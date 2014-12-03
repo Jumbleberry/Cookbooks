@@ -1,0 +1,83 @@
+[main]
+; App Setting
+
+app.title = "JB:Admin"
+app.pager.type = "sliding"
+app.version = "3.1.1"
+app.pager.limit = 10
+app.pager.range = 8
+
+; Initialize App Startup
+includePaths.library = APPLICATION_PATH "/../library"
+bootstrap.path = APPLICATION_PATH "/Bootstrap.php"
+bootstrap.class = "Bootstrap"
+appnamespace = "Application"
+
+resources.frontController.controllerDirectory = APPLICATION_PATH "/controllers"
+resources.frontController.moduleDirectory = APPLICATION_PATH "/modules" 
+resources.frontController.params.displayExceptions = 0
+resources.frontController.plugins.layoutloader = Jb_Plugin_LayoutLoader
+resources.view.helperPath.Jb_View_Helper_ = "Jb/View/Helper/"
+
+; Layouts
+resources.modules[] = ""
+resources.layout.layout = "layout"
+resources.layout.layoutPath = APPLICATION_PATH "/layouts/"
+mobile.resources.layout.layout = "layout"
+mobile.resources.layout.layoutPath = APPLICATION_PATH "/modules/mobile/layouts/"
+
+autoloaderNamespaces.jb = "Jb_"
+autoloaderNamespaces.fb = "Fb_"
+autoloaderNamespaces.pq = "Pq_"
+
+; Affiliate Redirect URL
+jbxrouter.url = "<%= @jbxroute %>"
+
+; Pixel url
+pixels.url = "<%= @jbxtrack %>"
+
+; File Manager directory
+filemanager.directory = APPLICATION_PATH "/../bank/"
+
+; Bank Directory
+bank.directory = APPLICATION_PATH "/../public/_bank/"
+
+; Image FTP
+ftp.image.public_url  = ""
+
+
+;Keys
+key.salt = "<%= @key-salt %>"
+key.pass = "<%= @key-pass %>"
+
+
+; Database : Affiliate Redirect
+resources.db.redirect.params.host = "<%= @db-redirect-hosts %>"
+resources.db.redirect.params.username = <%= @db-redirect-username %>
+resources.db.redirect.params.password = "<%= @db-redirect-password %>"
+resources.db.redirect.params.dbname = "<%= @db-redirect-dbname %>"
+
+; Mail SMTP
+email.server = <%= @email-server %>
+email.config.username = <%= @email-username %>
+email.config.password = <%= @email-password %>
+email.config.auth = <%= @email-auth %>
+email.config.port = <%= @email-port %>
+
+[<%= @app-env %> : main]
+; Database : Master 
+resources.db.master.params.host = <%= @db-master-host %>
+resources.db.master.params.username = <%= @db-master-username %>
+resources.db.master.params.password = <%= @db-master-password %>
+resources.db.master.params.dbname = <%= @db-master-dbname %>
+resources.db.master.default = <%= @db-master-default %>
+
+; Database : Slave
+resources.db.slave.params.host = <%= @db-slave-host %>
+resources.db.slave.params.username = <%= @db-slave-username %>
+resources.db.slave.params.password = <%= @db-slave-password %>
+resources.db.slave.params.dbname = <%= @db-slave-dbname %>
+
+phpSettings.display_startup_errors = <%= @display-startup-errors %>
+phpSettings.display_errors = <%= @php-display-errors %>
+resources.frontController.params.displayExceptions = <%= @display-exceptions %>

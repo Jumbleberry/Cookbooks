@@ -1,0 +1,68 @@
+<?php 
+/**
+ * Configuration 
+ */
+if (PHP_SAPI === 'cli')
+    @parse_str(implode('&', array_slice($argv, 1)), $_GET);
+ 
+/**
+ * Define application constants
+ */
+ defined('APPLICATION_ENV')
+    || define('APPLICATION_ENV', 'development');
+
+$whoami = exec("whoami");
+$group  = exec("id -gn $whoami");
+
+/**
+ * Date Settings
+ */
+// FB UTC formatted (ISO8601)
+define("FB_DATE", 'Y-m-d\TH:i:sO');
+  
+/**
+ * Database Config
+ */
+$dbConfig['master'] = array(
+    'host' => '<%= @db-master-host %>',
+    'username' => '<%= @db-master-username %>',
+    'password' => '<%= @db-master-password %>',
+    'dbname' => '<%= @db-master-dbname %>',
+    'default' => '<%= @db-master-default %>'
+);
+ 
+$dbConfig['slave'] = array(
+    'host' => '<%= @db-slave-host %>',
+    'username' => '<%= @db-slave-username %>',
+    'password' => '<%= @db-slave-password %>',
+    'dbname' => '<%= @db-slave-dbname %>',
+    'default' => '<%= @db-slave-default %>'
+);
+
+// Hitpath Slave Server
+$dbConfig['hitpath_main'] = array(
+    "host"          => "<%= @hitpath-main-host %>",
+    "username"      => "<%= @hitpath-main-username %>",
+    "password"      => "<%= @hitpath-main-password %>",
+    "dbname"        => "<%= @hitpath-main-dbname %>",
+    "default"       => "<%= @hitpath-main-default %>"
+);
+ 
+$dbConfig['hitpath_report'] = array(
+    "host"          => "<%= @hitpath-report-host %>",
+    "username"      => "<%= @hitpath-report-username %>",
+    "password"      => "<%= @hitpath-report-password %>",
+    "dbname"        => "<%= @hitpath-report-dbname %>",
+    "default"       => "<%= @hitpath-report-default %>"
+); 
+ 
+/**
+ * Email SMTP Settings
+ */
+$emailConfig =  array(
+    "server"    => "<%= @email-server %>",
+    "username"  => "<%= @email-username %>",
+    "password"  => "<%= @email-password %>",
+    "auth"      => "<%= @email-auth %>",
+    "port"      => "<%= @email-port %>"
+);
