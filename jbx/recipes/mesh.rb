@@ -1,3 +1,8 @@
+#Registers nginx service TODO: change this
+service 'nginx' do 
+  action :nothing
+end
+
 # Set the branch to checkout
 branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['mesh']['branch']
 
