@@ -43,5 +43,6 @@ apps.each do | app, key |
         cwd path
         command "gpg --output #{key}.key --decrypt #{key}.key.gpg"
         user "root"
+        not_if do ::File.exists?("#{path}/#{key}.key") end
     end
 end
