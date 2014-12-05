@@ -6,6 +6,7 @@ default['php']['fpm']['max_children'] = '5'
 default['php']['fpm']['start_servers'] = '2'
 default['php']['fpm']['min_spare_servers'] = '1'
 default['php']['fpm']['max_spare_servers'] = '3'
+default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
 default['php']['packages'] = [
   {

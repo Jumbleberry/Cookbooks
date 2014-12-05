@@ -31,10 +31,10 @@ autoloaderNamespaces.fb = "Fb_"
 autoloaderNamespaces.pq = "Pq_"
 
 ; Affiliate Redirect URL
-jbxrouter.url = "<%= @jbxroute %>"
+jbxrouter.url = "<%= node['admin']['jbxroute'] %>"
 
 ; Pixel url
-pixels.url = "<%= @jbxtrack %>"
+pixels.url = "<%= node['admin']['jbxtrack'] %>"
 
 ; File Manager directory
 filemanager.directory = APPLICATION_PATH "/../bank/"
@@ -47,37 +47,37 @@ ftp.image.public_url  = ""
 
 
 ;Keys
-key.salt = "<%= @key-salt %>"
-key.pass = "<%= @key-pass %>"
+key.salt = "<%= node['admin']['key_salt'] %>"
+key.pass = "<%= node['admin']['key_pass'] %>"
 
 
 ; Database : Affiliate Redirect
-resources.db.redirect.params.host = "<%= @db-redirect-hosts %>"
-resources.db.redirect.params.username = <%= @db-redirect-username %>
-resources.db.redirect.params.password = "<%= @db-redirect-password %>"
-resources.db.redirect.params.dbname = "<%= @db-redirect-dbname %>"
+resources.db.redirect.params.host = "<%= node['admin']['redirect']['hosts'] %>"
+resources.db.redirect.params.username = "<%= node['admin']['redirect']['username'] %>"
+resources.db.redirect.params.password = "<%= node['admin']['redirect']['password'] %>"
+resources.db.redirect.params.dbname = "<%= node['admin']['redirect']['dbname'] %>"
 
 ; Mail SMTP
-email.server = <%= @email-server %>
-email.config.username = <%= @email-username %>
-email.config.password = <%= @email-password %>
-email.config.auth = <%= @email-auth %>
-email.config.port = <%= @email-port %>
+email.server = "<%= node['admin']['email']['email_server'] %>"
+email.config.username = "<%= node['admin']['email']['username'] %>"
+email.config.password = "<%= node['admin']['email']['password'] %>"
+email.config.auth = "<%= node['admin']['email']['auth'] %>"
+email.config.port = "<%= node['admin']['email']['port'] %>"
 
-[<%= @app-env %> : main]
+[<%= node['admin']['app_env'] %> : main]
 ; Database : Master 
-resources.db.master.params.host = <%= @db-master-host %>
-resources.db.master.params.username = <%= @db-master-username %>
-resources.db.master.params.password = <%= @db-master-password %>
-resources.db.master.params.dbname = <%= @db-master-dbname %>
-resources.db.master.default = <%= @db-master-default %>
+resources.db.master.params.host = "<%= node['admin']['mysql_write']['host'] %>"
+resources.db.master.params.username = "<%= node['admin']['mysql_write']['username'] %>"
+resources.db.master.params.password = "<%= node['admin']['mysql_write']['password'] %>"
+resources.db.master.params.dbname = "<%= node['admin']['mysql_write']['dbname'] %>"
+resources.db.master.default = "<%= node['admin']['mysql_write']['default'] %>"
 
 ; Database : Slave
-resources.db.slave.params.host = <%= @db-slave-host %>
-resources.db.slave.params.username = <%= @db-slave-username %>
-resources.db.slave.params.password = <%= @db-slave-password %>
-resources.db.slave.params.dbname = <%= @db-slave-dbname %>
+resources.db.slave.params.host = "<%= node['admin']['mysql_read']['host'] %>"
+resources.db.slave.params.username = "<%= node['admin']['mysql_read']['username'] %>"
+resources.db.slave.params.password = "<%= node['admin']['mysql_read']['password'] %>"
+resources.db.slave.params.dbname = "<%= node['admin']['mysql_read']['dbname'] %>"
 
-phpSettings.display_startup_errors = <%= @display-startup-errors %>
-phpSettings.display_errors = <%= @php-display-errors %>
-resources.frontController.params.displayExceptions = <%= @display-exceptions %>
+phpSettings.display_startup_errors = "<%= node['admin']['display_startup_errors'] %>"
+phpSettings.display_errors = "<%= node['admin']['php_display_errors'] %>"
+resources.frontController.params.displayExceptions = "<%= node['admin']['display_exceptions'] %>"

@@ -1,30 +1,41 @@
 # Make sure directory exists
-directory node['jbx']['admin']['path'] do
-  owner node["jbx"]["user"]
-  group node["jbx"]["user"]
+# Use the same user defined for the jbx application
+directory node['admin']['path'] do
+  owner node['jbx']['user']
+  group node['jbx']['user']
 end
 
-git node['jbx']['admin']['path'] do
-  if !node['jbx']['admin']['github_key'].empty?
-    ssh_wrapper node['github']['wrapper_path'] + "/" + node['jbx']['admin']['github_key'] + "_wrapper.sh"
+git node['admin']['path'] do
+  if !node['admin']['github_key'].empty?
+    ssh_wrapper node['github']['wrapper_path'] + "/" + node['admin']['github_key'] + "_wrapper.sh"
   end
-  repository node['jbx']['admin']['git-url']
+  repository node['admin']['git-url']
   revision branch
   user node['jbx']['user']
   action :sync
 end
 
 # Creates the nginx virtual host
-virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['admin']['hostname']
-virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['admin']['hostname']
+virtualhost         = '/etc/nginx/sites-available/' + node['admin']['hostname']
+virtualhost_link    = '/etc/nginx/sites-enabled/' + node['admin']['hostname']
 
 template virtualhost do
   source    "nginx/admin.jumbleberry.com.erb"
   variables ({
-    "hostname"  => node['jbx']['admin']['hostname'],
-    "path"      => "#{node['jbx']['admin']['path']}/public",
-    "app-env"   => node['jbx']['admin']['app-env']
+    "hostname"  => node['admin']['hostname'],
+    "path"      => "#{node['admin']['path']}/public",
+    "app_env"   => node['admin']['app_env']
   })
+end
+
+#Add application configurations
+template "#{node['admin']['path']}/application/configs/application.ini" do
+  source  "admin/application.ini.erb"
+end
+
+#Add cron configurations
+template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
+  source  "admin/settings.php.erb"
 end
 
 link virtualhost_link do

@@ -1,5 +1,10 @@
-#Applications
-apps = ["core", "mesh", "admin"]
+#Get all the applications keys
+apps = {}
+#JBX
+apps['core'] = node['jbx']['core']['github_key'];
+apps['mesh'] = node['jbx']['mesh']['github_key'];
+#Jb-Admin
+apps['admin'] = node['admin']['github_key'];
 
 #Username owner of the keys
 username = node['jbx']['user']
@@ -15,27 +20,29 @@ directory tmp_ssh_folder do
 end
 
 #Creates one key file and ssh wrapper for each app
-apps.each do |app|
-  if !node['jbx'][app]['github_key'].empty?
-    key_name = node['jbx'][app]['github_key'] + ".key"
-    ssh_wrapper_name = node['jbx'][app]['github_key'] + "_wrapper.sh"
+apps.each do |app, github_key|
+    if !github_key.empty?
+        key_name = github_key + ".key"
+        ssh_wrapper_name = github_key + "_wrapper.sh"
 
-    #Copy private key to tmp folder
-    cookbook_file "#{tmp_ssh_folder}/#{key_name}" do
-      source "ssh/#{key_name}"
-      owner username
-      mode 0600
-    end
+        if(node['aws_deploy_key'].empty?)
+            #Copy private key to tmp folder
+            cookbook_file "#{tmp_ssh_folder}/#{key_name}" do
+                source "ssh/#{key_name}"
+                owner username
+                mode 0600
+            end
+        end
 
-    #Creates ssh wrapper for the key
-    template "#{tmp_ssh_folder}/#{ssh_wrapper_name}" do
-      source 'ssh/ssh_wrapper.sh.erb'
-      variables ({
-            'tmp_key_file' => "#{tmp_ssh_folder}/#{key_name}"
-      })
-      mode 0770
-      owner username
-      group username
+        #Creates ssh wrapper for the key
+        template "#{tmp_ssh_folder}/#{ssh_wrapper_name}" do
+            source 'ssh/ssh_wrapper.sh.erb'
+            variables ({
+                'tmp_key_file' => "#{tmp_ssh_folder}/#{key_name}"
+            })
+            mode 0770
+            owner username
+            group username
+        end
     end
-  end
 end
