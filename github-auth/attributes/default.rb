@@ -1,1 +1,1 @@
-default['github']['wrapper_path'] = '/tmp/.ssh'
+default['github']['wrapper_path'] = '~/.ssh'
