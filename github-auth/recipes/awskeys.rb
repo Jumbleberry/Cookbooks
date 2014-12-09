@@ -1,5 +1,7 @@
-path = node['github']['wrapper_path']
-key_name = 'aws_deploy_key.key'
+path        = node['github']['wrapper_path']
+username    = node['jbx']['user']
+key_name    = 'aws_deploy_key.key'
+
 # Creates gpg directory
 directory '/root/.gnupg' do
     owner "root"
