@@ -25,7 +25,7 @@ apps.each do |app, github_key|
         key_name = github_key + ".key"
         ssh_wrapper_name = github_key + "_wrapper.sh"
 
-        if(node['aws_deploy_key'].empty?)
+        if( !node.attribute?('aws_deploy_key') )
             #Copy private key to tmp folder
             cookbook_file "#{tmp_ssh_folder}/#{key_name}" do
                 source "ssh/#{key_name}"

@@ -21,6 +21,14 @@ execute "import gpg key" do
     not_if "gpg --list-keys | grep deploy"
 end
 
+#Creates ssh folder for github keys
+directory path do
+  action :create
+  owner username
+  group username
+  recursive true
+end
+
 #Get all the applications keys
 apps = {}
 #JBX
