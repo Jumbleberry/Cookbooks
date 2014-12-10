@@ -1,4 +1,9 @@
 #Redis installation
+#Turn off huge pages
+execute 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' do
+  user 'root'
+end
+
 #Clone the specified version from the repository
 path  = node['redis']['path']
 
@@ -6,6 +11,11 @@ git path do
     repository node['redis']['git_url']
     reference node['redis']['git_ref']
     action :sync
+end
+
+# get make
+apt_package 'make' do
+  action :install
 end
 
 #Installation
@@ -47,10 +57,49 @@ binaries.each do | file |
     end
 end
 
+# Copy server template
+cookbook_file '/etc/redis/server-template' do
+  source 'server-template'
+  owner 'root'
+  group 'root'
+end
+
+# Copy server create file
+template '/etc/redis/create_servers.rb' do
+  source 'create_servers.rb.erb'
+end
+
+#Creates servers directory
+directory '/etc/redis/servers' do
+    action :create
+    owner 'root'
+    group 'root'
+end
+
+# Create servers
+execute "create redis servers" do
+  command "ruby /etc/redis/create_servers.rb" do
+    user 'root'
+  end
+end
+
+#Allow overcomit_memory
+ruby_block "adds to sysctl" do
+    block do
+        sysctl = Chef::Util::FileEdit.new('/etc/sysctl.conf')
+        sysctl.insert_line_if_no_match('/vm.overcommit_memory/', 'vm.overcommit_memory = 1')
+        sysctl.write_file
+    end
+    not_if "grep -q 'vm.overcommit_memory' /etc/sysctl.conf"
+end
+execute 'sysctl vm.overcommit_memory=1' do
+  user 'root'
+end
+
 #Add init scripts
-init_files = { 
-    'redis_init_script' => 'redis', 
-    'sentinel_init_script' => 'redis-sentinel' 
+init_files = {
+    'redis_init_script' => 'redis',
+    'sentinel_init_script' => 'redis-sentinel'
 }
 
 init_files.each do | origin, dest |

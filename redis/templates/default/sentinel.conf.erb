@@ -1,6 +1,4 @@
-sentinel monitor mymaster <%= node['redis']['master_hostname'] %> 6379 2
-sentinel down-after-milliseconds mymaster 5000
-sentinel failover-timeout mymaster 15000
-daemonize yes
 logfile "/var/log/redis/sentinel.log"
+daemonize yes
 pidfile "/var/run/sentinel.pid"
+port 26379

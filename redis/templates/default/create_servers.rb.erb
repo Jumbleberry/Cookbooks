@@ -1,0 +1,83 @@
+#!/usr/bin/env ruby 
+
+require 'socket'
+require 'resolv'
+
+def getPort(serverDir)
+  port = `grep -hR ^port #{serverDir} | sort -u -r | awk '{print $NF}'`
+
+  if port != ''
+    return port.split().shift.to_i + 1
+  end
+
+  return 6379
+end
+
+redisDir    = "<%= node['redis']['config'] %>"
+serverDir   = redisDir + '/servers'
+baseServer  = 'server1'
+redisMaster = "<%= node['redis']['master_hostname'] %>"
+#ipAddress   = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+ipAddress   = "<%= node['ipaddress'] %>"
+
+# If we are not the master we need to find the master IP and port
+if Resolv.getaddress(redisMaster).to_s != ipAddress
+  retries    = 0
+  masterIp   = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/ip/{getline;print}'`
+  masterPort = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/^port/{getline;print}'`
+
+  while masterIp == '' && retries < 5 do
+    masterIp   = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/ip/{getline;print}'`
+    masterPort = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/^port/{getline;print}'`
+    sleep(5)
+    retries += 1
+  end
+
+  if masterIp == ''
+    puts "Cannot connec to sentinel at #{redisMaster}"
+    exit
+  end
+else
+  masterIp   = ipAddress
+  masterPort = 6379
+end
+
+maxCores = `nproc`
+
+(1..maxCores.to_i).each do |i|
+  newServer     = 'server' + i.to_s
+  newServerConf = serverDir + '/' + newServer + '.conf'
+
+  # If the conf file already exists skip
+  if File.file?(newServerConf)
+    next
+  end
+
+  port = getPort(serverDir)
+
+  # Create a new server conf file
+  system "cp #{redisDir}/server-template #{newServerConf}"
+
+  # Update server name
+  system "sed -i s/#{baseServer}/#{newServer}/g #{newServerConf}"
+
+  # Update the port
+  system "sed -i \"s/port [0-9]\\{4\\}/port #{port}/g\" #{newServerConf}"
+
+  # Check if slaveof needs to be added
+  if ipAddress != masterIp || port != masterPort
+    open(newServerConf, 'a') { |file|
+      file.puts ''
+      file.puts "slaveof #{redisMaster} #{masterPort}"
+    }
+  end
+
+  # Update sentinel file
+  open(redisDir + '/sentinel.conf', 'a') { |file|
+    file.puts ''
+    file.puts "sentinel monitor #{newServer} #{redisMaster} #{port} 2"
+    file.puts "sentinel down-after-milliseconds #{newServer} 5000"
+    file.puts "sentinel failover-timeout #{newServer} 15000"
+    file.puts "sentinel parallel-syncs #{newServer} 1"
+  }
+end
