@@ -37,7 +37,10 @@ jbxrouter.url                                       = "<%= node['admin']['jbxrou
 pixels.url                                          = "<%= node['admin']['jbxtrack'] %>"
 
 ; File Manager directory
-filemanager.directory                               = APPLICATION_PATH "/../bank/"
+filemanager.directory                               = "<%= node['admin']['s3_bucket'] %>/bank/"
+
+; User Image directory
+user_images.directory                               = "<%= node['admin']['s3_bucket'] %>/images/user/"
 
 ; Bank Directory
 bank.directory                                      = APPLICATION_PATH "/../public/_bank/"
