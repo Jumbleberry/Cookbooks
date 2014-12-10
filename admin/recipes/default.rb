@@ -22,9 +22,9 @@ virtualhost_link    = '/etc/nginx/sites-enabled/' + node['admin']['hostname']
 template virtualhost do
   source    "nginx/admin.jumbleberry.com.erb"
   variables ({
-    "hostname"  => node['admin']['hostname'],
-    "path"      => "#{node['admin']['path']}/public",
-    "app_env"   => node['admin']['app_env']
+    "hostname"      => node['admin']['hostname'],
+    "path"          => "#{node['admin']['path']}/public",
+    "environment"   => node['admin']['environment']
   })
 end
 
@@ -38,7 +38,12 @@ template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
   source  "admin/settings.php.erb"
 end
 
+#Nginx service
+service 'nginx' do
+  action :nothing
+end
+
 link virtualhost_link do
   to virtualhost
-  notifies :restart, "service[nginx]", :delayed
+  notifies :reload, "service[nginx]", :delayed
 end
