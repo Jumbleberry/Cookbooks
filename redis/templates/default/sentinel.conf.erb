@@ -1,4 +1,4 @@
-logfile "/var/log/redis/sentinel.log"
+logfile "<%= node['redis']['log'] %>/sentinel.log"
 daemonize yes
 pidfile "/var/run/sentinel.pid"
-port 26379
+port <%= node['redis']['sentinelPort'] %>
