@@ -8,3 +8,4 @@ version          '0.1.0'
 
 depends "web-server"
 depends "github-auth"
+depends "nginx"
