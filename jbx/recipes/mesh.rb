@@ -30,5 +30,5 @@ end
 
 link virtualhost_link do
   to virtualhost
-  notifies :restart, "service[nginx]", :delayed
+  notifies :reload, "service[nginx]", :delayed
 end
