@@ -5,6 +5,8 @@ directory node['admin']['path'] do
   group node['jbx']['user']
 end
 
+branch = ENV['JB_ADMIN_BRANCH'] || node['admin']['branch']
+
 git node['admin']['path'] do
   if !node['admin']['github_key'].empty?
     ssh_wrapper node['github']['wrapper_path'] + "/" + node['admin']['github_key'] + "_wrapper.sh"
