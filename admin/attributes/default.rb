@@ -4,6 +4,7 @@ default['admin']['git-url']                 = 'git@github.com:Jumbleberry/admin.
 default['admin']['branch']                  = 'master'
 default['admin']['github_key']              = ''
 default['admin']['environment']             = ''
+default['admin']['s3_bucket']               = '/mnt/s3'
 
 default['admin']['jbxroute']                = 'http://jbxroute.com'
 default['admin']['jbxtrack']                = 'https://jbxtrack.com'
