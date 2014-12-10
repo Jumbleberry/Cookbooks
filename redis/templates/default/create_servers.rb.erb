@@ -10,14 +10,13 @@ def getPort(serverDir)
     return port.split().shift.to_i + 1
   end
 
-  return 6379
+  return <%= node['redis']['basePort'] %>
 end
 
 redisDir    = "<%= node['redis']['config'] %>"
 serverDir   = redisDir + '/servers'
 baseServer  = 'server1'
 redisMaster = "<%= node['redis']['master_hostname'] %>"
-#ipAddress   = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
 ipAddress   = "<%= node['ipaddress'] %>"
 
 # If we are not the master we need to find the master IP and port
@@ -39,7 +38,7 @@ if Resolv.getaddress(redisMaster).to_s != ipAddress
   end
 else
   masterIp   = ipAddress
-  masterPort = 6379
+  masterPort = <%= node['redis']['basePort'] %>
 end
 
 maxCores = `nproc`

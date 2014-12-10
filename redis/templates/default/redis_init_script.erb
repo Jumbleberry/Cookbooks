@@ -11,13 +11,15 @@
 # Description:          redis-server - Persistent key-value db
 ### END INIT INFO
 
+REDISDIR=<%= node['redis']['config'] %>
+
 if [ -n "$2" ]; then
   NAME=$2
- 
+  
   PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
   DAEMON=/usr/local/bin/redis-server
-  DAEMON_ARGS=/etc/redis/servers/$NAME.conf
-  DESC=redis-server
+  DAEMON_ARGS=${REDISDIR}/servers/$NAME.conf
+  DESC=redis-server  
  
   RUNDIR=/var/run/redis
   PIDFILE=$RUNDIR/$NAME.pid
@@ -31,7 +33,6 @@ if [ -n "$2" ]; then
       echo -n "Starting $DESC: "
       mkdir -p $RUNDIR
       touch $PIDFILE
-      #chown redis:redis $RUNDIR $PIDFILE
       chmod 755 $RUNDIR
       if start-stop-daemon --start --quiet --umask 007 --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS
       then
@@ -56,11 +57,10 @@ if [ -n "$2" ]; then
      ;;
   esac
 else 
-  for f in `ls -la /etc/redis/servers/*.conf | awk {'print $9'}`
+  for f in `ls -la ${REDISDIR}/servers/*.conf | awk {'print $9'}`
   do
-    SERVERNAME=$(sed 's|/etc/redis/servers/||g' <<< $f)
+    SERVERNAME=$(sed 's|'${REDISDIR}'/servers/||g' <<< $f)
     SERVERNAME=$(sed 's|.conf||g' <<< $SERVERNAME)
-    #/etc/init.d/redis-server "$1" "$SERVERNAME"
     /etc/init.d/redis "$1" "$SERVERNAME"
   done 
 fi

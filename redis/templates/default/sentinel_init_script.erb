@@ -8,7 +8,7 @@ EXEC=/usr/local/bin/redis-sentinel
 CLIEXEC=/usr/local/bin/redis-cli
 
 PIDFILE=/var/run/sentinel.pid
-CONF="/etc/redis/sentinel.conf"
+CONF="<%= node['redis']['config'] %>/sentinel.conf"
 
 case "$1" in
     start)
