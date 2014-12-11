@@ -40,6 +40,13 @@ template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
   source  "admin/settings.php.erb"
 end
 
+#Creates log directory
+directory node['admin']['s3_bucket']['upload'] + node['admin']['s3_bucket']['user_images'] do
+    action :create
+    owner 'www-data'
+    group 'www-data'
+end
+
 #Nginx service
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
