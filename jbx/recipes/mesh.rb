@@ -1,8 +1,3 @@
-#Registers nginx service TODO: change this
-service 'nginx' do 
-  action :nothing
-end
-
 # Set the branch to checkout
 branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['mesh']['branch']
 
@@ -26,6 +21,11 @@ template virtualhost do
     "hostname"  => node['jbx']['hostname'],
     "path"      => "#{node['jbx']['core']['path']}/public"
   })
+end
+
+service 'nginx' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :nothing
 end
 
 link virtualhost_link do
