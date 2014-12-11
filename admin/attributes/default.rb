@@ -5,7 +5,7 @@ default['admin']['branch']                  = 'master'
 default['admin']['github_key']              = ''
 default['admin']['environment']             = ''
 
-default['admin']['s3_bucket']                = '/s3'
+default['admin']['s3_bucket']['s3']          = '/s3'
 default['admin']['s3_bucket']['upload']      = '/mnt/s3'
 default['admin']['s3_bucket']['user_images'] = '/images/user'
 
