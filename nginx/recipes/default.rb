@@ -20,5 +20,6 @@ link '/etc/nginx/sites-enabled/default' do
 end
 
 service 'nginx' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
   action [ :enable, :start ]
 end
