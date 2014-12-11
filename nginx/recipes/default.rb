@@ -3,11 +3,6 @@ package 'nginx' do
   action :install
 end
 
-#Nginx service
-service 'nginx' do
-  action :nothing
-end
-
 template '/etc/nginx/nginx.conf' do
   source    "nginx.conf.erb"
   variables ({
@@ -25,5 +20,5 @@ link '/etc/nginx/sites-enabled/default' do
 end
 
 service 'nginx' do
-  action :start
+  action [ :enable, :start ]
 end
