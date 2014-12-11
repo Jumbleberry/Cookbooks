@@ -41,7 +41,7 @@ filemanager.directory                               = "<%= node['admin']['s3_buc
 
 ; User Image directory
 user_images.directory                               = "<%= node['admin']['s3_bucket']['s3'] %>/images/user/"
-user_images.uploadDirectory                         = "<%= default['admin']['s3_bucket']['upload'] %>/images/user/"
+user_images.uploadDirectory                         = "<%= node['admin']['s3_bucket']['upload'] %>/images/user/"
 
 ; Bank Directory
 bank.directory                                      = APPLICATION_PATH "/../public/_bank/"
