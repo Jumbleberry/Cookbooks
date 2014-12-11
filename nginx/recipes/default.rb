@@ -24,7 +24,6 @@ link '/etc/nginx/sites-enabled/default' do
   action :delete
 end
 
-link virtualhost_link do
-  to virtualhost
-  notifies :start, "service[nginx]", :delayed
+service 'nginx' do
+  action :start
 end

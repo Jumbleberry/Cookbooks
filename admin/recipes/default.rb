@@ -42,5 +42,10 @@ end
 
 #Nginx service
 service 'nginx' do
-  action :start
+  action :nothing
+end
+
+link virtualhost_link do
+  to virtualhost
+  notifies :reload, "service[nginx]", :delayed
 end
