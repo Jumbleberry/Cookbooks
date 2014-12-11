@@ -40,11 +40,6 @@ template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
   source  "admin/settings.php.erb"
 end
 
-#Make a sym link to the s3 bucket
-link "#{node['admin']['path']}#{node['admin']['s3']}" do
-  to node['admin']['s3_bucket_path']
-end
-
 #Nginx service
 service 'nginx' do
   action :nothing
