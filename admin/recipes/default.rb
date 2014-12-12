@@ -23,11 +23,6 @@ virtualhost_link    = '/etc/nginx/sites-enabled/' + node['admin']['hostname']
 
 template virtualhost do
   source    "nginx/admin.jumbleberry.com.erb"
-  variables ({
-    "hostname"      => node['admin']['hostname'],
-    "path"          => "#{node['admin']['path']}/public",
-    "environment"   => node['admin']['environment']
-  })
 end
 
 #Add application configurations
@@ -40,11 +35,12 @@ template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
   source  "admin/settings.php.erb"
 end
 
-#Creates log directory
+#Creates bucket directory
 directory node['admin']['s3_bucket']['upload'] + node['admin']['s3_bucket']['user_images'] do
     action :create
     owner 'www-data'
     group 'www-data'
+    recursive true
 end
 
 #Nginx service
