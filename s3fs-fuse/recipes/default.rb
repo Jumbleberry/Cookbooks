@@ -20,15 +20,15 @@ end
 #Moves installation script to cloned repo
 cookbook_file "#{path}install_s3fs.sh" do
     source "install_s3fs.sh"
-    owner "root"
-    group "root"
+    owner "www-data"
+    group "www-data"
     mode 0777
 end
 
 #Execute installation script
 execute  "s3fs-fuse-installation" do
     cwd "#{path}"
-    user "root"
+    user "www-data"
     command "./install_s3fs.sh"
     not_if { ::File.exists?(password_file)}
 end
@@ -37,16 +37,16 @@ end
 file "s3fs-fuse-password" do
     path password_file
     content node['s3fs-fuse']['password']
-    owner "root"
-    group "root"
+    owner "www-data"
+    group "www-data"
     mode 0640
 end
 
 #Creates mount folder
 directory mnt_path do
     action :create
-    owner "root"
-    group "root"
+    owner "www-data"
+    group "www-data"
 end
 
 #Adds new mnt path to fstab for automount
@@ -61,7 +61,7 @@ end
 
 #Mount the new partition
 execute "mount s3fs partition" do
-    user "root"
+    user "www-data"
     command "s3fs jbdocstorage /mnt/s3 -ouse_cache=/tmp -o allow_other"
     not_if "df | grep -q s3fs"
 end
