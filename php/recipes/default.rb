@@ -15,7 +15,7 @@ end
 #Check if we need to change the php include path
 include_path = node['php']['fpm']['include_path']
 if node.recipes.include?('admin')
-  include_path = node['admin']['include_path']
+  include_path = include_path + node['admin']['include_path']
 end
 
 #Fpm configurations
