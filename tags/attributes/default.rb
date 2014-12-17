@@ -1,4 +1,4 @@
-default['aws']['tags']['force_remove'] = [
+default['aws']['tags']['force_remove'] = {
     "production"    => "true",
     "redis-write"   => "true",
     "redis-read"    => "true",
@@ -6,6 +6,6 @@ default['aws']['tags']['force_remove'] = [
     "jbx-core"      => "true",
     "jbx-mesh"      => "true",
     "jb-admin"      => "true"
-]
+}
 
-default['aws']['tags']['add'] = []
+default['aws']['tags']['add'] = {}
