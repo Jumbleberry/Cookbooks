@@ -9,3 +9,4 @@ default['aws']['tags']['force_remove'] = {
 }
 
 default['aws']['tags']['add'] = {}
+default['ec2']['instance_id'] = ''
