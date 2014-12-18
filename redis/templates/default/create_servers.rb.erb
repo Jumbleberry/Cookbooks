@@ -17,23 +17,23 @@ redisDir    = "<%= node['redis']['config'] %>"
 serverDir   = redisDir + '/servers'
 baseServer  = 'server1'
 redisMaster = "<%= node['redis']['master_hostname'] %>"
-ipAddress   = "<%= node['ipaddress'] %>"
+ipAddress   = "<%= node['redis']['ipaddress'] %>"
 
 # If we are not the master we need to find the master IP and port
 if Resolv.getaddress(redisMaster).to_s != ipAddress
   retries    = 0
-  masterIp   = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/ip/{getline;print}'`
-  masterPort = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/^port/{getline;print}'`
+  masterIp   = `redis-cli -h #{redisMaster} -p 26379 sentinel master #{baseServer} | awk {'print $1'} | awk '/ip/{getline;print}'`
+  masterPort = `redis-cli -h #{redisMaster} -p 26379 sentinel master #{baseServer} | awk {'print $1'} | awk '/^port/{getline;print}'`
 
   while masterIp == '' && retries < 5 do
-    masterIp   = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/ip/{getline;print}'`
-    masterPort = `redis-cli -h #{redisMaster} -p 26379 sentinel master server1 | awk {'print $1'} | awk '/^port/{getline;print}'`
+    masterIp   = `redis-cli -h #{redisMaster} -p 26379 sentinel master #{baseServer} | awk {'print $1'} | awk '/ip/{getline;print}'`
+    masterPort = `redis-cli -h #{redisMaster} -p 26379 sentinel master #{baseServer} | awk {'print $1'} | awk '/^port/{getline;print}'`
     sleep(5)
     retries += 1
   end
 
   if masterIp == ''
-    puts "Cannot connec to sentinel at #{redisMaster}"
+    puts "Cannot connect to sentinel at #{redisMaster}"
     exit
   end
 else
@@ -41,7 +41,8 @@ else
   masterPort = <%= node['redis']['basePort'] %>
 end
 
-maxCores = `nproc`
+maxCores   = `nproc`
+masterFlag = 0;
 
 (1..maxCores.to_i).each do |i|
   newServer     = 'server' + i.to_s
@@ -72,11 +73,14 @@ maxCores = `nproc`
   end
 
   # Update sentinel file
-  open(redisDir + '/sentinel.conf', 'a') { |file|
-    file.puts ''
-    file.puts "sentinel monitor #{newServer} #{redisMaster} #{port} 2"
-    file.puts "sentinel down-after-milliseconds #{newServer} 5000"
-    file.puts "sentinel failover-timeout #{newServer} 15000"
-    file.puts "sentinel parallel-syncs #{newServer} 1"
-  }
+  if masterFlag == 0
+    masterFlag = 1
+    open(redisDir + '/sentinel.conf', 'a') { |file|
+      file.puts ''
+      file.puts "sentinel monitor #{newServer} #{redisMaster} #{port} 2"
+      file.puts "sentinel down-after-milliseconds #{newServer} 10000"
+      file.puts "sentinel failover-timeout #{newServer} 30000"
+      file.puts "sentinel parallel-syncs #{newServer} 1"
+    }
+  end
 end
