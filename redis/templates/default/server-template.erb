@@ -8,6 +8,7 @@ pidfile /var/run/redis/server1.pid
 # Accept connections on the specified port, default is 6379.
 # If port 0 is specified Redis will not listen on a TCP socket.
 port <%= node['redis']['basePort'] %>
+bind <%= node['redis']['ipaddress'] %>
 
 # Specify the log file name. Also 'stdout' can be used to force
 # Redis to log on the standard output. Note that if you use standard
