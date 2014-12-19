@@ -1,0 +1,9 @@
+# Configuration for the awscli tool
+
+<% default_profile = node[:aws]
+unless default_profile.nil? %>
+[default]
+<%  default_profile.each do |key, value| %>
+<%= key %> = <%= value %>
+<%  end 
+end %>
