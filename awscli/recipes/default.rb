@@ -21,7 +21,7 @@ if node[:aws][:compile_time]
 end
 
 if node[:aws]
-  user = node[:aws][:user]
+  user = node[:user]
   if user == 'root'
     config_file = "/#{user}/.aws/config"
   else
