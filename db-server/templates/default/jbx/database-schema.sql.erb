@@ -52,7 +52,7 @@ END$$
 
 DROP PROCEDURE IF EXISTS `hitpath_sales_summary_insert_update`$$
 CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
-IN hitDate DATETIME,
+IN saleDate DATETIME,
 IN affiliateId INT(11),
 IN rejected INT(8),
 IN newEarned DECIMAL(10, 2),
@@ -72,8 +72,8 @@ BEGIN
      WHERE campaign_id = campaignId;
 
     -- Format dates
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d') INTO dailyDate;
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d') INTO dailyDate;
 
     -- Update hourly log
     UPDATE `summary_hitpath_hourly`
@@ -855,9 +855,9 @@ DELIMITER //
 CREATE TRIGGER `hitpath_sales_insert` AFTER INSERT ON `hitpath_sales`
  FOR EACH ROW BEGIN
     IF (new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, 1, new.earned, new.paid);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 1, new.earned, new.paid);
     ELSEIF (new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, 0, 0, 0);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 0, 0, 0);
     END IF;
 END
 //
@@ -867,11 +867,11 @@ DELIMITER //
 CREATE TRIGGER `hitpath_sales_update` AFTER UPDATE ON `hitpath_sales`
  FOR EACH ROW BEGIN
     IF (new.rejected != old.rejected AND new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, -1, (new.earned * -1), (new.paid * -1));
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, -1, (new.earned * -1), (new.paid * -1));
     ELSEIF (new.rejected != old.rejected AND new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, 1, new.earned, new.paid);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 1, new.earned, new.paid);
     ELSEIF ((old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, 0, new.earned - old.earned, new.paid - old.paid);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 0, new.earned - old.earned, new.paid - old.paid);
     END IF;
 END
 //
