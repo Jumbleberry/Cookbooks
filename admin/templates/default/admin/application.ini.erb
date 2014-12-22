@@ -37,17 +37,11 @@ jbxrouter.url                                       = "<%= node['admin']['jbxrou
 pixels.url                                          = "<%= node['admin']['jbxtrack'] %>"
 
 ; File Manager directory
-filemanager.directory                               = "<%= node['admin']['s3_bucket']['s3'] %>/bank/"
+filemanager.directory                               = "<%= node['admin']['storage']['bank'] %>"
 
 ; User Image directory
-user_images.directory                               = "<%= node['admin']['s3_bucket']['s3'] %>/images/user/"
-user_images.uploadDirectory                         = "<%= node['admin']['s3_bucket']['upload'] %>/images/user/"
-
-; Bank Directory
-bank.directory                                      = APPLICATION_PATH "/../public/_bank/"
-
-; Image FTP
-ftp.image.public_url                                = ""
+user_images.directory                               = "<%= node['admin']['storage']['user_images'] %>"
+user_images.uploadDirectory                         = "<%= node['admin']['storage']['user_images'] %>"
 
 
 ;Keys

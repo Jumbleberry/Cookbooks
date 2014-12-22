@@ -5,9 +5,8 @@ default['admin']['branch']                  = 'master'
 default['admin']['github_key']              = ''
 default['admin']['environment']             = ''
 
-default['admin']['s3_bucket']['s3']          = '/s3'
-default['admin']['s3_bucket']['upload']      = '/mnt/s3'
-default['admin']['s3_bucket']['user_images'] = '/images/user'
+default['admin']['storage']['bank']         = '/mnt/bank/'
+default['admin']['storage']['user_images']  = '/mnt/images/user/'
 
 default['admin']['jbxroute']                = 'http://jbxroute.com'
 default['admin']['jbxtrack']                = 'https://jbxtrack.com'
