@@ -6,3 +6,4 @@ default['redis']['config'] = '/etc/redis'
 default['redis']['log'] = '/var/log/redis'
 default['redis']['basePort'] = 6379
 default['redis']['sentinelPort'] = 26379
+default['redis']['ipaddress'] = '192.168.55.161'
