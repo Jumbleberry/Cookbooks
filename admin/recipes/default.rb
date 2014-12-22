@@ -36,7 +36,7 @@ template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
 end
 
 #Creates bucket directory
-directory node['admin']['storage']['user_images'] do
+directory node['admin']['storage']['base'] + node['admin']['storage']['user_images'] do
     action :create
     owner 'www-data'
     group 'www-data'
