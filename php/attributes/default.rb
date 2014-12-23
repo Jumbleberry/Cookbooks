@@ -44,6 +44,14 @@ default['php']['packages'] = [
   {
     "name" => "php5-gearman",
     "version" => "1.1.2*"
+  },
+  {
+    "name" => "php5-mysqlnd",
+    "version" => "5.5.*"
+  },
+  {
+    "name" => "php5-curl",
+    "version" => "5.5.*"
   }
 ]
 
