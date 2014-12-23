@@ -43,12 +43,6 @@ filemanager.directory                               = "<%= node['admin']['storag
 user_images.directory                               = "<%= node['admin']['storage']['user_images'] %>"
 user_images.uploadDirectory                         = "<%= node['admin']['storage']['base'] + node['admin']['storage']['user_images'] %>"
 
-
-;Keys
-key.salt                                            = "<%= node['admin']['key_salt'] %>"
-key.pass                                            = "<%= node['admin']['key_pass'] %>"
-
-
 ; Database : Affiliate Redirect
 resources.db.redirect.params.host                   = "<%= node['admin']['redirect']['hosts'] %>"
 resources.db.redirect.params.username               = "<%= node['admin']['redirect']['username'] %>"
