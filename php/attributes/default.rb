@@ -51,7 +51,7 @@ default['php']['packages'] = [
   },
   {
     "name" => "php5-curl",
-    "version" => "5.3.*"
+    "version" => "5.5.*"
   }
 ]
 
