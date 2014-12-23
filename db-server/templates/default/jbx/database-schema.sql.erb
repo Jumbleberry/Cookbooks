@@ -27,7 +27,6 @@ CREATE PROCEDURE mysql.store_time_zone ()
 DELIMITER ;
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `cap_history_insert`$$
 CREATE DEFINER=`root`@`%` PROCEDURE `cap_history_insert`(IN campaign_id int(10),
 IN old_value INT (11),
 IN new_value INT(11),
@@ -39,7 +38,6 @@ BEGIN
     VALUES (campaign_id, old_value, new_value, notes, created_by, created);
 END$$
 
-DROP PROCEDURE IF EXISTS `credit_history_insert`$$
 CREATE DEFINER=`root`@`%` PROCEDURE `credit_history_insert`(IN advertiser_id INT(11),
 IN old_value DECIMAL(10, 2),
 IN new_value DECIMAL(10, 2),
@@ -50,7 +48,6 @@ BEGIN
     VALUES (advertiser_id, old_value, new_value, created_by, created);
 END$$
 
-DROP PROCEDURE IF EXISTS `hitpath_sales_summary_insert_update`$$
 CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
 IN saleDate DATETIME,
 IN affiliateId INT(11),
@@ -120,7 +117,6 @@ BEGIN
     END IF;
 END$$
 
-DROP PROCEDURE IF EXISTS `hitpath_summary_insert_update`$$
 CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_summary_insert_update`(IN campaignId INT(11),
 IN hitDate DATETIME,
 IN affiliateId INT(11))
@@ -187,7 +183,6 @@ BEGIN
     END IF;
 END$$
 
-DROP PROCEDURE IF EXISTS `prepay_history_insert`$$
 CREATE DEFINER=`root`@`%` PROCEDURE `prepay_history_insert`(IN advertiser_id INT(11),
 IN old_value DECIMAL(10, 2),
 IN new_value DECIMAL(10, 2),
@@ -200,7 +195,6 @@ END$$
 
 DELIMITER ;
 
-DROP TABLE IF EXISTS `advertiser_credit`;
 CREATE TABLE IF NOT EXISTS `advertiser_credit` (
   `advertiser_id` int(11) NOT NULL,
   `credit` decimal(10,2) NOT NULL,
@@ -230,7 +224,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `advertiser_credit_history`;
 CREATE TABLE IF NOT EXISTS `advertiser_credit_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `advertiser_id` int(11) NOT NULL,
@@ -241,7 +234,6 @@ CREATE TABLE IF NOT EXISTS `advertiser_credit_history` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `advertiser_prepay`;
 CREATE TABLE IF NOT EXISTS `advertiser_prepay` (
   `advertiser_id` int(11) NOT NULL,
   `prepay` decimal(10,2) NOT NULL,
@@ -271,7 +263,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `advertiser_prepay_history`;
 CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `advertiser_id` int(11) NOT NULL,
@@ -282,7 +273,6 @@ CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `affiliate_redirects`;
 CREATE TABLE IF NOT EXISTS `affiliate_redirects` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `affiliate_id` int(10) unsigned NOT NULL,
@@ -294,7 +284,6 @@ CREATE TABLE IF NOT EXISTS `affiliate_redirects` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `affiliate_redirect_offers`;
 CREATE TABLE IF NOT EXISTS `affiliate_redirect_offers` (
   `affiliate_redirect_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
@@ -306,14 +295,12 @@ CREATE TABLE IF NOT EXISTS `affiliate_redirect_offers` (
   KEY `redirect_url` (`redirect_url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `campaign_countries`;
 CREATE TABLE IF NOT EXISTS `campaign_countries` (
   `campaign_id` int(11) NOT NULL,
   `country_id` int(11) NOT NULL,
   UNIQUE KEY `idx_campaign_countries` (`campaign_id`,`country_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `campaign_crm`;
 CREATE TABLE IF NOT EXISTS `campaign_crm` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) DEFAULT NULL,
@@ -334,7 +321,6 @@ CREATE TABLE IF NOT EXISTS `campaign_crm` (
   UNIQUE KEY `campaign_id_2` (`campaign_id`,`advertiser_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `campaign_crm_api`;
 CREATE TABLE IF NOT EXISTS `campaign_crm_api` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) DEFAULT NULL,
@@ -345,14 +331,12 @@ CREATE TABLE IF NOT EXISTS `campaign_crm_api` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `campaign_languages`;
 CREATE TABLE IF NOT EXISTS `campaign_languages` (
   `campaign_id` int(11) NOT NULL,
   `language_id` int(11) NOT NULL,
   UNIQUE KEY `idx_campaign_languages` (`campaign_id`,`language_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `campaign_metadata`;
 CREATE TABLE IF NOT EXISTS `campaign_metadata` (
   `campaign_id` int(11) NOT NULL,
   `vertical` enum('n/a','diet','skin','muscle','e-cig','pain management') NOT NULL DEFAULT 'n/a',
@@ -375,7 +359,6 @@ CREATE TABLE IF NOT EXISTS `campaign_metadata` (
   PRIMARY KEY (`campaign_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `campaign_pairings`;
 CREATE TABLE IF NOT EXISTS `campaign_pairings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `step1_campaign_id` int(11) NOT NULL,
@@ -389,7 +372,6 @@ CREATE TABLE IF NOT EXISTS `campaign_pairings` (
   KEY `step2_campaign_id` (`step2_campaign_id`,`active`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_affiliate_log`;
 CREATE TABLE IF NOT EXISTS `crm_affiliate_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `crm_mapping_id` int(11) NOT NULL,
@@ -409,7 +391,6 @@ CREATE TABLE IF NOT EXISTS `crm_affiliate_log` (
   UNIQUE KEY `crm_mapping_id` (`crm_mapping_id`,`affiliate_id`,`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_exception_log`;
 CREATE TABLE IF NOT EXISTS `crm_exception_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `crm_mapping_id` int(11) NOT NULL,
@@ -422,7 +403,6 @@ CREATE TABLE IF NOT EXISTS `crm_exception_log` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_log`;
 CREATE TABLE IF NOT EXISTS `crm_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `crm_mapping_id` int(11) NOT NULL,
@@ -441,7 +421,6 @@ CREATE TABLE IF NOT EXISTS `crm_log` (
   UNIQUE KEY `crm_mapping_id` (`crm_mapping_id`,`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_mapping`;
 CREATE TABLE IF NOT EXISTS `crm_mapping` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `hp_campaign_id` int(11) DEFAULT NULL,
@@ -459,7 +438,6 @@ CREATE TABLE IF NOT EXISTS `crm_mapping` (
   UNIQUE KEY `hp_campaign_id` (`hp_campaign_id`,`child_name`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_payment_cycles`;
 CREATE TABLE IF NOT EXISTS `crm_payment_cycles` (
   `id` smallint(5) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
@@ -469,7 +447,6 @@ CREATE TABLE IF NOT EXISTS `crm_payment_cycles` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_payment_cycle_ranges`;
 CREATE TABLE IF NOT EXISTS `crm_payment_cycle_ranges` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `cycle_id` int(11) NOT NULL,
@@ -479,7 +456,6 @@ CREATE TABLE IF NOT EXISTS `crm_payment_cycle_ranges` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_weekly_affiliate_log`;
 CREATE TABLE IF NOT EXISTS `crm_weekly_affiliate_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `crm_mapping_id` int(11) NOT NULL,
@@ -500,9 +476,8 @@ CREATE TABLE IF NOT EXISTS `crm_weekly_affiliate_log` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_set` (`crm_mapping_id`,`affiliate_id`,`payment_cycle_id`,`start_date`),
   KEY `crm_mapping_id` (`crm_mapping_id`,`start_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `crm_weekly_log`;
 CREATE TABLE IF NOT EXISTS `crm_weekly_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `crm_mapping_id` int(11) NOT NULL,
@@ -521,9 +496,8 @@ CREATE TABLE IF NOT EXISTS `crm_weekly_log` (
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_set` (`crm_mapping_id`,`payment_cycle_id`,`start_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `cron_log`;
 CREATE TABLE IF NOT EXISTS `cron_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(127) NOT NULL,
@@ -535,9 +509,8 @@ CREATE TABLE IF NOT EXISTS `cron_log` (
   `args` text NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `departments`;
 CREATE TABLE IF NOT EXISTS `departments` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
@@ -545,7 +518,6 @@ CREATE TABLE IF NOT EXISTS `departments` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `departments_users`;
 CREATE TABLE IF NOT EXISTS `departments_users` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `department` int(10) unsigned NOT NULL,
@@ -554,7 +526,6 @@ CREATE TABLE IF NOT EXISTS `departments_users` (
   KEY `department` (`department`,`user`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `file_manager_files`;
 CREATE TABLE IF NOT EXISTS `file_manager_files` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -569,7 +540,6 @@ CREATE TABLE IF NOT EXISTS `file_manager_files` (
   KEY `parent_id` (`parent_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `file_manager_log`;
 CREATE TABLE IF NOT EXISTS `file_manager_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(10) unsigned NOT NULL,
@@ -583,7 +553,6 @@ CREATE TABLE IF NOT EXISTS `file_manager_log` (
   KEY `parent` (`parent`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `file_manager_permissions`;
 CREATE TABLE IF NOT EXISTS `file_manager_permissions` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `department` int(10) unsigned DEFAULT NULL,
@@ -597,7 +566,6 @@ CREATE TABLE IF NOT EXISTS `file_manager_permissions` (
   KEY `department` (`department`,`user`,`file`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `finance_campaign_caps`;
 CREATE TABLE IF NOT EXISTS `finance_campaign_caps` (
   `campaign_id` int(10) unsigned NOT NULL DEFAULT '0',
   `advertiser_id` int(10) unsigned NOT NULL,
@@ -658,7 +626,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `finance_campaign_cap_history`;
 CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) unsigned NOT NULL,
@@ -671,7 +638,6 @@ CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
   KEY `cap_id` (`campaign_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `hitpath_advertisers`;
 CREATE TABLE IF NOT EXISTS `hitpath_advertisers` (
   `advertiser_id` int(11) unsigned NOT NULL,
   `company` varchar(80) DEFAULT NULL,
@@ -692,7 +658,6 @@ CREATE TABLE IF NOT EXISTS `hitpath_advertisers` (
   KEY `active` (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `hitpath_affiliates`;
 CREATE TABLE IF NOT EXISTS `hitpath_affiliates` (
   `affiliate_id` int(11) NOT NULL,
   `company` varchar(80) DEFAULT NULL,
@@ -713,7 +678,6 @@ CREATE TABLE IF NOT EXISTS `hitpath_affiliates` (
   KEY `hitpath_manager_id` (`hitpath_manager_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `hitpath_campaigns`;
 CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   `campaign_id` int(11) NOT NULL,
   `name` varchar(200) DEFAULT NULL,
@@ -769,7 +733,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `hitpath_campaign_caps`;
 CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
   `cap_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
@@ -788,7 +751,6 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
   KEY `idx_hitpath_campaign_caps` (`campaign_id`,`affiliate_id`,`period`,`status`,`cap_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `hitpath_hits`;
 CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `hit_date` datetime NOT NULL,
@@ -823,7 +785,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `hitpath_sales`;
 CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `sale_date` datetime NOT NULL,
@@ -877,7 +838,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `mesh_campaign_sessions`;
 CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `mesh_global_session_id` bigint(20) unsigned NOT NULL,
@@ -922,7 +882,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `mesh_global_sessions`;
 CREATE TABLE IF NOT EXISTS `mesh_global_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `ip` varbinary(16) NOT NULL,
@@ -943,7 +902,6 @@ CREATE TABLE IF NOT EXISTS `mesh_global_sessions` (
   KEY `updated` (`updated`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `mesh_pixels`;
 CREATE TABLE IF NOT EXISTS `mesh_pixels` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `campaign_id` int(10) unsigned DEFAULT NULL,
@@ -958,7 +916,6 @@ CREATE TABLE IF NOT EXISTS `mesh_pixels` (
   KEY `dependency_id` (`dependency_id`,`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `mesh_pixel_log`;
 CREATE TABLE IF NOT EXISTS `mesh_pixel_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `mesh_global_session_id` bigint(20) unsigned NOT NULL,
@@ -997,7 +954,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `mesh_pixel_raw_log`;
 CREATE TABLE IF NOT EXISTS `mesh_pixel_raw_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `mesh_global_session_id` bigint(20) unsigned NOT NULL,
@@ -1034,7 +990,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `mesh_redirects`;
 CREATE TABLE IF NOT EXISTS `mesh_redirects` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `affiliate_id` int(10) unsigned NOT NULL,
@@ -1046,7 +1001,6 @@ CREATE TABLE IF NOT EXISTS `mesh_redirects` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `mesh_redirect_offers`;
 CREATE TABLE IF NOT EXISTS `mesh_redirect_offers` (
   `redirect_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
@@ -1058,13 +1012,11 @@ CREATE TABLE IF NOT EXISTS `mesh_redirect_offers` (
   KEY `redirect_url` (`redirect_url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `migration_versions`;
 CREATE TABLE IF NOT EXISTS `migration_versions` (
   `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `notification_metrics`;
 CREATE TABLE IF NOT EXISTS `notification_metrics` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) NOT NULL,
@@ -1074,7 +1026,6 @@ CREATE TABLE IF NOT EXISTS `notification_metrics` (
   KEY `group` (`group`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `notification_rules`;
 CREATE TABLE IF NOT EXISTS `notification_rules` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_key_id` int(11) DEFAULT NULL,
@@ -1092,7 +1043,6 @@ CREATE TABLE IF NOT EXISTS `notification_rules` (
   KEY `metric_id` (`metric_id`,`metric_comparison_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `notification_rule_alerts`;
 CREATE TABLE IF NOT EXISTS `notification_rule_alerts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `notification_id` int(11) NOT NULL,
@@ -1101,17 +1051,15 @@ CREATE TABLE IF NOT EXISTS `notification_rule_alerts` (
   `value` decimal(10,2) NOT NULL,
   `date` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `notification_rule_recipients`;
 CREATE TABLE IF NOT EXISTS `notification_rule_recipients` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `notification_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `setting_countries`;
 CREATE TABLE IF NOT EXISTS `setting_countries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` char(2) COLLATE utf8_unicode_ci NOT NULL,
@@ -1120,7 +1068,6 @@ CREATE TABLE IF NOT EXISTS `setting_countries` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `setting_languages`;
 CREATE TABLE IF NOT EXISTS `setting_languages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(2) DEFAULT NULL,
@@ -1128,12 +1075,12 @@ CREATE TABLE IF NOT EXISTS `setting_languages` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `summary_hitpath_daily`;
 CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `hits` int(10) unsigned NOT NULL DEFAULT '0',
   `sales` int(10) unsigned NOT NULL DEFAULT '0',
   `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -1144,7 +1091,7 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`),
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`),
   KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
   KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
@@ -1161,12 +1108,12 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `summary_hitpath_hourly`;
 CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `hits` int(10) unsigned NOT NULL DEFAULT '0',
   `sales` int(10) unsigned NOT NULL DEFAULT '0',
   `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -1194,7 +1141,6 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
@@ -1209,7 +1155,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `user_call_log`;
 CREATE TABLE IF NOT EXISTS `user_call_log` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -1225,9 +1170,8 @@ CREATE TABLE IF NOT EXISTS `user_call_log` (
   `transaction_date` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `Unique` (`user_id`,`from`,`to`,`extension`,`transaction_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `user_list_views`;
 CREATE TABLE IF NOT EXISTS `user_list_views` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(10) unsigned NOT NULL,
@@ -1237,7 +1181,6 @@ CREATE TABLE IF NOT EXISTS `user_list_views` (
   UNIQUE KEY `user_list` (`user_id`,`list_name`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `user_log`;
 CREATE TABLE IF NOT EXISTS `user_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(10) unsigned NOT NULL,
@@ -1247,7 +1190,6 @@ CREATE TABLE IF NOT EXISTS `user_log` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `user_permissions`;
 CREATE TABLE IF NOT EXISTS `user_permissions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role_id` int(11) DEFAULT NULL,
@@ -1257,7 +1199,6 @@ CREATE TABLE IF NOT EXISTS `user_permissions` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `user_profiles`;
 CREATE TABLE IF NOT EXISTS `user_profiles` (
   `user_id` int(11) NOT NULL,
   `role_id` int(11) NOT NULL,
@@ -1284,7 +1225,6 @@ CREATE TABLE IF NOT EXISTS `user_profiles` (
   KEY `role_id` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `user_resources`;
 CREATE TABLE IF NOT EXISTS `user_resources` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `resource` varchar(128) CHARACTER SET utf8 NOT NULL,
@@ -1292,7 +1232,6 @@ CREATE TABLE IF NOT EXISTS `user_resources` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE IF NOT EXISTS `user_roles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role` varchar(40) CHARACTER SET utf8 NOT NULL,
@@ -1301,7 +1240,6 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-DROP TABLE IF EXISTS `values`;
 CREATE TABLE IF NOT EXISTS `values` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) DEFAULT NULL,
@@ -1309,4 +1247,3 @@ CREATE TABLE IF NOT EXISTS `values` (
   `current` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-

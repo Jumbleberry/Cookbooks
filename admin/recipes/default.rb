@@ -1,8 +1,8 @@
 # Make sure directory exists
-# Use the same user defined for the jbx application
+# Use the same user defined for the admin application
 directory node['admin']['path'] do
-  owner node['jbx']['user']
-  group node['jbx']['user']
+  owner node['admin']['user']
+  group node['admin']['user']
 end
 
 branch = ENV['JB_ADMIN_BRANCH'] || node['admin']['branch']
@@ -13,7 +13,7 @@ git node['admin']['path'] do
   end
   repository node['admin']['git-url']
   revision branch
-  user node['jbx']['user']
+  user node['admin']['user']
   action :sync
 end
 
@@ -38,8 +38,8 @@ end
 #Creates bucket directory
 directory node['admin']['storage']['base'] + node['admin']['storage']['user_images'] do
     action :create
-    owner 'www-data'
-    group 'www-data'
+    owner node['admin']['user']
+    group node['admin']['user']
     recursive true
 end
 
