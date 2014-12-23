@@ -31,7 +31,7 @@ cron "CRM Data Report" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/crm_data_report.php"
   minute '30'
   hour '8'
-  day '5,0'
+  weekday '5,0'
   user 'www-data'
   action :create
 end
