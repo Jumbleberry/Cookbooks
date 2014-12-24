@@ -21,7 +21,7 @@ else
     fetch_instances_by_tag 'consul' do
         tag_value 'bootstrap'
     end
-    instances_hash = JSON.parse(File.read("#{stack_file_path}stack_b.json"))
+    instances_hash = JSON.parse(File.read("#{stack_file_path}#{stack_file}"))
 
     if instances_hash['Reservations'].count() < min_servers
         #Mark this server to be started as bootstrap
