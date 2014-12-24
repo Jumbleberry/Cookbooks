@@ -1,6 +1,6 @@
 user = node['user']
-stack_file_path = node['jb_consul']['stack_file_path']
 stack_file = node['jb_consul']['stack_file']
+stack_file_path = node['jb_consul']['stack_file_path']
 min_servers = node['consul']['bootstrap_expect'].to_i
 
 #Check if there is any consul agent runing.
@@ -34,7 +34,7 @@ else
         node.override['consul']['servers'] = bootstrap_servers
     end
 
-    if node.has_key?("ec2")
+#    if node.has_key?("ec2")
         #Set tag depending on how many bootstrap server we are runing
         if instances_hash['Reservations'].count() == (min_servers - 1)
             #Already reach the amount of bootstrap servers, bootstraping is done
@@ -59,5 +59,5 @@ else
                 tag_value 'bootstrap'
             end
         end
-    end
+#    end
 end
