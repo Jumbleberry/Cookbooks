@@ -34,7 +34,7 @@ else
         node.override['consul']['servers'] = bootstrap_servers
     end
 
-    if not ['development', 'testing'].include?(node.chef_environment)
+    if node.has_key?("ec2")
         #Set tag depending on how many bootstrap server we are runing
         if instances_hash['Reservations'].count() == (min_servers - 1)
             #Already reach the amount of bootstrap servers, bootstraping is done
