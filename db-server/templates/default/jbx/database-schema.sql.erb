@@ -756,7 +756,7 @@ CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   `hit_date` datetime NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
-  `landing_page_id` int(10) unsigned DEFAULT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `ip` varchar(20) DEFAULT NULL,
   `c1` varchar(700) DEFAULT NULL,
   `c2` varchar(100) DEFAULT NULL,
@@ -785,12 +785,40 @@ END
 //
 DELIMITER ;
 
+CREATE TABLE IF NOT EXISTS `hitpath_override` (
+  `id` int(10) unsigned NOT NULL,
+  `agent_id` varchar(20) DEFAULT NULL,
+  `prog_id` int(10) unsigned DEFAULT NULL,
+  `segment_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `amount` decimal(10,2) DEFAULT NULL,
+  `override_amount` enum('yes','no') NOT NULL DEFAULT 'yes',
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `override_cpa_in` enum('yes','no') NOT NULL DEFAULT 'no',
+  `if_over` int(10) unsigned DEFAULT '0',
+  `if_under` int(10) DEFAULT NULL,
+  `effective_date` datetime DEFAULT NULL,
+  `expires` datetime DEFAULT NULL,
+  `lifetime` enum('indefinite','expires') NOT NULL DEFAULT 'indefinite',
+  `status` enum('active','inactive') DEFAULT 'active',
+  `type` enum('std','volume','tiered') DEFAULT 'std',
+  `user` char(3) NOT NULL,
+  `c1` varchar(100) DEFAULT 'ALL',
+  `created` datetime DEFAULT NULL,
+  `created_by` int(10) unsigned DEFAULT NULL,
+  `deleted` datetime DEFAULT NULL,
+  `deleted_by` int(10) DEFAULT NULL,
+  `sub_var` varchar(4) DEFAULT NULL,
+  `override_type` enum('general','subid','event') NOT NULL DEFAULT 'general',
+  `operator` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `sale_date` datetime NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
-  `landing_page_id` int(10) unsigned DEFAULT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `hit_date` datetime NOT NULL,
   `transaction_id` varchar(50) DEFAULT NULL,
   `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
