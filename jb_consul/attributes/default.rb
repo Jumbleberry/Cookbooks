@@ -1,2 +1,2 @@
-default['jb_consul']['instances']['cluster'] = ''
-default['jb_consul']['instances']['bootstrap'] = ''
+default['jb_consul']['instances']['cluster'] = []
+default['jb_consul']['instances']['bootstrap'] = []

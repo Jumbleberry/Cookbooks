@@ -6,7 +6,7 @@ min_servers = node['consul']['bootstrap_expect'].to_i
 fetch_instances_by_tag 'consul' do
     tag_value 'cluster'
 end
-instances_hash = node['jb_consul']['instances']['cluster']
+instances_hash = lazy { node['jb_consul']['instances']['cluster'] }
 if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() > 0
     #Get the ip of the first instance with consul runing on it
     instance_ip = instances_hash['Reservations'][0]['Instances'][0]['PrivateIpAddress']
@@ -19,7 +19,7 @@ else
     fetch_instances_by_tag 'consul' do
         tag_value 'bootstrap'
     end
-    instances_hash = node['jb_consul']['instances']['bootstrap']
+    instances_hash = lazy { node['jb_consul']['instances']['bootstrap'] }
 
     if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() < min_servers
         #Mark this server to be started as bootstrap
