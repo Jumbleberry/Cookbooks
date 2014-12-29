@@ -1,1 +1,1 @@
-default[:aws][:compile_time] = false
+default[:aws][:compile_time] = true
