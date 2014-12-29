@@ -5,14 +5,11 @@ define :fetch_instances_by_tag, :tag_name => 'consul', :tag_value => 'bootstrap'
     region = node['aws']['region']
 
 #    if node.has_key?("ec2")
-        execute "Describe EC2 Instances Test" + params[:tag_value] do
-            command "aws --region #{region} --profile default ec2 describe-instances --filters 'Name=tag:#{params[:tag_name]},Values=#{params[:tag_value]}' --debug"
-            user node['user']
-        end
         
         execute "Describe EC2 Instances " + params[:tag_value] do
             command "aws --region #{region} --profile default ec2 describe-instances --filters 'Name=tag:#{params[:tag_name]},Values=#{params[:tag_value]}' > #{stack_file_path}#{stack_file}"
             user node['user']
+            environment "HOME" => "/home/ubuntu"
         end
 #    end
 end
