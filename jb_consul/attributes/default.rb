@@ -1,2 +1,2 @@
-default['jb_consul']['stack_file_path'] = '/home/vagrant/bootstrap/'
-default['jb_consul']['stack_file'] = 'stack.json'
+default['jb_consul']['instances']['cluster'] = ''
+default['jb_consul']['instances']['bootstrap'] = ''

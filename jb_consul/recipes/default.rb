@@ -1,6 +1,4 @@
 user = node['user']
-stack_file = node['jb_consul']['stack_file']
-stack_file_path = node['jb_consul']['stack_file_path']
 min_servers = node['consul']['bootstrap_expect'].to_i
 
 #Check if there is any consul agent runing.
@@ -8,7 +6,7 @@ min_servers = node['consul']['bootstrap_expect'].to_i
 fetch_instances_by_tag 'consul' do
     tag_value 'cluster'
 end
-instances_hash = JSON.parse(File.read("#{stack_file_path}#{stack_file}"))
+instances_hash = node['jb_consul']['instances']['cluster']
 if instances_hash['Reservations'].count() > 0
     #Get the ip of the first instance with consul runing on it
     instance_ip = instances_hash['Reservations'][0]['Instances'][0]['PrivateIpAddress']
@@ -21,7 +19,7 @@ else
     fetch_instances_by_tag 'consul' do
         tag_value 'bootstrap'
     end
-    instances_hash = JSON.parse(File.read("#{stack_file_path}#{stack_file}"))
+    instances_hash = node['jb_consul']['instances']['bootstrap']
 
     if instances_hash['Reservations'].count() < min_servers
         #Mark this server to be started as bootstrap
