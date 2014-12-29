@@ -7,7 +7,7 @@ fetch_instances_by_tag 'consul' do
     tag_value 'cluster'
 end
 instances_hash = node['jb_consul']['instances']['cluster']
-if instances_hash['Reservations'].count() > 0
+if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() > 0
     #Get the ip of the first instance with consul runing on it
     instance_ip = instances_hash['Reservations'][0]['Instances'][0]['PrivateIpAddress']
     #Add the instance server ip to the join list of the consul recipe
@@ -21,7 +21,7 @@ else
     end
     instances_hash = node['jb_consul']['instances']['bootstrap']
 
-    if instances_hash['Reservations'].count() < min_servers
+    if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() < min_servers
         #Mark this server to be started as bootstrap
         node.override['consul']['service_mode'] = 'cluster'
         #Add the runing bootstrap servers to the join list
@@ -34,7 +34,7 @@ else
 
 #    if node.has_key?("ec2")
         #Set tag depending on how many bootstrap server we are runing
-        if instances_hash['Reservations'].count() == (min_servers - 1)
+        if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() == (min_servers - 1)
             #Already reach the amount of bootstrap servers, bootstraping is done
             #so we change the tags from consul-bootstrap to consul
             instances_hash['Reservations'].each do | reservation |
