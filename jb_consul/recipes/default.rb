@@ -1,12 +1,9 @@
 user = node['user']
 min_servers = node['consul']['bootstrap_expect'].to_i
 
-#Check if there is any consul agent runing.
-#If we have an instance with the consul tag on cluster mode, it means that the bootstraping process is done
-fetch_instances_by_tag 'consul' do
-    tag_value 'cluster'
-end
+#Check if there is any consul agent runing
 instances_hash = node['jb_consul']['instances']['cluster']
+
 if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() > 0
     #Get the ip of the first instance with consul runing on it
     instance_ip = instances_hash['Reservations'][0]['Instances'][0]['PrivateIpAddress']
@@ -14,11 +11,7 @@ if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].c
     node.override['consul']['servers'] = [instance_ip]
     node.override['consul']['service_mode'] = 'client'
 else
-    #If we have no instance with the consul tag, then look for the bootstrap agents
-    #Check if there is any bootstraping consul agent
-    fetch_instances_by_tag 'consul' do
-        tag_value 'bootstrap'
-    end
+    # get a list of instances currently being bootstrapped
     instances_hash = node['jb_consul']['instances']['bootstrap']
 
     if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() < min_servers
