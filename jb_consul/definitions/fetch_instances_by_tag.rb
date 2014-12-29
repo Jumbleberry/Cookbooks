@@ -10,9 +10,5 @@ define :fetch_instances_by_tag, :tag_name => 'consul', :tag_value => 'bootstrap'
         end
         action :run
     end
-    log "debug" do
-        level :info
-        attribute node['jb_consul']
-    end
 #    end
 end
