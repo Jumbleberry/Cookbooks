@@ -6,6 +6,6 @@ define :update_tag, :tag_name => 'consul', :tag_value => 'bootstrap' do
         tags (
             {params[:tag_name] => params[:tag_value]}
         )
-        action :add
+        action :update
     end
 end
