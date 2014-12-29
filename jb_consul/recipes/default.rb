@@ -14,7 +14,7 @@ else
     # get a list of instances currently being bootstrapped
     instances_hash = node['jb_consul']['instances']['bootstrap']
 
-    if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() < min_servers
+    if instances_hash.attribute?('Reservations') && instances_hash['Reservations'].count() <= min_servers
         #Mark this server to be started as bootstrap
         node.override['consul']['service_mode'] = 'cluster'
         #Add the runing bootstrap servers to the join list
