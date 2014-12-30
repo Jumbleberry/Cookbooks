@@ -1,0 +1,167 @@
+<?php
+/**
+ * Setup consul cluster for the Jumbleberry Infrastructure
+ */
+
+//Template variables
+$region = '<%= node['aws']['region'] %>';
+$environment = '<%= node['envirnoment'] %>';
+$consul_config_file_path = '<%= node['consul']['config_dir'] %>/default.json';
+$home_path = '/home/<%= node['user'] %>/';
+
+//Base aws commands
+define("AWS_DESCRIBE_CLI", "aws --region ".$region." --profile default ec2 describe-instances --filter 'Name=tag:environment,Values=" . $environment . "'");
+define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
+
+//Consul config file
+define("CONSUL_CONFIG_FILE", $consul_config_file_path);
+
+//Change home path for the aws command line tool
+putenv('HOME='.$home_path);
+
+//Get current consul configuration
+$consul_config = getConsulConfig();
+//Check the current status of consul on the current server
+$current_instance = getCurrentInstance();
+$current_tag = getTag('consul', $current_instance['Tags']);
+
+if($current_tag == 'bootstrap'){
+    //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
+    $cluster_instances = getInstancesByTag('consul', 'cluster');
+    if(count($cluster_instances)){
+        //Add the list of instances to the join list of consul
+        addInstancesToJoinList($consul_config, $cluster_instances);
+        //Update current consul tag to cluster
+        updateInstanceTag($current_instance, 'consul', 'cluster');
+    } else {
+        //Get list of other bootstrap instances
+        $bootstrap_instances = getInstancesByTag('consul', 'bootstrap');
+        if(count($bootstrap_instances)){
+            //If there is more than juan instance, we have to join them
+            addInstancesToJoinList($consul_config, $bootstrap_instances);
+            if(count($bootstrap_instances) == intval($consul_config['bootstrap_expect'])){
+                //If this is the last instace needed to finish the bootraping process, update every tag on the stack
+                updateStackInstancesTags('consul', 'cluster');
+            }
+        } else {
+            //This shouldn't happen but it means that there is no tag on the current instance
+            updateInstanceTag($current_instance, 'consul', 'bootstrap');
+        }
+    }
+    //restart the consul service with the new configurations
+    restartConsulService();
+} else {
+    //To preserve the state of the cluster, update the consul config file with every node currently runing
+    $instances = getInstancesByTag('consul', 'cluster');
+    addInstancesToJoinList($consul_config, $instances);
+}
+
+/**
+ * Get the current consul configuration from the default config file
+ * @return array
+ */
+function getConsulConfig()
+{
+    $config_file = file_get_contents(CONSUL_CONFIG_FILE);
+    return json_decode($config_file, true);
+}
+
+/**
+ * Get the consul tag for the current instance
+ * @return string
+ */
+function getCurrentInstance()
+{
+    $instance = getInstancesByTag('opsworks:instance', gethostname());
+    return $instance[0]['Instances'][0];
+}
+
+/**
+ * Get the array of instances with the given tag
+ * @param  string tag_name
+ * @param  string tag_value
+ * @return array
+ */
+function getInstancesByTag($tag_name, $tag_value)
+{
+    $reservations = callAwsCli(" 'Name=tag:" . $tag_name . ",Values=" . $tag_value . "'");
+    return $reservations['Reservations'];
+}
+
+/**
+ * Get a tag value by it's name from a tag array
+ * @param  string tag_name
+ * @param  array tags
+ * @return string
+ */
+function getTag($tag_name, $tags)
+{
+    foreach ($tags as $key => $tag) {
+        if($tag['Key'] == $tag_name)
+            return $tag['Value'];
+    }
+    return '';
+}
+
+/**
+ * add multiple instances to the consul join list
+ * @param array
+ */
+function addInstancesToJoinList(&$consul_config, $reservations)
+{
+    $start_join = array();
+    foreach ($reservations as $reservation) {
+        foreach ($reservation['Instances'] as $instance) {
+            $start_join[] = $instance['PrivateIpAddress'];
+        }
+    }
+    $consul_config['start_join'] = $start_join;
+    file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
+}
+
+function updateStackInstancesTags($tag_name, $tag_value)
+{
+    //Get every instance on the environment with the tag
+    $reservations = callAwsCli(" 'Name=tag-key,Values=consul'");
+    foreach ($reservations['Reservations'] as $reservation) {
+        foreach ($reservation['Instances'] as $instance) {
+            updateInstanceTag($instance, $tag_name, $tag_value);
+        }
+    }
+}
+
+/**
+ * Update a tag value of a given instance
+ * @param  array instance
+ * @param  string tag_name
+ * @param  string tag_value
+ * @return void
+ */
+function updateInstanceTag($instance, $tag_name, $tag_value)
+{
+    callAwsCli(" --resources " . $instance['InstanceId'] . " --tags Key=" . $tag_name . ",Value=" . $tag_value, AWS_UPDATE_TAG_CLI);
+}
+
+/**
+ * Execute the Aws cli tool with the given options
+ * @param  string
+ * @return array
+ */
+function callAwsCli($options = '', $cli_command = AWS_DESCRIBE_CLI)
+{
+    exec($cli_command . $options, $output);
+    if(!empty($output))
+        return @json_decode(implode(PHP_EOL, $output), true) ?: false;
+    else
+        return true;
+}
+
+/**
+ * Restart the consul service
+ * @return void
+ */
+function restartConsulService()
+{
+    exec('service consul stop');
+    exec('service consul start');
+}
