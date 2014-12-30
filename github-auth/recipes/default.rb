@@ -3,6 +3,7 @@ apps = {}
 #JBX
 apps['core'] = node['jbx']['core']['github_key'];
 apps['mesh'] = node['jbx']['mesh']['github_key'];
+apps['route'] = node['jbx']['route']['github_key'];
 #Jb-Admin
 apps['admin'] = node['admin']['github_key'];
 
