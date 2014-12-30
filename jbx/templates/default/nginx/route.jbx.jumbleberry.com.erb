@@ -1,0 +1,45 @@
+server {
+    listen       80;
+    server_name  <%= @hostname %> *.<%= @hostname %>;
+    
+    index index.php;
+    
+    set $root_path '<%= @path %>';
+    root $root_path;
+    
+    access_log  /var/log/nginx/<%= @hostname %>.access.log  main;
+
+    location /status/nginx {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+    }
+
+    location /status/fpm {
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME   $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+
+    location / {
+        root   /var/www/html;
+        index  index.php index.html index.htm;
+    }
+    
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_index /index.php;
+
+        include /etc/nginx/fastcgi_params;
+
+        fastcgi_split_path_info       ^(.+\.php)(/.+)$;
+        fastcgi_param PATH_INFO       $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
