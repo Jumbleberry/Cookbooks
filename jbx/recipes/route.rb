@@ -12,8 +12,8 @@ git node['jbx']['route']['path'] do
 end
 
 # Creates the nginx virtual host
-virtualhost         = '/etc/nginx/sites-available/route.jbx.jumbleberry.com'
-virtualhost_link    = '/etc/nginx/sites-enabled/route.jbx.jumbleberry.com'
+virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['route']['hostname']
+virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['route']['hostname']
 
 template virtualhost do
   source    "nginx/route.jbx.jumbleberry.com.erb"
