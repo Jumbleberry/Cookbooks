@@ -7,8 +7,14 @@ git node['jbx']['route']['path'] do
   end
   repository node['jbx']['route']['git-url']
   revision branch
-  user node['jbx']['user']
   action :sync
+  user 'root'
+end
+
+execute "chown-data-www" do
+  command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['route']['path']}"
+  user "root"
+  action :run
 end
 
 # Creates the nginx virtual host
