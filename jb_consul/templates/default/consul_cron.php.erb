@@ -5,7 +5,7 @@
 
 //Template variables
 $region = '<%= node['aws']['region'] %>';
-$environment = '<%= node['envirnoment'] %>';
+$environment = '<%= node['environment'] %>';
 $consul_config_file_path = '<%= node['consul']['config_dir'] %>/default.json';
 $home_path = '/home/<%= node['user'] %>/';
 
@@ -149,6 +149,7 @@ function updateInstanceTag($instance, $tag_name, $tag_value)
  */
 function callAwsCli($options = '', $cli_command = AWS_DESCRIBE_CLI)
 {
+    if(!in_array($environment, haystack) )
     exec($cli_command . $options, $output);
     if(!empty($output))
         return @json_decode(implode(PHP_EOL, $output), true) ?: false;
