@@ -13,6 +13,7 @@ git node['admin']['path'] do
   end
   repository node['admin']['git-url']
   revision branch
+  user 'root'
   action :sync
 end
 
