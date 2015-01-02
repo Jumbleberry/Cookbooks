@@ -7,16 +7,13 @@ apps['route'] = node['jbx']['route']['github_key'];
 #Jb-Admin
 apps['admin'] = node['admin']['github_key'];
 
-#Username owner of the keys
-username = node['jbx']['user']
-
 #Creates tmp ssh folder for github keys
 tmp_ssh_folder = node['github']['wrapper_path']
 
 directory tmp_ssh_folder do
   action :create
-  owner username
-  group username
+  owner 'root'
+  group 'root'
   recursive true
 end
 
@@ -30,7 +27,7 @@ apps.each do |app, github_key|
             #Copy private key to tmp folder
             cookbook_file "#{tmp_ssh_folder}/#{key_name}" do
                 source "ssh/#{key_name}"
-                owner username
+                owner 'root'
                 mode 0600
             end
         end
@@ -42,8 +39,8 @@ apps.each do |app, github_key|
                 'tmp_key_file' => "#{tmp_ssh_folder}/#{key_name}"
             })
             mode 0770
-            owner username
-            group username
+            owner 'root'
+            group 'root'
         end
     end
 end
