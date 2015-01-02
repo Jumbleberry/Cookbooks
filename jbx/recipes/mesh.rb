@@ -18,13 +18,13 @@ execute "chown-data-www" do
 end
 
 # Creates the nginx virtual host
-virtualhost         = '/etc/nginx/sites-available/mesh.jbx.jumbleberry.com'
-virtualhost_link    = '/etc/nginx/sites-enabled/mesh.jbx.jumbleberry.com'
+virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['mesh']['hostname']
+virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['mesh']['hostname']
 
 template virtualhost do
   source    "nginx/mesh.jbx.jumbleberry.com.erb"
   variables ({
-    "hostname"  => node['jbx']['hostname'],
+    "hostname"  => node['jbx']['mesh']['hostname'],
     "path"      => "#{node['jbx']['core']['path']}/public"
   })
 end
