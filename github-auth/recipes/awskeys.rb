@@ -52,7 +52,7 @@ apps.each do | app, key |
     #Unencrypt key using the previosuly imported gpg key
     execute "unencrypt key: #{app}" do
         cwd path
-        command "gpg --output #{key}.key --decrypt #{key}.key.gpg --batch --yes && chmod 0600 #{key}.key"
+        command "gpg --output #{key}.key --decrypt --batch --yes #{key}.key.gpg && chmod 0600 #{key}.key"
         user "root"
     end
 end
