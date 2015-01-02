@@ -28,7 +28,7 @@ apps.each do |app, github_key|
             cookbook_file "#{tmp_ssh_folder}/#{key_name}" do
                 source "ssh/#{key_name}"
                 owner 'root'
-                mode 0600
+                mode "0600"
             end
         end
 
@@ -38,7 +38,7 @@ apps.each do |app, github_key|
             variables ({
                 'tmp_key_file' => "#{tmp_ssh_folder}/#{key_name}"
             })
-            mode 0770
+            mode "0770"
             owner 'root'
             group 'root'
         end
