@@ -790,14 +790,14 @@ CREATE TABLE IF NOT EXISTS `hitpath_overrides` (
   `affiliate_id` varchar(20) DEFAULT NULL,
   `campaign_id` int(10) unsigned DEFAULT NULL,
   `segment_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `amount` decimal(10,2) DEFAULT NULL,
-  `override_amount` enum('yes','no') NOT NULL DEFAULT 'yes',
+  `cpa_out` decimal(10,2) DEFAULT NULL,
+  `override_cpa_out` enum('yes','no') NOT NULL DEFAULT 'yes',
   `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
   `override_cpa_in` enum('yes','no') NOT NULL DEFAULT 'no',
-  `if_over` int(10) unsigned DEFAULT '0',
-  `if_under` int(10) unsigned DEFAULT NULL,
+  `if_over` int(11) DEFAULT '0',
+  `if_under` int(11) DEFAULT NULL,
   `effective_date` datetime DEFAULT NULL,
-  `expires` datetime DEFAULT NULL,
+  `expiration_date` datetime DEFAULT NULL,
   `lifetime` enum('indefinite','expires') NOT NULL DEFAULT 'indefinite',
   `status` enum('active','inactive') DEFAULT 'active',
   `type` enum('std','volume','tiered') DEFAULT 'std',
@@ -810,7 +810,7 @@ CREATE TABLE IF NOT EXISTS `hitpath_overrides` (
   `sub_var` varchar(4) DEFAULT NULL,
   `override_type` enum('general','subid','event') NOT NULL DEFAULT 'general',
   `operator` varchar(20) DEFAULT NULL,
-  `updated` datetime DEFAULT NULL,
+  `updated` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
