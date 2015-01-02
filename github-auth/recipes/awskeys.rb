@@ -52,8 +52,7 @@ apps.each do | app, key |
     #Unencrypt key using the previosuly imported gpg key
     execute "unencrypt key: #{app}" do
         cwd path
-        command "gpg --output #{key}.key --decrypt #{key}.key.gpg"
+        command "gpg --output #{key}.key --decrypt #{key}.key.gpg && chmod 0600 #{key}.key"
         user "root"
-        not_if do ::File.exists?("#{path}/#{key}.key") end
     end
 end
