@@ -8,6 +8,7 @@ git node['jbx']['route']['path'] do
   repository node['jbx']['route']['git-url']
   revision branch
   action :sync
+  user 'root'
 end
 
 execute "chown-data-www" do

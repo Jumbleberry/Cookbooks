@@ -7,6 +7,7 @@ git node['jbx']['mesh']['path'] do
   end
   repository node['jbx']['mesh']['git-url']
   revision branch
+  user 'root'
   action :sync
 end
 

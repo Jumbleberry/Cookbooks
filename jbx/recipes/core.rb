@@ -13,9 +13,9 @@ git node['jbx']['core']['path'] do
   end
   repository node['jbx']['core']['git-url']
   revision branch
+  user 'root'
   action :sync
 end
-
 
 execute "chown-data-www" do
   command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['core']['path']}"
