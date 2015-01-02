@@ -35,3 +35,8 @@ servers.each do |server|
         })
     end
 end
+
+execute "reload consul configuration" do
+    command "consul reload"
+    user "root"
+end
