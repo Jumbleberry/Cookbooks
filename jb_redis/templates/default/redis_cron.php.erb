@@ -1,0 +1,161 @@
+<?php
+//Current instance configurations
+define('CURRENT_IP', $argv[1]);
+define('CURRENT_PORT', $argv[2]);
+define('CONSUL_BASE_URL', 'http://localhost:8500');
+define('CONSUL_CONFIG_PATH', '<%= node['consul']['config_dir'] %>');
+define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
+define('SENTINEL_NAME', 'sentinel_<%= node['redisio']['sentinels'][0]['name'] %>');
+define('SENTINEL_QUORUM', '<%= node['redisio']['sentinels'][0]['quorum_count'] %>');
+define('HOSTNAME', gethostname());
+
+//Check with consul if there is a Redis master already runing
+$redis_master = getRedisMaster();
+if(!empty($redis_master)){
+    if(!hasMaster()){
+        if($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT){
+            //Start redis server as a slave of the current master
+            startRedisServer($redis_master);
+            //Start sentinel with the current master
+            startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
+        }
+    }
+    //If there is a master the bootstraping process has already finished, so lets update the status
+    setRedisStatus('runing');
+} else {
+    //If there is no redis master registered in consul, check the lock to start the bootstrap process
+    $redis_stauts = getRedisStatus();
+    if($redis_stauts != 'bootstraping'){
+        //This means that we haven't started the bootstraping process, lets start it now
+        setRedisStatus('bootstraping');
+        //Start redis server as master
+        startRedisServer();
+        //Start sentinel server pointing to the new master
+        startSentinelServer(CURRENT_IP, CURRENT_PORT);
+        //Register the new redis master on consul
+        setRedisMaster();
+    }
+}
+
+function getCurrentRedisServiceConfiguration()
+{
+    $config_file = 'redis' . CURRENT_PORT . '.json';
+    return json_decode(file_get_contents(CONSUL_CONFIG_PATH . '/' . $config_file), true);
+}
+
+function updateCurrentRedisConfig($content)
+{
+    $config_file = 'redis' . CURRENT_PORT . '.json';
+    file_put_contents(CONSUL_CONFIG_PATH . '/' . $config_file, str_replace("\\",'',json_encode($content, JSON_PRETTY_PRINT)));
+}
+
+/**
+ * Get the current redis master from consul
+ * @return string
+ */
+function getRedisMaster()
+{
+    $master = null;
+    $result = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/catalog/service/redis?tag=master'), true);
+    if(count($result))
+        $master = $result[0];
+    return $master;
+}
+
+function setRedisMaster()
+{
+    $current_config = getCurrentRedisServiceConfiguration();
+    //Add master tag to configuration
+    $current_config['service']['tags'][] = 'master';
+    updateCurrentRedisConfig($current_config);
+    reloadConsulAgent();
+}
+
+function getRedisStatus()
+{
+    $status = null;
+    $result = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master'), true);
+    if(count($result))
+        $status = base64_decode($result[0]["Value"]);
+    return $status;
+}
+
+function setRedisStatus($status)
+{
+    putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master', $status);
+}
+
+function startRedisServer($master_instance = null)
+{
+    updateRedisConfigurationFile($master_instance);
+    exec('sudo service redis' . CURRENT_PORT . ' stop');
+    exec('sudo service redis' . CURRENT_PORT . ' start');
+}
+
+function updateRedisConfigurationFile($master_instance)
+{
+    $redis_config_file_path = REDIS_CONFIG_PATH . '/' . CURRENT_PORT . '.conf';
+    $redis_config = file_get_contents($redis_config_file_path);
+    //Remove previous "slaveof" configuration
+    $redis_config = preg_replace("/^slaveof.*/m", null, $redis_config);
+    if($master_instance){
+        //Adds the new master to the config file
+        $redis_config .= PHP_EOL . 'slaveof ' . $master_instance['Address'] . ' ' . $master_instance['ServicePort'];
+    }
+    file_put_contents($redis_config_file_path, $redis_config);
+}
+
+function startSentinelServer($master_ip, $master_port)
+{
+    updateSentinelConfigurationFile($master_ip, $master_port);
+    exec('sudo service redis_' . SENTINEL_NAME . ' stop');
+    exec('sudo service redis_' . SENTINEL_NAME . ' start');
+}
+
+function updateSentinelConfigurationFile($master_ip, $master_port)
+{
+    $sentinel_config_file_path = REDIS_CONFIG_PATH . '/' . SENTINEL_NAME . '.conf';
+    $sentinel_config = file_get_contents($sentinel_config_file_path);
+    //Remove previos "sentinel monitor" from configuration
+    $sentinel_config = preg_replace("/^sentinel.monitor.*/m", null, $sentinel_config);
+    //Add the current instance as the sentinel master
+    $sentinel_config = 'sentinel monitor ' . SENTINEL_NAME . ' ' . $master_ip . ' ' . $master_port . ' ' . SENTINEL_QUORUM . PHP_EOL . $sentinel_config;
+    file_put_contents($sentinel_config_file_path, $sentinel_config);
+}
+
+function hasMaster()
+{
+    $redis_config_file_path = REDIS_CONFIG_PATH . '/' . CURRENT_PORT . '.conf';
+    $redis_config = file_get_contents($redis_config_file_path);
+    return preg_match_all("/^slaveof.*/m", $redis_config, $matches) > 0;
+}
+
+function reloadConsulAgent()
+{
+    exec('consul reload');
+}
+
+/**
+ * Execute a curl get request to the given url
+ * @param  string url
+ * @return string
+ */
+function getCurlRequest($url)
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPGET,true);
+    return curl_exec($ch);
+}
+
+function putCurlRequest($url, $data)
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
+    curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
+    $response = curl_exec($ch);
+}

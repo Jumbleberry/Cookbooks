@@ -49,11 +49,15 @@ BEGIN
 END$$
 
 CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
-IN saleDate DATETIME,
+IN hitDate DATETIME,
 IN affiliateId INT(11),
+IN landingPageId INT(11),
 IN rejected INT(8),
 IN newEarned DECIMAL(10, 2),
-IN newPaid DECIMAL(10, 2))
+IN newPaid DECIMAL(10, 2),
+IN _c1 VARCHAR(100),
+IN _c2 VARCHAR(100),
+IN _c3 VARCHAR(100))
 BEGIN
     DECLARE advertiserId INT;
     DECLARE hourlyDate DATETIME;
@@ -69,15 +73,18 @@ BEGIN
      WHERE campaign_id = campaignId;
 
     -- Format dates
-    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
-    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d') INTO dailyDate;
+    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
+    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d') INTO dailyDate;
 
     -- Update hourly log
     UPDATE `summary_hitpath_hourly`
        SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
      WHERE transaction_date = hourlyDate
        AND campaign_id = campaignId
-       AND affiliate_id = affiliateId;
+       AND affiliate_id = affiliateId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid
+       AND landing_page_id = landingPageId;
 
     SET updateRows = ROW_COUNT();
 
@@ -95,31 +102,72 @@ BEGIN
           FROM hitpath_affiliates
          WHERE affiliate_id = affiliateId;
 
-        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, 0, 1, newEarned, newPaid, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
             ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
     END IF;
 
     -- Update daily log
     UPDATE `summary_hitpath_daily`
-       SET hits = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
      WHERE transaction_date = dailyDate
        AND campaign_id = campaignId
-       AND affiliate_id = affiliateId;
+       AND affiliate_id = affiliateId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid
+       AND landing_page_id = landingPageId;
 
     SET updateRows = ROW_COUNT();
 
     IF (updateRows = 0) THEN
 
-        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, 0, 1, newEarned, newPaid, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
+
+    -- Update daily detail log
+    UPDATE `summary_hitpath_daily_detail`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE transaction_date = dailyDate
+       AND campaign_id = campaignId
+       AND affiliate_id = affiliateId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid
+       AND landing_page_id = landingPageId
+       AND c1 = _c1
+       AND c2 = _c2
+       AND c3 = _c3;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), _c1, _c2, _c3, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
             ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
     END IF;
 END$$
 
-CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_summary_insert_update`(IN campaignId INT(11),
+CREATE DEFINER=`root`@`%` PROCEDURE `prepay_history_insert`(IN advertiser_id INT(11),
+IN old_value DECIMAL(10, 2),
+IN new_value DECIMAL(10, 2),
+IN created_by INT(11),
+IN created DATETIME)
+BEGIN
+    INSERT INTO advertiser_prepay_history (advertiser_id, old_value, new_value, created_by, created)
+    VALUES (advertiser_id, old_value, new_value, created_by, created);
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `summary_hits_insert_update`(IN campaignId INT(11),
 IN hitDate DATETIME,
-IN affiliateId INT(11))
+IN affiliateId INT(11),
+IN landingPageId INT(11),
+IN cpaOut DECIMAL,
+IN cpaIn DECIMAL,
+IN _c1 VARCHAR(100),
+IN _c2 VARCHAR(100),
+IN _c3 VARCHAR(100))
 BEGIN
     DECLARE advertiserId INT;
     DECLARE hourlyDate DATETIME;
@@ -161,8 +209,8 @@ BEGIN
           FROM hitpath_affiliates
          WHERE affiliate_id = affiliateId;
 
-        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, 1, 0, 0.00, 0.00, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
             ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
     END IF;
 
@@ -177,20 +225,29 @@ BEGIN
 
     IF (updateRows = 0) THEN
 
-        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, 1, 0, 0.00, 0.00, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
             ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
     END IF;
-END$$
 
-CREATE DEFINER=`root`@`%` PROCEDURE `prepay_history_insert`(IN advertiser_id INT(11),
-IN old_value DECIMAL(10, 2),
-IN new_value DECIMAL(10, 2),
-IN created_by INT(11),
-IN created DATETIME)
-BEGIN
-    INSERT INTO advertiser_prepay_history (advertiser_id, old_value, new_value, created_by, created)
-    VALUES (advertiser_id, old_value, new_value, created_by, created);
+    -- Update daily detail
+    UPDATE `summary_hitpath_daily_detail`
+       SET hits = hits + 1, updated = NOW()
+     WHERE transaction_date = dailyDate
+       AND campaign_id = campaignId
+       AND affiliate_id = affiliateId
+       AND c1 = _c1
+       AND c2 = _c2
+       AND c3 = _c3;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, _c1, _c2, _c3, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
+    END IF;
 END$$
 
 DELIMITER ;
@@ -274,25 +331,29 @@ CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `affiliate_redirects` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `affiliate_id` int(10) unsigned NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `affiliate_id` int(11) NOT NULL,
+  `affiliate_name` varchar(255) NOT NULL,
+  `token` varchar(8) NOT NULL,
   `status` enum('active','inactive','deleted') NOT NULL DEFAULT 'active',
-  `created_by` int(10) unsigned NOT NULL,
-  `created` datetime NOT NULL,
-  `updated_by` int(10) unsigned NOT NULL,
-  `updated` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `created_by` int(11) NOT NULL,
+  `created_on` datetime NOT NULL,
+  `modified_by` int(11) NOT NULL,
+  `modified_on` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_key` (`token`),
+  KEY `affiliate_id` (`affiliate_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `affiliate_redirect_offers` (
-  `affiliate_redirect_id` int(10) unsigned NOT NULL,
-  `campaign_id` int(10) unsigned NOT NULL,
-  `order` int(10) unsigned NOT NULL,
-  `daily_cap` int(10) unsigned NOT NULL,
-  `weekly_cap` int(10) unsigned NOT NULL,
+  `affiliate_redirect_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
+  `campaign_name` varchar(255) NOT NULL,
+  `order` int(11) NOT NULL,
+  `daily_cap` int(11) NOT NULL,
+  `weekly_cap` int(11) NOT NULL,
   `redirect_url` varchar(255) NOT NULL,
-  PRIMARY KEY (`affiliate_redirect_id`,`campaign_id`,`order`),
-  KEY `redirect_url` (`redirect_url`)
+  PRIMARY KEY (`affiliate_redirect_id`,`campaign_id`,`order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `campaign_countries` (
@@ -756,6 +817,8 @@ CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   `hit_date` datetime NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
+  `cpa_out` decimal(10,2) DEFAULT NULL,
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
   `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `ip` varchar(20) DEFAULT NULL,
   `c1` varchar(700) DEFAULT NULL,
@@ -768,19 +831,70 @@ CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   KEY `hit_date` (`hit_date`,`campaign_id`,`affiliate_id`),
   KEY `updated` (`updated`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+DROP TRIGGER IF EXISTS `hitpath_hits_cpa`;
+DELIMITER //
+CREATE TRIGGER `hitpath_hits_cpa` BEFORE INSERT ON `hitpath_hits`
+ FOR EACH ROW BEGIN
+    DECLARE newCpaIn DECIMAL;
+    DECLARE newCpaOut DECIMAL;
+
+    SELECT IF (o.override_cpa_in = 'yes', o.cpa_in, c.cpa_in), IF (o.override_cpa_out = 'yes', o.cpa_out, c.cpa_out) INTO newCpaIn, newCpaOut
+      FROM hitpath_campaigns c
+      LEFT JOIN hitpath_overrides o ON c.campaign_id = o.campaign_id
+       AND o.affiliate_id = new.affiliate_id
+       AND (((o.expiration_date < new.hit_date OR o.expiration_date IS NULL) AND o.lifetime = 'expires') OR o.lifetime = 'indefinite')
+       AND o.effective_date <= new.hit_date
+       AND o.status = 'active'
+     WHERE c.campaign_id = new.campaign_id
+     ORDER BY o.effective_date DESC
+     LIMIT 1;
+
+    SET new.cpa_in = newCpaIn;
+    SET new.cpa_out = newCpaOut;
+END
+//
+DELIMITER ;
+DROP TRIGGER IF EXISTS `hitpath_hits_delete`;
+DELIMITER //
+CREATE TRIGGER `hitpath_hits_delete` AFTER DELETE ON `hitpath_hits`
+ FOR EACH ROW BEGIN
+    UPDATE `summary_hitpath_hourly`
+       SET hits = hits - 1, updated = NOW()
+     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d %H:00:00')
+       AND campaign_id = old.campaign_id
+       AND affiliate_id = old.affiliate_id
+       AND cpa_in = old.cpa_in
+       AND cpa_out = old.cpa_out
+       AND landing_page_id = old.landing_page_id;
+
+    UPDATE `summary_hitpath_daily`
+       SET hits = hits - 1, updated = NOW()
+     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
+       AND campaign_id = old.campaign_id
+       AND affiliate_id = old.affiliate_id
+       AND cpa_in = old.cpa_in
+       AND cpa_out = old.cpa_out
+       AND landing_page_id = old.landing_page_id;
+
+    UPDATE `summary_hitpath_daily_detail`
+       SET hits = hits - 1, updated = NOW()
+     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
+       AND campaign_id = old.campaign_id
+       AND affiliate_id = old.affiliate_id
+       AND cpa_in = old.cpa_in
+       AND cpa_out = old.cpa_out
+       AND landing_page_id = old.landing_page_id
+       AND c1 = old.c1
+       AND c2 = old.c2
+       AND c3 = old.c3;
+END
+//
+DELIMITER ;
 DROP TRIGGER IF EXISTS `hitpath_hits_insert`;
 DELIMITER //
 CREATE TRIGGER `hitpath_hits_insert` AFTER INSERT ON `hitpath_hits`
  FOR EACH ROW BEGIN
-    CALL hitpath_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_hits_update`;
-DELIMITER //
-CREATE TRIGGER `hitpath_hits_update` AFTER UPDATE ON `hitpath_hits`
- FOR EACH ROW BEGIN
-    CALL hitpath_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id);
+    CALL summary_hits_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, new.cpa_out, new.cpa_in, new.c1, new.c2, new.c3);
 END
 //
 DELIMITER ;
@@ -840,14 +954,24 @@ CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   KEY `updated` (`updated`),
   KEY `transaction_id` (`transaction_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+DROP TRIGGER IF EXISTS `hitpath_sales_delete`;
+DELIMITER //
+CREATE TRIGGER `hitpath_sales_delete` AFTER DELETE ON `hitpath_sales`
+ FOR EACH ROW BEGIN
+    IF (old.rejected = 'no') THEN
+        CALL hitpath_sales_summary_insert_update(old.campaign_id, old.hit_date, old.affiliate_id, old.landing_page_id, -1, (old.earned * -1), (old.paid * -1), old.c1, old.c2, old.c3);
+    END IF;
+END
+//
+DELIMITER ;
 DROP TRIGGER IF EXISTS `hitpath_sales_insert`;
 DELIMITER //
 CREATE TRIGGER `hitpath_sales_insert` AFTER INSERT ON `hitpath_sales`
  FOR EACH ROW BEGIN
     IF (new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 1, new.earned, new.paid);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
     ELSEIF (new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 0, 0, 0);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, 0, 0, 0, new.c1, new.c2, new.c3);
     END IF;
 END
 //
@@ -856,12 +980,16 @@ DROP TRIGGER IF EXISTS `hitpath_sales_update`;
 DELIMITER //
 CREATE TRIGGER `hitpath_sales_update` AFTER UPDATE ON `hitpath_sales`
  FOR EACH ROW BEGIN
-    IF (new.rejected != old.rejected AND new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, -1, (new.earned * -1), (new.paid * -1));
-    ELSEIF (new.rejected != old.rejected AND new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 1, new.earned, new.paid);
-    ELSEIF ((old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, 0, new.earned - old.earned, new.paid - old.paid);
+    DECLARE cpaChanged TINYINT(1);
+
+    SET cpaChanged = (old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no';
+
+    IF ((new.rejected != old.rejected AND new.rejected = 'yes') OR cpaChanged = 1) THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, -1, (old.earned * -1), (old.paid * -1), new.c1, new.c2, new.c3);
+    END IF;
+
+    IF ((new.rejected != old.rejected AND new.rejected = 'no') OR cpaChanged = 1) THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
     END IF;
 END
 //
@@ -1120,7 +1248,7 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`),
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`cpa_in`,`cpa_out`),
   KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
   KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
@@ -1136,6 +1264,37 @@ CREATE TRIGGER `summary_hitpath_daily_insert` BEFORE INSERT ON `summary_hitpath_
 END
 //
 DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS `summary_hitpath_daily_detail` (
+  `transaction_date` datetime NOT NULL,
+  `advertiser_id` int(10) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `hits` int(10) unsigned NOT NULL DEFAULT '0',
+  `sales` int(10) unsigned NOT NULL DEFAULT '0',
+  `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `paid` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `cpa_out` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `c1` varchar(700) NOT NULL DEFAULT '',
+  `c2` varchar(100) NOT NULL DEFAULT '',
+  `c3` varchar(100) NOT NULL DEFAULT '',
+  `advertiser_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`cpa_in`,`cpa_out`,`c1`,`c2`,`c3`),
+  KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
+  KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
+  KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
+  KEY `updated` (`updated`),
+  KEY `idx_summary_hitpath_daily` (`advertiser_id`,`transaction_date`,`affiliate_id`),
+  KEY `transaction_date` (`transaction_date`),
+  KEY `c1` (`c1`),
+  KEY `c2` (`c2`),
+  KEY `c3` (`c3`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   `transaction_date` datetime NOT NULL,
@@ -1153,7 +1312,7 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`),
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`cpa_in`,`cpa_out`),
   KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
   KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),

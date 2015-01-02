@@ -3,21 +3,15 @@
  * Setup consul cluster for the Jumbleberry Infrastructure
  */
 
-//Template variables
-$region = '<%= node['aws']['region'] %>';
-$environment = '<%= node['environment'] %>';
-$consul_config_file_path = '<%= node['consul']['config_dir'] %>/default.json';
-$home_path = '/home/<%= node['user'] %>/';
-
+//Server environment
+define("ENVIRONMENT", '<%= node['environment'] %>');
 //Base aws commands
-define("AWS_DESCRIBE_CLI", "aws --region ".$region." --profile default ec2 describe-instances --filter 'Name=tag:environment,Values=" . $environment . "'");
+define("AWS_DESCRIBE_CLI", "aws --region " . '<%= node['aws']['region'] %>' . " --profile default ec2 describe-instances --filter 'Name=tag:environment,Values=" . ENVIRONMENT . "'");
 define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
-
 //Consul config file
-define("CONSUL_CONFIG_FILE", $consul_config_file_path);
-
+define("CONSUL_CONFIG_FILE", '<%= node['consul']['config_dir'] %>/default.json');
 //Change home path for the aws command line tool
-putenv('HOME='.$home_path);
+putenv('HOME='.'/home/<%= node['user'] %>/');
 
 //Get current consul configuration
 $consul_config = getConsulConfig();
@@ -48,7 +42,7 @@ if($current_tag == 'bootstrap'){
             updateInstanceTag($current_instance, 'consul', 'bootstrap');
         }
     }
-    //restart the consul service with the new configurations
+    //Reload consul configuration files
     restartConsulService();
 } else {
     //To preserve the state of the cluster, update the consul config file with every node currently runing
@@ -115,8 +109,11 @@ function addInstancesToJoinList(&$consul_config, $reservations)
             $start_join[] = $instance['PrivateIpAddress'];
         }
     }
-    $consul_config['start_join'] = $start_join;
-    file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
+    //Only update if there is more than 1 server to join
+    if(count($start_join)){
+        $consul_config['start_join'] = $start_join;
+        file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
+    }
 }
 
 function updateStackInstancesTags($tag_name, $tag_value)
@@ -149,12 +146,17 @@ function updateInstanceTag($instance, $tag_name, $tag_value)
  */
 function callAwsCli($options = '', $cli_command = AWS_DESCRIBE_CLI)
 {
-    if(!in_array($environment, haystack) )
-    exec($cli_command . $options, $output);
-    if(!empty($output))
-        return @json_decode(implode(PHP_EOL, $output), true) ?: false;
-    else
-        return true;
+    if( !in_array(ENVIRONMENT, array('testing', 'development')) ){
+        exec($cli_command . $options, $output);
+        if(!empty($output))
+            return @json_decode(implode(PHP_EOL, $output), true) ?: false;
+        else
+            return true;
+    } else {
+        //If we are on a development environment, use a mocked json file
+        $config_file = file_get_contents(realpath(dirname(__FILE__)) . '/mocked_stack.json');
+        return json_decode($config_file, true);
+    }
 }
 
 /**
@@ -163,6 +165,5 @@ function callAwsCli($options = '', $cli_command = AWS_DESCRIBE_CLI)
  */
 function restartConsulService()
 {
-    exec('service consul stop');
-    exec('service consul start');
+    exec('sudo service consul restart');
 }
