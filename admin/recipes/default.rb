@@ -17,6 +17,13 @@ git node['admin']['path'] do
   action :sync
 end
 
+# Run the deploy script
+execute 'Deploy Script' do
+    cwd "#{node['admin']['path']}"
+    user "root"
+    command 'sh deploy.sh'
+end
+
 execute "chown-data-www" do
   command "chown -R #{node['admin']['user']}:#{node['admin']['user']} #{node['admin']['path']}"
   user "root"
