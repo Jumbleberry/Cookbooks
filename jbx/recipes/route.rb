@@ -36,7 +36,7 @@ credentials_file_template = "databases.ini.erb"
 template credentials_file do
   source credentials_file_template
   variables ({
-      "mysql_read_host"         => 'read1.mysql.jumbleberry.com',
+      "mysql_read_host"         => node['jbx']['credentials']['mysql_read']['host'],
       "mysql_read_username"     => node['jbx']['credentials']['mysql_read']['username'],
       "mysql_read_password"     => node['jbx']['credentials']['mysql_read']['password'],
       "mysql_read_database"     => node['jbx']['credentials']['mysql_read']['dbname'],
@@ -46,7 +46,7 @@ template credentials_file do
       "hitpath_password"        => node['jbx']['credentials']['hitpath']['password'],
       "hitpath_database"        => node['jbx']['credentials']['hitpath']['dbname'],
 
-      "redis_host"              => 'read1.redis.jumbleberry.com',
+      "redis_host"              => node['jbx']['credentials']['redis']['host'],
       "redis_port"              => node['jbx']['credentials']['redis']['port'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
