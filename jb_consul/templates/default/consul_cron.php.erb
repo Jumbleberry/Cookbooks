@@ -117,7 +117,7 @@ function addInstancesToJoinList(&$consul_config, $reservations, $current_ip)
     $start_join = array();
     foreach ($reservations as $reservation) {
         foreach ($reservation['Instances'] as $instance) {
-            if ($instance['PrivateIpAddress'] != $current_ip && !empty($instance['PrivateIpAddress']))
+            if (isset($instance['PrivateIpAddress']) && $instance['PrivateIpAddress'] != $current_ip && !empty($instance['PrivateIpAddress']))
                 $start_join[] = $instance['PrivateIpAddress'];
         }
     }
