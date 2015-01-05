@@ -21,7 +21,7 @@ $current_tag = getTag('consul', $current_instance['Tags']);
 //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
 $cluster_instances = getInstancesByTag('consul', 'cluster');
 
-if($current_tag == 'bootstrap' || is_null($current_tag)){
+if($current_tag == 'bootstrap' || empty($current_tag)){
     if(count($cluster_instances)){
         //Add the list of instances to the join list of consul
         addInstancesToJoinList($consul_config, $cluster_instances);
@@ -36,6 +36,9 @@ if($current_tag == 'bootstrap' || is_null($current_tag)){
             if(count($bootstrap_instances) == intval($consul_config['bootstrap_expect'])){
                 //If this is the last instace needed to finish the bootraping process, update every tag on the stack
                 updateStackInstancesTags('consul', 'cluster');
+            } else {
+                // Make sure this node is bootstrapping
+                updateInstanceTag($current_instance, 'consul', 'bootstrap');
             }
         } else {
             //This shouldn't happen but it means that there is no tag on the current instance
