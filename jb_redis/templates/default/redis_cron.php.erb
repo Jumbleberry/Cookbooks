@@ -8,6 +8,7 @@ define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
 define('SENTINEL_NAME', 'sentinel_<%= node['redisio']['sentinels'][0]['name'] %>');
 define('SENTINEL_QUORUM', '<%= node['redisio']['sentinels'][0]['quorum_count'] %>');
 define('HOSTNAME', gethostname());
+putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
 
 //Check with consul if there is a Redis master already runing
 $redis_master = getRedisMaster();

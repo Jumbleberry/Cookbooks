@@ -12,7 +12,7 @@ define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
 define("CONSUL_CONFIG_FILE", '<%= node['consul']['config_dir'] %>/default.json');
 //Change home path for the aws command line tool
 putenv('HOME='.'/home/<%= node['user'] %>/');
-putenv('PATH='.getenv('PATH').':/usr/local/bin/'); 
+putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
 
 //Get current consul configuration
 $consul_config = getConsulConfig();
