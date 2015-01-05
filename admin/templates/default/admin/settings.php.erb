@@ -9,7 +9,7 @@ if (PHP_SAPI === "cli")
  * Define application constants
  */
  defined("APPLICATION_ENV")
-    || define("APPLICATION_ENV", "development");
+    || define("APPLICATION_ENV", "<%= node['admin']['environment'] %>");
 
 $whoami = exec("whoami");
 $group  = exec("id -gn $whoami");
