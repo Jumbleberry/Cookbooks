@@ -36,7 +36,7 @@ if($current_tag == 'bootstrap' || empty($current_tag)){
         $bootstrap_instances = getInstancesByTag('consul', 'bootstrap');
         
         // If this node is bootstrapping, but has no bootstrap tag, don't expect the count to match bootstrap_expect
-        $selfBootstrapped = $current_tag == 'bootstrap'? 1: 0;
+        $selfBootstrapped = $current_tag == 'bootstrap'? 0: 1;
         $expectedInstances = intval($consul_config['bootstrap_expect']) - $selfBootstrapped;
         
         //If there is more than juan instance, we have to join them
