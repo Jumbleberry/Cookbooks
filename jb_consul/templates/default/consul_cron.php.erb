@@ -46,7 +46,7 @@ if($current_tag == 'bootstrap' || is_null($current_tag)){
     restartConsulService();
 } else {
     //To preserve the state of the cluster, update the consul config file with every node currently runing
-    addInstancesToJoinList($consul_config, $instances);
+    addInstancesToJoinList($consul_config, $cluster_instances);
 }
 
 /**
