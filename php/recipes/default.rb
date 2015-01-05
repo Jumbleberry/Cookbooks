@@ -1,3 +1,10 @@
+# Custom repositories
+apt_repository 'php5.5-ppa' do
+  uri           'ppa:ondrej/php5'
+  distribution  'precise'
+  components    ['main', 'stable']
+end
+
 # Installs php package and modules
 phpmodules = node['php']['packages']
 phpmodules.each do |pkg|

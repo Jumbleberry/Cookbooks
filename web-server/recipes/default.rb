@@ -16,13 +16,6 @@ template '/etc/sysctl.conf' do
   notifies :run, "execute[sysctl-config]", :immediately
 end
 
-# Custom repositories
-apt_repository 'php5.5-ppa' do
-  uri           'ppa:ondrej/php5'
-  distribution  'precise'
-  components    ['main', 'stable']
-end
-
 execute "sudo apt-get update" do
 end
 
