@@ -10,7 +10,7 @@ define("AWS_DESCRIBE_CLI", "aws --region " . '<%= node['aws']['region'] %>' . " 
 define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
 //Consul config file
 define("CONSUL_CONFIG_FILE", '<%= node['consul']['config_dir'] %>/default.json');
-define("CONSUL_PORT", '<%= node['consul']['ports']['rpc'] || 8400 %>');
+define("CONSUL_PORT", '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
 //Change home path for the aws command line tool
 putenv('HOME='.'/home/<%= node['user'] %>/');
 putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
@@ -40,7 +40,7 @@ if($current_tag == 'bootstrap' || empty($current_tag)){
         $expectedInstances = intval($consul_config['bootstrap_expect']) - $selfBootstrapped;
         
         //If there is more than juan instance, we have to join them
-        addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip)
+        addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip);
         
         if ($expectedInstances == count($bootstrap_instances)) {
             //If this is the last instace needed to finish the bootraping process, update every tag on the stack
