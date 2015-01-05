@@ -26,7 +26,9 @@ $cluster_instances = getInstancesByTag('consul', 'cluster');
 if($current_tag == 'bootstrap' || empty($current_tag)){
     if(count($cluster_instances)){
         //Add the list of instances to the join list of consul
-        addInstancesToJoinList($consul_config, $cluster_instances);
+        if (addInstancesToJoinList($consul_config, $cluster_instances, $current_ip))
+             restartConsulService();
+        
         //Update current consul tag to cluster
         updateInstanceTag($current_instance, 'consul', 'cluster');
     } else {
@@ -38,11 +40,8 @@ if($current_tag == 'bootstrap' || empty($current_tag)){
         $expectedInstances = intval($consul_config['bootstrap_expect']) - $selfBootstrapped;
         
         //If there is more than juan instance, we have to join them
-        if (addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip)) {
-            
-            //Reload consul configuration files
+        if (addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip))
             restartConsulService();
-        }
         
         if ($expectedInstances == count($bootstrap_instances)) {
             //If this is the last instace needed to finish the bootraping process, update every tag on the stack
@@ -118,13 +117,13 @@ function addInstancesToJoinList(&$consul_config, $reservations, $current_ip)
     $start_join = array();
     foreach ($reservations as $reservation) {
         foreach ($reservation['Instances'] as $instance) {
-            if ($instance['PrivateIpAddress'] !== $current_ip)
+            if ($instance['PrivateIpAddress'] != $current_ip && !empty($instance['PrivateIpAddress']))
                 $start_join[] = $instance['PrivateIpAddress'];
         }
     }
     
     //Only update if there is more than 1 server to join - and if the configuration has changed
-    if (count($start_join) && count(array_diff($consul_config['start_join'], $start_join))) {
+    if (count($start_join) && count(array_diff($start_join, $consul_config['start_join']))) {
         $consul_config['start_join'] = $start_join;
         file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
         
