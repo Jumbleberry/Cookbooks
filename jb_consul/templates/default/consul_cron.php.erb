@@ -18,10 +18,10 @@ $consul_config = getConsulConfig();
 //Check the current status of consul on the current server
 $current_instance = getCurrentInstance();
 $current_tag = getTag('consul', $current_instance['Tags']);
+//Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
+$instances = getInstancesByTag('consul', 'cluster');
 
-if($current_tag == 'bootstrap'){
-    //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
-    $cluster_instances = getInstancesByTag('consul', 'cluster');
+if($current_tag == 'bootstrap' || is_null($current_tag)){
     if(count($cluster_instances)){
         //Add the list of instances to the join list of consul
         addInstancesToJoinList($consul_config, $cluster_instances);
@@ -46,7 +46,6 @@ if($current_tag == 'bootstrap'){
     restartConsulService();
 } else {
     //To preserve the state of the cluster, update the consul config file with every node currently runing
-    $instances = getInstancesByTag('consul', 'cluster');
     addInstancesToJoinList($consul_config, $instances);
 }
 
@@ -67,7 +66,7 @@ function getConsulConfig()
 function getCurrentInstance()
 {
     $instance = getInstancesByTag('opsworks:instance', gethostname());
-    return $instance[0]['Instances'][0];
+    return $instance[0]['Instances'][0] ?: null;
 }
 
 /**
