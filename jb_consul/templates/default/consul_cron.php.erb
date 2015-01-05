@@ -18,6 +18,7 @@ putenv('PATH='.getenv('PATH').':/usr/local/bin/');
 $consul_config = getConsulConfig();
 //Check the current status of consul on the current server
 $current_instance = getCurrentInstance();
+$current_ip  = $current_instance['PrivateIpAddress'];
 $current_tag = getTag('consul', $current_instance['Tags']);
 //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
 $cluster_instances = getInstancesByTag('consul', 'cluster');
@@ -31,27 +32,28 @@ if($current_tag == 'bootstrap' || empty($current_tag)){
     } else {
         //Get list of other bootstrap instances
         $bootstrap_instances = getInstancesByTag('consul', 'bootstrap');
-        if(count($bootstrap_instances)){
-            //If there is more than juan instance, we have to join them
-            addInstancesToJoinList($consul_config, $bootstrap_instances);
+        
+        // If this node is bootstrapping, but has no bootstrap tag, don't expect the count to match bootstrap_expect
+        $selfBootstrapped = $current_tag == 'bootstrap'? 1: 0;
+        $expectedInstances = intval($consul_config['bootstrap_expect']) - $selfBootstrapped;
+        
+        //If there is more than juan instance, we have to join them
+        if (addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip)) {
             
-            // If this node is bootstrapping, but has no bootstrap tag, don't expect the count to match bootstrap_expect
-            $selfBootstrapped = $current_tag == 'bootstrap'? 1: 0;
+            //Reload consul configuration files
+            restartConsulService();
+        }
+        
+        if ($expectedInstances == count($bootstrap_instances)) {
+            //If this is the last instace needed to finish the bootraping process, update every tag on the stack
+            updateStackInstancesTags('consul', 'cluster');
             
-            if (count($bootstrap_instances) == (intval($consul_config['bootstrap_expect']) - $selfBootstrapped)) {
-                //If this is the last instace needed to finish the bootraping process, update every tag on the stack
-                updateStackInstancesTags('consul', 'cluster');
-            } else {
-                // Make sure this node is bootstrapping
-                updateInstanceTag($current_instance, 'consul', 'bootstrap');
-            }
         } else {
             //This shouldn't happen but it means that there is no tag on the current instance
             updateInstanceTag($current_instance, 'consul', 'bootstrap');
+            
         }
     }
-    //Reload consul configuration files
-    restartConsulService();
 } else {
     //To preserve the state of the cluster, update the consul config file with every node currently runing
     addInstancesToJoinList($consul_config, $cluster_instances);
@@ -111,19 +113,25 @@ function getTag($tag_name, $tags)
  * add multiple instances to the consul join list
  * @param array
  */
-function addInstancesToJoinList(&$consul_config, $reservations)
+function addInstancesToJoinList(&$consul_config, $reservations, $current_ip)
 {
     $start_join = array();
     foreach ($reservations as $reservation) {
         foreach ($reservation['Instances'] as $instance) {
-            $start_join[] = $instance['PrivateIpAddress'];
+            if ($instance['PrivateIpAddress'] !== $current_ip)
+                $start_join[] = $instance['PrivateIpAddress'];
         }
     }
-    //Only update if there is more than 1 server to join
-    if(count($start_join)){
+    
+    //Only update if there is more than 1 server to join - and if the configuration has changed
+    if (count($start_join) && count(array_diff($consul_config['start_join'], $start_join))) {
         $consul_config['start_join'] = $start_join;
         file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
+        
+        return true;
     }
+    
+    return false;
 }
 
 function updateStackInstancesTags($tag_name, $tag_value)
@@ -176,4 +184,13 @@ function callAwsCli($options = '', $cli_command = AWS_DESCRIBE_CLI)
 function restartConsulService()
 {
     exec('sudo service consul restart');
+}
+
+/**
+ * Reload the consul service
+ * @return void
+ */
+function reloadConsulService()
+{
+    exec('sudo service consul reload');
 }
