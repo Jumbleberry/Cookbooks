@@ -33,7 +33,11 @@ if($current_tag == 'bootstrap' || empty($current_tag)){
         if(count($bootstrap_instances)){
             //If there is more than juan instance, we have to join them
             addInstancesToJoinList($consul_config, $bootstrap_instances);
-            if(count($bootstrap_instances) == intval($consul_config['bootstrap_expect'])){
+            
+            // If this node is bootstrapping, but has no bootstrap tag, don't expect the count to match bootstrap_expect
+            $selfBootstrapped = $current_tag == 'bootstrap'? 1: 0;
+            
+            if (count($bootstrap_instances) == (intval($consul_config['bootstrap_expect']) - $selfBootstrapped)) {
                 //If this is the last instace needed to finish the bootraping process, update every tag on the stack
                 updateStackInstancesTags('consul', 'cluster');
             } else {
@@ -92,11 +96,14 @@ function getInstancesByTag($tag_name, $tag_value)
  */
 function getTag($tag_name, $tags)
 {
-    foreach ($tags as $key => $tag) {
-        if($tag['Key'] == $tag_name)
-            return $tag['Value'];
+    if (is_array($tags)) {
+        foreach ($tags as $key => $tag) {
+            if($tag['Key'] == $tag_name)
+                return $tag['Value'];
+        }
     }
-    return '';
+    
+    return null;
 }
 
 /**
