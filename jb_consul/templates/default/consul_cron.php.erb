@@ -19,7 +19,7 @@ $consul_config = getConsulConfig();
 $current_instance = getCurrentInstance();
 $current_tag = getTag('consul', $current_instance['Tags']);
 //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
-$instances = getInstancesByTag('consul', 'cluster');
+$cluster_instances = getInstancesByTag('consul', 'cluster');
 
 if($current_tag == 'bootstrap' || is_null($current_tag)){
     if(count($cluster_instances)){
