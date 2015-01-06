@@ -27,44 +27,31 @@ $current_instance   = getCurrentInstance();
 $current_ip         = $current_instance['PrivateIpAddress'];
 $current_tag        = getTag('consul', $current_instance['Tags']);
 
-//Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
-$cluster_instances  = getInstancesByTag('consul', 'cluster');
+$attempts           = 3;
 
-if ($current_tag == 'bootstrap' || empty($current_tag)) {
-    if (count($cluster_instances)) {
-        //Add the list of instances to the join list of consul
-        addInstancesToJoinList($consul_config, $cluster_instances, $current_ip);
-        
-        //Update current consul tag to cluster
-        updateInstanceTag($current_instance, 'consul', 'cluster');
-        
-    } else {
-        //Get list of other bootstrap instances
-        $bootstrap_instances = getInstancesByTag('consul', 'bootstrap');
-        
-        // If this node is bootstrapping, but has no bootstrap tag, don't expect the count to match bootstrap_expect
-        $selfBootstrapped = $current_tag == 'bootstrap'? 0: 1;
-        $expectedInstances = intval(@$consul_config['bootstrap_expect'] ?: 1) - $selfBootstrapped;
-        
-        //If there is more than juan instance, we have to join them
-        addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip);
-        
-        if ($expectedInstances <= count($bootstrap_instances)) {
-            //If this is the last instace needed to finish the bootraping process, update every tag on the stack
-            updateStackInstancesTags('consul', 'cluster');
-            
-        } else {
-            //This shouldn't happen but it means that there is no tag on the current instance
-            updateInstanceTag($current_instance, 'consul', 'bootstrap');
-            
-        }
-    }
-
-// Instance is not trying to be bootstrapped, so join the existing cluster
-} else {
+// Check to see if the cluster was started
+while ($attempts--) {
     
-    //To preserve the state of the cluster, update the consul config file with every node currently runing
-    addInstancesToJoinList($consul_config, $cluster_instances, $current_ip);
+    //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
+    $cluster_instances  = getInstancesByTag('consul', 'cluster');
+        
+    // Get all the cluster instances we can join, if a cluster is set up, otherwise get all the bootstrap instances we can join
+    $instancesToJoin    = count($cluster_instances)? $cluster_instances : getInstancesByTag('consul', 'bootstrap');
+    
+    //Add the list of instances to the join list of consul
+    addInstancesToJoinList($consul_config, $instancesToJoin, $current_ip);
+    
+    // Which type of tag should we have
+    $tag = getLeader() === false? 'bootstrap': 'cluster';
+    
+    // Update the tags accordingly, depending whether or not we're in a cluster
+    if ($tag !== $current_tag) 
+        updateInstanceTag($current_instance, 'consul', ($current_tag = $tag));
+    
+    if ($current_tag == 'cluster')
+        break;
+    
+    sleep(10);
 }
 
 /**
@@ -145,21 +132,6 @@ function addInstancesToJoinList(&$consul_config, $reservations, $current_ip)
     }
     
     return false;
-}
-
-function updateStackInstancesTags($tag_name, $tag_value)
-{
-    //Get every instance on the environment with the tag
-    $reservations = callAwsCli(" 'Name=tag-key,Values=consul'");
-    if (isset($reservations['Reservations'])) {
-        foreach ($reservations['Reservations'] as $reservation) {
-            if (isset($reservation['Instances'])) {
-                foreach ($reservation['Instances'] as $instance) {
-                    updateInstanceTag($instance, $tag_name, $tag_value);
-                }
-            }
-        }
-    }
 }
 
 /**
