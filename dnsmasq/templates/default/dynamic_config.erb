@@ -2,7 +2,9 @@
   <% if v -%>
     <% if(v.is_a?(Array)) -%>
       <% v.sort.each do |val| -%>
+        <% if(val) -%>
 <%= k %>=<%= val %>
+        <% end -%>
       <% end -%>
     <% else -%>
 <%= k %>=<%= v %>
