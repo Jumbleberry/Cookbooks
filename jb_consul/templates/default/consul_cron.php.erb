@@ -5,44 +5,51 @@
 
 //Server environment
 define("ENVIRONMENT", '<%= node['environment'] %>');
+define("CONSUL_URL", 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
+
 //Base aws commands
 define("AWS_DESCRIBE_CLI", "aws --region " . '<%= node['aws']['region'] %>' . " --profile default ec2 describe-instances --filter 'Name=tag:environment,Values=" . ENVIRONMENT . "'");
 define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
+
 //Consul config file
 define("CONSUL_CONFIG_FILE", '<%= node['consul']['config_dir'] %>/default.json');
 define("CONSUL_PORT", '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
+
 //Change home path for the aws command line tool
 putenv('HOME='.'/home/<%= node['user'] %>/');
 putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
 
 //Get current consul configuration
-$consul_config = getConsulConfig();
-//Check the current status of consul on the current server
-$current_instance = getCurrentInstance();
-$current_ip  = $current_instance['PrivateIpAddress'];
-$current_tag = getTag('consul', $current_instance['Tags']);
-//Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
-$cluster_instances = getInstancesByTag('consul', 'cluster');
+$consul_config      = getConsulConfig();
 
-if($current_tag == 'bootstrap' || empty($current_tag)){
-    if(count($cluster_instances)){
+//Check the current status of consul on the current server
+$current_instance   = getCurrentInstance();
+$current_ip         = $current_instance['PrivateIpAddress'];
+$current_tag        = getTag('consul', $current_instance['Tags']);
+
+//Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
+$cluster_instances  = getInstancesByTag('consul', 'cluster');
+
+if ($current_tag == 'bootstrap' || empty($current_tag)) {
+    if (count($cluster_instances)) {
         //Add the list of instances to the join list of consul
         addInstancesToJoinList($consul_config, $cluster_instances, $current_ip);
         
         //Update current consul tag to cluster
         updateInstanceTag($current_instance, 'consul', 'cluster');
+        
     } else {
         //Get list of other bootstrap instances
         $bootstrap_instances = getInstancesByTag('consul', 'bootstrap');
         
         // If this node is bootstrapping, but has no bootstrap tag, don't expect the count to match bootstrap_expect
         $selfBootstrapped = $current_tag == 'bootstrap'? 0: 1;
-        $expectedInstances = intval($consul_config['bootstrap_expect']) - $selfBootstrapped;
+        $expectedInstances = intval(@$consul_config['bootstrap_expect'] ?: 1) - $selfBootstrapped;
         
         //If there is more than juan instance, we have to join them
         addInstancesToJoinList($consul_config, $bootstrap_instances, $current_ip);
         
-        if ($expectedInstances == count($bootstrap_instances)) {
+        if ($expectedInstances <= count($bootstrap_instances)) {
             //If this is the last instace needed to finish the bootraping process, update every tag on the stack
             updateStackInstancesTags('consul', 'cluster');
             
@@ -52,9 +59,12 @@ if($current_tag == 'bootstrap' || empty($current_tag)){
             
         }
     }
+
+// Instance is not trying to be bootstrapped, so join the existing cluster
 } else {
+    
     //To preserve the state of the cluster, update the consul config file with every node currently runing
-    addInstancesToJoinList($consul_config, $cluster_instances);
+    addInstancesToJoinList($consul_config, $cluster_instances, $current_ip);
 }
 
 /**
@@ -74,7 +84,7 @@ function getConsulConfig()
 function getCurrentInstance()
 {
     $instance = getInstancesByTag('opsworks:instance', gethostname());
-    return $instance[0]['Instances'][0] ?: null;
+    return @$instance[0]['Instances'][0] ?: null;
 }
 
 /**
@@ -86,7 +96,7 @@ function getCurrentInstance()
 function getInstancesByTag($tag_name, $tag_value)
 {
     $reservations = callAwsCli(" 'Name=tag:" . $tag_name . ",Values=" . $tag_value . "'");
-    return $reservations['Reservations'];
+    return @$reservations['Reservations'] ?: array();
 }
 
 /**
@@ -104,7 +114,7 @@ function getTag($tag_name, $tags)
         }
     }
     
-    return null;
+    return false;
 }
 
 /**
@@ -115,14 +125,19 @@ function addInstancesToJoinList(&$consul_config, $reservations, $current_ip)
 {
     $start_join = array();
     foreach ($reservations as $reservation) {
-        foreach ($reservation['Instances'] as $instance) {
-            if (isset($instance['PrivateIpAddress']) && $instance['PrivateIpAddress'] != $current_ip && !empty($instance['PrivateIpAddress']))
-                $start_join[] = $instance['PrivateIpAddress'];
+        if (isset($reservation['Instances'])) {
+            foreach ($reservation['Instances'] as $instance) {
+                if (isset($instance['PrivateIpAddress']) && $instance['PrivateIpAddress'] != $current_ip && !empty($instance['PrivateIpAddress']))
+                    $start_join[] = $instance['PrivateIpAddress'];
+            }
         }
     }
     
-    //Only update if there is more than 1 server to join - and if the configuration has changed
-    if (count($start_join) && count(array_diff($start_join, $consul_config['start_join']))) {
+    if (!isset($consul_config['start_join']))
+        $consul_config['start_join'] = array();
+    
+    // Update if the configuration has changed
+    if (count(array_diff($start_join, $consul_config['start_join'])) || count(array_diff($consul_config['start_join'], $start_join))) {
         $consul_config['start_join'] = $start_join;
         file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
         
@@ -136,9 +151,13 @@ function updateStackInstancesTags($tag_name, $tag_value)
 {
     //Get every instance on the environment with the tag
     $reservations = callAwsCli(" 'Name=tag-key,Values=consul'");
-    foreach ($reservations['Reservations'] as $reservation) {
-        foreach ($reservation['Instances'] as $instance) {
-            updateInstanceTag($instance, $tag_name, $tag_value);
+    if (isset($reservations['Reservations'])) {
+        foreach ($reservations['Reservations'] as $reservation) {
+            if (isset($reservation['Instances'])) {
+                foreach ($reservation['Instances'] as $instance) {
+                    updateInstanceTag($instance, $tag_name, $tag_value);
+                }
+            }
         }
     }
 }
@@ -152,7 +171,9 @@ function updateStackInstancesTags($tag_name, $tag_value)
  */
 function updateInstanceTag($instance, $tag_name, $tag_value)
 {
-    callAwsCli(" --resources " . $instance['InstanceId'] . " --tags Key=" . $tag_name . ",Value=" . $tag_value, AWS_UPDATE_TAG_CLI);
+    if( !in_array(ENVIRONMENT, array('testing', 'development')) ) {
+        callAwsCli(" --resources " . $instance['InstanceId'] . " --tags Key=" . $tag_name . ",Value=" . $tag_value, AWS_UPDATE_TAG_CLI);
+    }
 }
 
 /**
@@ -185,4 +206,27 @@ function consulJoin($ips = array())
         exec('consul join ' . implode(':' . CONSUL_PORT . ' ', $ips) . ':' . CONSUL_PORT);
     
     return true;
+}
+
+/**
+ * getPeers function.
+ *  Find all peers to this consul instance
+ * 
+ * @access public
+ * @return array a list of the ips of our peers (including our own)
+ */
+function getPeers() {
+    return @json_decode(@file_get_contents(CONSUL_URL . '/v1/status/peers'), true) ?: array();
+}
+
+/**
+ * getLeader function
+ *  Check if there's a consul leader
+ * 
+ * @access public
+ * @return mixed string of the leader ip on success, false on failure
+ */
+function getLeader() {
+    $leader = trim(@file_get_contents(CONSUL_URL . '/v1/status/leader'), '"');
+    return (!empty($leader))? $leader : false;
 }
