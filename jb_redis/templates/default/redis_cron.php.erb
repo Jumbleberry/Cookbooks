@@ -2,7 +2,7 @@
 //Current instance configurations
 define('CURRENT_IP', $argv[1]);
 define('CURRENT_PORT', $argv[2]);
-define('CONSUL_BASE_URL', 'http://localhost:8500');
+define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
 define('CONSUL_CONFIG_PATH', '<%= node['consul']['config_dir'] %>');
 define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
 define('SENTINEL_NAME', 'sentinel_<%= node['redisio']['sentinels'][0]['name'] %>');
@@ -12,7 +12,7 @@ putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bi
 
 //Beacuse we depend on consul to elect the redis master, we have to wait until there is a consul leader before we can continue
 $consul_leader = getConsulLeader();
-if(empty($consul_leader))
+if(empty($consul_leader) || $consul_leader == '""')
     exit();
 
 //Check with consul if there is a Redis master already runing
@@ -72,9 +72,11 @@ function setRedisMaster()
 {
     $current_config = getCurrentRedisServiceConfiguration();
     //Add master tag to configuration
-    $current_config['service']['tags'][] = 'master';
-    updateCurrentRedisConfig($current_config);
-    reloadConsulAgent();
+    if(!in_array('master', $current_config['service']['tags'])){
+        $current_config['service']['tags'][] = 'master';
+        updateCurrentRedisConfig($current_config);
+        reloadConsulAgent();
+    }
 }
 
 function getRedisStatus()
