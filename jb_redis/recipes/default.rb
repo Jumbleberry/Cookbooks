@@ -1,3 +1,7 @@
+include_recipe "jb_consul"
+include_recipe "redisio"
+include_recipe "redisio::sentinel"
+
 redis_path = '/etc/redis'
 consul_path = node["consul"]["config_dir"]
 

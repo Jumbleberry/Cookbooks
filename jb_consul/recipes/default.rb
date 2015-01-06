@@ -1,5 +1,7 @@
 include_recipe "aws"
+include_recipe "tags"
 include_recipe "consul"
+include_recipe "dnsmasq"
 
 cron_path = node["consul"]["config_dir"]
 
@@ -25,7 +27,9 @@ end
 
 # Reset AWS Tags
 # If tag elements are present, and this is on EC2
-if ( node.attribute?('ec2') && node.attribute?('aws') && node['aws'].attribute?('tags') )
+if ( node.attribute?('ec2') && node[:ec2].attribute?('instance_id') && /(i|snap|vol)-[a-zA-Z0-9]+/.match(node[:ec2][:instance_id]) &&
+        node.attribute?('aws') && node['aws'].attribute?('tags') )
+    
     aws_resource_tag node['ec2']['instance_id'] do
         aws_access_key node['aws']['aws_access_key_id']
         aws_secret_access_key node['aws']['aws_secret_access_key']

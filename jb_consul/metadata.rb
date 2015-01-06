@@ -7,4 +7,6 @@ long_description 'Set up consul configuration'
 version          '1.0.0'
 
 depends "aws"
+depends "tags"
 depends "consul"
+depends "dnsmasq"

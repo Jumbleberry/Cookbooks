@@ -6,7 +6,5 @@ description      'Initialize redis configuration'
 long_description 'Set up redis configuration'
 version          '1.0.0'
 
-depends "aws"
-depends "consul"
 depends "jb_consul"
 depends "redisio"
