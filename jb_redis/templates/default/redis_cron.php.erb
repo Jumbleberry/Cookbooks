@@ -10,6 +10,11 @@ define('SENTINEL_QUORUM', '<%= node['redisio']['sentinels'][0]['quorum_count'] %
 define('HOSTNAME', gethostname());
 putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
 
+//Beacuse we depend on consul to elect the redis master, we have to wait until there is a consul leader before we can continue
+$consul_leader = getConsulLeader();
+if(empty($consul_leader))
+    exit();
+
 //Check with consul if there is a Redis master already runing
 $redis_master = getRedisMaster();
 if(!empty($redis_master)){
@@ -159,4 +164,9 @@ function putCurlRequest($url, $data)
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
     curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
     $response = curl_exec($ch);
+}
+
+function getConsulLeader()
+{
+    return getCurlRequest(CONSUL_BASE_URL . '/v1/status/leader');
 }
