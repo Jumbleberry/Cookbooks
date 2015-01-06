@@ -3,9 +3,10 @@
         {
             "Instances": [
                 {
+                    "PrivateIpAddress": "<%= @ip %>",
                     "Tags": [
                         {
-                            "Value": "testing", 
+                            "Value": "<%= @environment %>", 
                             "Key": "environment"
                         }, 
                         {
