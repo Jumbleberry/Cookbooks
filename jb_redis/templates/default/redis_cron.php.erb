@@ -137,11 +137,21 @@ function getConsulSession()
     return $session_id['ID'];
 }
 
+/**
+ * Removes current session from consul
+ * @param  string $session_id
+ * @return boolean
+ */
 function deleteConsulSesssion($session_id)
 {
     return putCurlRequest(CONSUL_BASE_URL . '/v1/session/destroy/' . $session_id);
 }
 
+/**
+ * Start the current redis service
+ * @param  array $master_instance
+ * @return void
+ */
 function startRedisServer($master_instance = null)
 {
     updateRedisConfigurationFile($master_instance);
@@ -149,6 +159,11 @@ function startRedisServer($master_instance = null)
     exec('sudo service redis' . CURRENT_PORT . ' start');
 }
 
+/**
+ * Update redis configuration files for the current service
+ * @param  array $master_instance
+ * @return void
+ */
 function updateRedisConfigurationFile($master_instance)
 {
     $redis_config_file_path = REDIS_CONFIG_PATH . '/' . CURRENT_PORT . '.conf';
@@ -162,6 +177,12 @@ function updateRedisConfigurationFile($master_instance)
     file_put_contents($redis_config_file_path, $redis_config);
 }
 
+/**
+ * Starts the sentinel service
+ * @param  string $master_ip
+ * @param  port $master_port
+ * @return void
+ */
 function startSentinelServer($master_ip, $master_port)
 {
     updateSentinelConfigurationFile($master_ip, $master_port);
@@ -169,6 +190,12 @@ function startSentinelServer($master_ip, $master_port)
     exec('sudo service redis_' . SENTINEL_NAME . ' start');
 }
 
+/**
+ * Updates sentinel configuration files with the current master details
+ * @param  string $master_ip
+ * @param  string $master_port
+ * @return void
+ */
 function updateSentinelConfigurationFile($master_ip, $master_port)
 {
     $sentinel_config_file_path = REDIS_CONFIG_PATH . '/' . SENTINEL_NAME . '.conf';
@@ -180,6 +207,10 @@ function updateSentinelConfigurationFile($master_ip, $master_port)
     file_put_contents($sentinel_config_file_path, $sentinel_config);
 }
 
+/**
+ * Reloads the consul agent with the new configurations (services)
+ * @return void
+ */
 function reloadConsulAgent()
 {
     exec('consul reload');
@@ -199,6 +230,12 @@ function getCurlRequest($url)
     return curl_exec($ch);
 }
 
+/**
+ * Execute a curl put request with some data to the given url
+ * @param  string $url
+ * @param  string $data
+ * @return string
+ */
 function putCurlRequest($url, $data ='')
 {
     $ch = curl_init();
@@ -212,6 +249,10 @@ function putCurlRequest($url, $data ='')
     return @json_decode($response, true) ?: false;
 }
 
+/**
+ * Get the current consul leader
+ * @return mixed
+ */
 function getConsulLeader()
 {
     return @trim(getCurlRequest(CONSUL_BASE_URL . '/v1/status/leader'), '"') ?: false;
