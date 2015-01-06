@@ -1,3 +1,9 @@
+include_recipe "timezone-ii"
+include_recipe "web-server"
+include_recipe "github-auth"
+include_recipe "nginx"
+include_recipe "php"
+
 # Set the branch to checkout
 branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['route']['branch']
 

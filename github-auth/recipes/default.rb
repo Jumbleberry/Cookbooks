@@ -1,3 +1,8 @@
+# If this is on aws, then run the awskeys auth
+if ( node.attribute?('aws_deploy_key') )
+    include_recipe "github-auth::awskeys"
+end
+
 #Get all the applications keys
 apps = {}
 #JBX

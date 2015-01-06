@@ -1,3 +1,11 @@
+include_recipe "timezone-ii"
+include_recipe "web-server"
+include_recipe "github-auth"
+include_recipe "nginx"
+include_recipe "php"
+include_recipe "zend"
+include_recipe "s3fs-fuse"
+
 # Make sure directory exists
 # Use the same user defined for the admin application
 directory node['admin']['path'] do
