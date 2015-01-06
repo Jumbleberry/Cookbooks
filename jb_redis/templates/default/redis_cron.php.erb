@@ -12,43 +12,64 @@ putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bi
 
 //Beacuse we depend on consul to elect the redis master, we have to wait until there is a consul leader before we can continue
 $consul_leader = getConsulLeader();
-if(empty($consul_leader) || $consul_leader == '""')
+if($consul_leader === false)
     exit();
 
-//Check with consul if there is a Redis master already runing
+//Check if there is already a master runing
 $redis_master = getRedisMaster();
-if(!empty($redis_master)){
-    if(!hasMaster()){
-        if($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT){
-            //Start redis server as a slave of the current master
-            startRedisServer($redis_master);
-            //Start sentinel with the current master
-            startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
-        }
+if (!empty($redis_master)) {
+    // Only if the current master is not the current service
+    if (($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT)) {
+        echo "There is a redis server running, join it\n";
+        //Start redis server as a slave of the current master
+        startRedisServer($redis_master);
+        //Start sentinel with the current master
+        startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
     }
-    //If there is a master the bootstraping process has already finished, so lets update the status
-    setRedisStatus('runing');
-} else {
-    //If there is no redis master registered in consul, check the lock to start the bootstrap process
-    $redis_stauts = getRedisStatus();
-    if($redis_stauts != 'bootstraping'){
-        //This means that we haven't started the bootstraping process, lets start it now
-        setRedisStatus('bootstraping');
+    exit();
+}
+
+//Get the lock to start the leader election
+$session_id = getConsulSession();
+$redis_lock = getRedisLock($session_id);
+if($redis_lock) {
+    echo $session_id . " I has the lock\n";
+    $redis_master = getRedisMaster();
+    if(empty($redis_master)){
+        echo "Im the new redis master\n";
         //Start redis server as master
         startRedisServer();
         //Start sentinel server pointing to the new master
         startSentinelServer(CURRENT_IP, CURRENT_PORT);
         //Register the new redis master on consul
         setRedisMaster();
+
+        //Wait until consul starts returning the 
+        while (empty(getRedisMaster()))
+            sleep(10);
     }
+    //Releses the current consul lock
+    releaseRedisLock($session_id);
 }
 
+//Deltes current consul session
+deleteConsulSesssion($session_id);
+
+/**
+ * Get redis configuration from config file
+ * @return array
+ */
 function getCurrentRedisServiceConfiguration()
 {
     $config_file = 'redis' . CURRENT_PORT . '.json';
     return json_decode(file_get_contents(CONSUL_CONFIG_PATH . '/' . $config_file), true);
 }
 
+/**
+ * Update redis config file
+ * @param  araray
+ * @return void
+ */
 function updateCurrentRedisConfig($content)
 {
     $config_file = 'redis' . CURRENT_PORT . '.json';
@@ -68,6 +89,9 @@ function getRedisMaster()
     return $master;
 }
 
+/**
+ * Set the current service as te redis master
+ */
 function setRedisMaster()
 {
     $current_config = getCurrentRedisServiceConfiguration();
@@ -79,18 +103,43 @@ function setRedisMaster()
     }
 }
 
-function getRedisStatus()
+/**
+ * Get a lock from consul to start the leader election
+ * @param  string $session_id
+ * @return boolean
+ */
+function getRedisLock($session_id)
 {
-    $status = null;
-    $result = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master'), true);
-    if(count($result))
-        $status = base64_decode($result[0]["Value"]);
-    return $status;
+    //Create the lock
+    $body = CURRENT_IP . ':' . CURRENT_PORT;
+    $lock = putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master?acquire=' . $session_id, $body);
+    return $lock;
 }
 
-function setRedisStatus($status)
+/**
+ * Release current lock on consul
+ * @param  string $session_id [description]
+ * @return boolean
+ */
+function releaseRedisLock($session_id)
 {
-    putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master', $status);
+    return putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master?release=' . $session_id);
+}
+
+/**
+ * Get a session on consul 
+ * @return string
+ */
+function getConsulSession()
+{
+    //Get a new session from consul
+    $session_id = putCurlRequest(CONSUL_BASE_URL . '/v1/session/create');
+    return $session_id['ID'];
+}
+
+function deleteConsulSesssion($session_id)
+{
+    return putCurlRequest(CONSUL_BASE_URL . '/v1/session/destroy/' . $session_id);
 }
 
 function startRedisServer($master_instance = null)
@@ -131,13 +180,6 @@ function updateSentinelConfigurationFile($master_ip, $master_port)
     file_put_contents($sentinel_config_file_path, $sentinel_config);
 }
 
-function hasMaster()
-{
-    $redis_config_file_path = REDIS_CONFIG_PATH . '/' . CURRENT_PORT . '.conf';
-    $redis_config = file_get_contents($redis_config_file_path);
-    return preg_match_all("/^slaveof.*/m", $redis_config, $matches) > 0;
-}
-
 function reloadConsulAgent()
 {
     exec('consul reload');
@@ -157,18 +199,20 @@ function getCurlRequest($url)
     return curl_exec($ch);
 }
 
-function putCurlRequest($url, $data)
+function putCurlRequest($url, $data ='')
 {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
     curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
     $response = curl_exec($ch);
+    return @json_decode($response, true) ?: false;
 }
 
 function getConsulLeader()
 {
-    return getCurlRequest(CONSUL_BASE_URL . '/v1/status/leader');
+    return @trim(getCurlRequest(CONSUL_BASE_URL . '/v1/status/leader'), '"') ?: false;
 }
