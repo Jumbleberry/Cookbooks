@@ -24,28 +24,32 @@ else
       action [:umount, :disable]
     end
     
-    execute "umount #{dir_info[:path]}"
+    # Force unmount - don't care if it works
+    execute "umount #{dir_info[:path]} || true"
     
     dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
     
-    #delete the cache
+    # delete the cache
     directory dir do
         recursive true
         action :delete
     end
     
+    # Delete the mount dir
     directory dir_info[:path] do
         recursive true
         action :delete
         only_if { Dir[dir_info[:path] + '/*'].empty? }
     end
     
+    # Create the mount dir
     directory dir_info[:path] do
         recursive true
         action :create
         not_if { File.directory? dir_info[:path] }
     end
     
+    # Mount the drive
     mount dir_info[:path] do
       device "s3fs##{dir_info[:bucket]}"
       fstype 'fuse'
