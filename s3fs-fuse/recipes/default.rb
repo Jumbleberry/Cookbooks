@@ -46,9 +46,8 @@ else
       fstype 'fuse'
       dump 0
       pass 0
-      options "allow_other,url=#{node[:s3fs_fuse][:s3_url]},lazy_fsdata=no,preserve_cache=no,passwd_file=/etc/passwd-s3fs,use_cache=#{dir_info[:tmp_store] || '/tmp/s3_cache'},retries=20#{",noupload" if dir_info[:no_upload]},#{dir_info[:read_only] ? 'ro' : 'rw'}"
-      action [:mount, :enable]
-      not_if "mountpoint -q #{dir_info[:path]}"
+      options "allow_other,url=#{node[:s3fs_fuse][:s3_url]},stat_cache_expire=300,passwd_file=/etc/passwd-s3fs,use_cache=#{dir_info[:tmp_store] || '/tmp/s3_cache'},retries=20#{",noupload" if dir_info[:no_upload]},#{dir_info[:read_only] ? 'ro' : 'rw'}"
+      action [:disable, :remount, :enable]
     end
   end
 end
