@@ -9,7 +9,7 @@ define("CONSUL_URL", 'http://localhost:<%= node['consul']['ports']['http'] || 85
 
 //Base aws commands
 define("AWS_DESCRIBE_CLI", "aws --region " . '<%= node['aws']['region'] %>' . " --profile default ec2 describe-instances \
-            --filter 'Name=instance-state-code,Values=16' 'Name=tag:environment,Values=" . ENVIRONMENT . "'");
+            --filter 'Name=instance-state-code,Values=16,0' 'Name=tag:environment,Values=" . ENVIRONMENT . "'");
 define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
 
 //Consul config file
