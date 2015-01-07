@@ -24,6 +24,15 @@ elsif(node[:s3fs_fuse][:rc_mon])
   include_recipe 's3fs-fuse::rc_mon'
 else
   mounted_directories.each do |dir_info|
+    
+    dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
+    
+    #delete the cache
+    file dir do
+        recursive true
+        action :delete
+    end
+    
     mount dir_info[:path] do
       device "s3fs##{dir_info[:bucket]}"
       fstype 'fuse'
