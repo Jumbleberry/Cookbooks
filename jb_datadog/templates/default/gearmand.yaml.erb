@@ -1,0 +1,14 @@
+instances:
+<% node['datadog']['gearmand']['instances'].each do |i| -%>
+  - server: <%= i["server"] %>
+    port: <%= i["port"] || 4730 %>
+    <% if i.key?("tags") -%>
+    tags:
+      <% i["tags"].each do |t| -%>
+      - <%= t %>
+      <% end -%>
+    <% end -%>
+<% end -%>
+
+init_config:
+# nothing to add here

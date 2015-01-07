@@ -1,3 +1,10 @@
+include_recipe "timezone-ii"
+include_recipe "web-server"
+include_recipe "github-auth"
+include_recipe "nginx"
+include_recipe "php"
+include_recipe "phalcon"
+
 # Set the branch to checkout
 branch = ENV['JBX_CORE_BRANCH'] || node['jbx']['core']['branch']
 

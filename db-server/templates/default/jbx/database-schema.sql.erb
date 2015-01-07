@@ -49,7 +49,7 @@ BEGIN
 END$$
 
 CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
-IN hitDate DATETIME,
+IN saleDate DATETIME,
 IN affiliateId INT(11),
 IN landingPageId INT(11),
 IN rejected INT(8),
@@ -73,8 +73,8 @@ BEGIN
      WHERE campaign_id = campaignId;
 
     -- Format dates
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d') INTO dailyDate;
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d') INTO dailyDate;
 
     -- Update hourly log
     UPDATE `summary_hitpath_hourly`
@@ -959,7 +959,7 @@ DELIMITER //
 CREATE TRIGGER `hitpath_sales_delete` AFTER DELETE ON `hitpath_sales`
  FOR EACH ROW BEGIN
     IF (old.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(old.campaign_id, old.hit_date, old.affiliate_id, old.landing_page_id, -1, (old.earned * -1), (old.paid * -1), old.c1, old.c2, old.c3);
+        CALL hitpath_sales_summary_insert_update(old.campaign_id, old.sale_date, old.affiliate_id, old.landing_page_id, -1, (old.earned * -1), (old.paid * -1), old.c1, old.c2, old.c3);
     END IF;
 END
 //
@@ -969,9 +969,9 @@ DELIMITER //
 CREATE TRIGGER `hitpath_sales_insert` AFTER INSERT ON `hitpath_sales`
  FOR EACH ROW BEGIN
     IF (new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
     ELSEIF (new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, 0, 0, 0, new.c1, new.c2, new.c3);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 0, 0, 0, new.c1, new.c2, new.c3);
     END IF;
 END
 //
@@ -985,15 +985,21 @@ CREATE TRIGGER `hitpath_sales_update` AFTER UPDATE ON `hitpath_sales`
     SET cpaChanged = (old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no';
 
     IF ((new.rejected != old.rejected AND new.rejected = 'yes') OR cpaChanged = 1) THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, -1, (old.earned * -1), (old.paid * -1), new.c1, new.c2, new.c3);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, -1, (old.earned * -1), (old.paid * -1), new.c1, new.c2, new.c3);
     END IF;
 
     IF ((new.rejected != old.rejected AND new.rejected = 'no') OR cpaChanged = 1) THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
     END IF;
 END
 //
 DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS `key_value` (
+  `key` varchar(255) NOT NULL,
+  `value` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
