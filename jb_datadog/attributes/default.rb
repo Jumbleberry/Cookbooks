@@ -9,7 +9,7 @@ default['datadog']['nginx']['instances'] = [
 
 default['datadog']['gearmand']['instances'] = [
   {
-    'server' => "localhost",
+    'server' => node[:network][:interfaces][node[:network_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first || node['ipaddress'],
     'port'   => '4730',
     'tags'   => ["prod"]
   }
