@@ -7,14 +7,6 @@ default['datadog']['nginx']['instances'] = [
   }
 ]
 
-default['datadog']['redisdb']['instances'] = [
-  {
-    'server' => 'localhost',
-    'port'   => '6379',
-    'tags'   => ['prod']
-  }
-]
-
 default['datadog']['gearmand']['instances'] = [
   {
     'server' => "localhost",
@@ -25,9 +17,25 @@ default['datadog']['gearmand']['instances'] = [
 
 default['datadog']['mysql']['instances'] = [
   {
-    'server'  => "read1.mysql.jumbleberry.com",
-    'user'    => "root",
-    'pass'    => "jbdb5s2013",
+    'server'  => node['jbx']['credentials']['mysql_read']['host'],
+    'user'    => node['jbx']['credentials']['mysql_read']['username'],
+    'pass'    => node['jbx']['credentials']['mysql_read']['password'],
+    'tags'    => ["prod"],
+  },
+  {
+    'server'  => node['jbx']['credentials']['mysql_write']['host'],
+    'user'    => node['jbx']['credentials']['mysql_write']['username'],
+    'pass'    => node['jbx']['credentials']['mysql_write']['password'],
     'tags'    => ["prod"],
   }
 ]
+
+default['datadog']['redisdb']['instances'] = []
+
+node['redisio']['servers'].each do | server |
+  default['datadog']['redisdb']['instances'] << {
+    'server' => 'localhost',
+    'port'   => server.port,
+    'tags'   => ["prod"]
+  }
+end
