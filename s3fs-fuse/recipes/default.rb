@@ -28,7 +28,7 @@ else
     dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
     
     #delete the cache
-    file dir do
+    directory dir do
         recursive true
         action :delete
     end
