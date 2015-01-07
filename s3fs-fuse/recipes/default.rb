@@ -8,14 +8,6 @@ if(mounted_directories.is_a?(Hash) || !mounted_directories.respond_to?(:each))
   mounted_directories = [node[:s3fs_fuse][:mounts]].compact
 end
 
-mounted_directories.each do |mount_point|
-  directory mount_point[:path] do
-    recursive true
-    action :create
-	not_if { File.directory? mount_point[:path] }
-  end
-end
-
 include_recipe "s3fs-fuse::install"
 
 if(node[:s3fs_fuse][:bluepill])
@@ -30,8 +22,9 @@ else
       device "s3fs##{dir_info[:bucket]}"
       fstype 'fuse'
       action [:umount, :disable]
-      only_if "mountpoint -q #{dir_info[:path]}"
     end
+    
+    execute "umount #{dir_info[:path]}"
     
     dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
     
@@ -39,6 +32,18 @@ else
     directory dir do
         recursive true
         action :delete
+    end
+    
+    directory dir_info[:path] do
+        recursive true
+        action :delete
+        only_if { Dir[dir_info[:path] + '/*'].empty? }
+    end
+    
+    directory dir_info[:path] do
+        recursive true
+        action :create
+        not_if { File.directory? dir_info[:path] }
     end
     
     mount dir_info[:path] do
