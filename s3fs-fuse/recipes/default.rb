@@ -25,6 +25,14 @@ elsif(node[:s3fs_fuse][:rc_mon])
 else
   mounted_directories.each do |dir_info|
     
+    #unmount a drive
+    mount dir_info[:path] do
+      device "s3fs##{dir_info[:bucket]}"
+      fstype 'fuse'
+      action [:disable, :umount]
+      only_if "mountpoint -q #{dir_info[:path]}"
+    end
+    
     dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
     
     #delete the cache
