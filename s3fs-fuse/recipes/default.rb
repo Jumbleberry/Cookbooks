@@ -29,7 +29,7 @@ else
     mount dir_info[:path] do
       device "s3fs##{dir_info[:bucket]}"
       fstype 'fuse'
-      action [:disable, :umount]
+      action [:umount, :disable]
       only_if "mountpoint -q #{dir_info[:path]}"
     end
     
@@ -47,7 +47,7 @@ else
       dump 0
       pass 0
       options "allow_other,url=#{node[:s3fs_fuse][:s3_url]},stat_cache_expire=300,passwd_file=/etc/passwd-s3fs,use_cache=#{dir_info[:tmp_store] || '/tmp/s3_cache'},retries=20#{",noupload" if dir_info[:no_upload]},#{dir_info[:read_only] ? 'ro' : 'rw'}"
-      action [:disable, :remount, :enable]
+      action [:mount, :enable]
     end
   end
 end
