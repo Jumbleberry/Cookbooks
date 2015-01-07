@@ -20,11 +20,15 @@ $redis_master = getRedisMaster();
 if (!empty($redis_master)) {
     // Only if the current master is not the current service
     if (($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT)) {
-        echo "There is a redis server running, join it\n";
-        //Start redis server as a slave of the current master
-        startRedisServer($redis_master);
-        //Start sentinel with the current master
-        startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
+        //Check if the current redis service is already part of the cluster with the slave tag on cluster
+        if(!serviceHasTagOnConsul('slave')){
+            //Start redis server as a slave of the current master
+            startRedisServer($redis_master);
+            //Start sentinel server pointing to the new master
+            startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
+            //Add the slave tag to the current service
+            addTagOnConsul('slave');
+        }
     }
     exit();
 }
@@ -42,7 +46,7 @@ if($redis_lock) {
         //Start sentinel server pointing to the new master
         startSentinelServer(CURRENT_IP, CURRENT_PORT);
         //Register the new redis master on consul
-        setRedisMaster();
+        addTagOnConsul('master');
 
         //Wait until consul starts returning the 
         while (empty(getRedisMaster()))
@@ -90,14 +94,27 @@ function getRedisMaster()
 }
 
 /**
- * Set the current service as te redis master
+ * Check the current service has the given tag
+ * @return boolean
  */
-function setRedisMaster()
+function serviceHasTagOnConsul($tag)
+{
+    //Get current node state
+    $node = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/catalog/node/'.HOSTNAME), true);
+    //Check if the service has the tag on consul
+    return isset($node['Services']['redis'.CURRENT_PORT]) && in_array($tag, $node['Services']['redis'.CURRENT_PORT]['Tags']);
+}
+
+/**
+ * Add a tag to the current service on consul
+ * @param string $tag
+ */
+function addTagOnConsul($tag)
 {
     $current_config = getCurrentRedisServiceConfiguration();
     //Add master tag to configuration
-    if(!in_array('master', $current_config['service']['tags'])){
-        $current_config['service']['tags'][] = 'master';
+    if(!in_array($tag, $current_config['service']['tags'])){
+        $current_config['service']['tags'][] = $tag;
         updateCurrentRedisConfig($current_config);
         reloadConsulAgent();
     }
@@ -185,9 +202,12 @@ function updateRedisConfigurationFile($master_instance)
  */
 function startSentinelServer($master_ip, $master_port)
 {
-    updateSentinelConfigurationFile($master_ip, $master_port);
-    exec('sudo service redis_' . SENTINEL_NAME . ' stop');
-    exec('sudo service redis_' . SENTINEL_NAME . ' start');
+    //Check if sentinel was already configured by another service
+    if(!preg_match("/^sentinel.monitor.*/m", $sentinel_config)){
+        updateSentinelConfigurationFile($master_ip, $master_port);
+        exec('sudo service redis_' . SENTINEL_NAME . ' stop');
+        exec('sudo service redis_' . SENTINEL_NAME . ' start');
+    }
 }
 
 /**
