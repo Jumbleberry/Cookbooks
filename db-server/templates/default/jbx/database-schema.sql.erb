@@ -1295,7 +1295,7 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily_detail` (
   `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`cpa_in`,`cpa_out`,`c1`,`c2`,`c3`),
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`c1`,`c2`,`c3`,`cpa_in`,`cpa_out`),
   KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
   KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
