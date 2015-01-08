@@ -4,7 +4,7 @@ server {
     root <%= node['admin']['path'] %>/public;
 
     index index.php;
-    try_files $uri $uri/;
+    try_files $uri $uri/ /index.php?it=$uri&$args;
     
     access_log  /var/log/nginx/<%= node['admin']['hostname'] %>.access.log  main;
     error_log  /var/log/nginx/<%= node['admin']['hostname'] %>.error.log  warn;
