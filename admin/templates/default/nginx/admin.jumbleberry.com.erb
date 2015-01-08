@@ -3,9 +3,11 @@ server {
     server_name <%= node['admin']['hostname'] %> *.<%= node['admin']['hostname'] %>;
     root <%= node['admin']['path'] %>/public;
 
-    index index.php index.html index.htm;
-
-    try_files $uri $uri/ /index.php?it=$uri&$args;
+    index index.php;
+    try_files $uri $uri/;
+    
+    access_log  /var/log/nginx/<%= node['admin']['hostname'] %>.access.log  main;
+    error_log  /var/log/nginx/<%= node['admin']['hostname'] %>.error.log  warn;
     
     location /s3/ {
         root /mnt/;
