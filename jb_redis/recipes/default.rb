@@ -14,6 +14,7 @@ end
 
 # Get every redis server for the current instance
 servers = node['redisio']['servers'];
+sentinels = node['redisio']['sentinels'];
 
 # Copy the cron scrip to the redis config path
 template "#{redis_path}/redis_cron.php" do
@@ -43,8 +44,30 @@ servers.each do |server|
         group "cluster"
         mode "0664"
         variables ({
-            "port" => server.port
+            "port" => server.port,
+            "currentip" => local_ip,
+            "consul_path" => consul_path
         })
+    end
+
+    #Create log file with the right permissions
+    if(server[:logfile])
+        file server.logfile do
+            owner "redis"
+            group "redis"
+            mode  "0644"
+        end
+    end
+end
+
+sentinels.each do |sentinel|
+    if(sentinel[:logfile])
+        #Create log file with the right permissions
+        file sentinel.logfile do
+            owner "redis"
+            group "redis"
+            mode  "0644"
+        end
     end
 end
 
@@ -57,6 +80,14 @@ template "#{consul_path}/sentinel_reconf_script.php" do
     variables ({
         "currentip" => local_ip
     })
+end
+
+#Creates the service configuration file
+template "#{consul_path}/redis_check.php" do
+    source "redis_check.php.erb"
+    owner "root"
+    group "root"
+    mode "0755"
 end
 
 execute "reload consul configuration" do

@@ -3,10 +3,9 @@
 //Current instance configurations
 define('CURRENT_IP', $argv[1]);
 define('CURRENT_PORT', $argv[2]);
-define('SENTINEL_PORT', 'sentinel_<%= node['redisio']['sentinels'][0]['port'] %>');
+define('SENTINEL_PORT', '<%= node['redisio']['sentinels'][0]['port'] %>');
 
 $ping = runRedisCommand('ping');
-
 //Check if the client is responding
 if($ping[0] != 'PONG')
     exit(2);
@@ -17,12 +16,9 @@ $f_masters = array_flip($masters);
 $master_ip = $masters[$f_masters['ip'] + 1];
 $master_port = $masters[$f_masters['port'] + 1];
 
-var_dump($masters);
-
 //Check if we can write a value on the current master
 if($master_ip == CURRENT_IP && $master_port == CURRENT_PORT){
     $output = runRedisCommand('SET consul:health:redis "'.uniqid().'"');
-    var_dump($output);
     if($output[0] != 'OK')
         exit(2);
 }
