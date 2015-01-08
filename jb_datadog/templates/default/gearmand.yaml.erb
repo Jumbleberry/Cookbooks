@@ -1,5 +1,5 @@
 instances:
-<% node['datadog']['gearmand']['instances'].each do |i| -%>
+<% node['datadog']['services']['gearmand']['instances'].each do |i| -%>
   - server: <%= i["server"] %>
     port: <%= i["port"] || 4730 %>
     <% if i.key?("tags") -%>

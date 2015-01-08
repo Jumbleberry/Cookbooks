@@ -925,8 +925,13 @@ CREATE TABLE IF NOT EXISTS `hitpath_overrides` (
   `override_type` enum('general','subid','event') NOT NULL DEFAULT 'general',
   `operator` varchar(20) DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`id`),
+  KEY `affiliate_id` (`affiliate_id`,`campaign_id`),
+  KEY `campaign_id` (`campaign_id`),
+  KEY `user` (`user`),
+  KEY `c1` (`c1`),
+  KEY `search_key` (`campaign_id`,`affiliate_id`,`lifetime`,`expiration_date`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   `hit_id` bigint(20) unsigned NOT NULL,
