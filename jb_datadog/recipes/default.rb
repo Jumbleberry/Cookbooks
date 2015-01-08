@@ -4,6 +4,9 @@ node['datadog']['services'].each do | service, instances |
     source "#{service}.yaml.erb"
     owner 'dd-agent'
     mode 00644
+    variables ({
+        "ipAddress" => node[:network][:interfaces][node[:network_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
+    })
   end
 end
 
