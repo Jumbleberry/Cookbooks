@@ -23,16 +23,15 @@ virtualhost         = '/etc/nginx/sites-available/default'
 virtualhost_link    = '/etc/nginx/sites-enabled/default'
 
 template virtualhost do
-  source    "nginx/default.erb"
+  source    "default.erb"
 end
 
 link virtualhost_link do
   to virtualhost
-  notifies :reload, "service[nginx]"
 end
 
 
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
-  action [ :enable, :start ]
+  action [ :enable, :start, :reload ]
 end
