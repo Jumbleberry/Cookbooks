@@ -1,8 +1,6 @@
-include_recipe 'datadog::dd-agent'
-
 # Create yaml files
 node['datadog']['services'].each do | service, instances |
-  template node['datadog']['templateDir'] + "/#{service}.yaml" do
+  template node['datadog']['template_dir'] + "/#{service}.yaml" do
     source "#{service}.yaml.erb"
     owner 'dd-agent'
     mode 00644
