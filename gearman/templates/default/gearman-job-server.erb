@@ -23,4 +23,4 @@ PARAMS="-q mysql \
     --mysql-db=<%= node['gearman']['mysql']['db'] %> \
     --mysql-table=<%= node['gearman']['mysql']['table'] %> \
     --mysql-port=<%= node['gearman']['mysql']['port'] %> \
-    -L <%= node[:network][:interfaces][:eth1][:addresses].detect{|k,v| v[:family] == "inet" }.first || node['ipaddress'] %>"
+    -L <%= node['gearman']['ip'] %>"
