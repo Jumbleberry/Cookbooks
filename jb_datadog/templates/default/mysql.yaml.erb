@@ -1,5 +1,5 @@
 instances:
-<% node['datadog']['services']['mysql']['instances'].each do |i| -%>
+<% node['datadog']['services']['mysql'].each do |i| -%>
   - server: <%= i['server'] %>
     user: <%= i['user'] %>
     pass: <%= i['pass'] %>
