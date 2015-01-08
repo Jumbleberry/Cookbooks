@@ -1,5 +1,5 @@
 instances:
-<% node['datadog']['redisdb']['instances'].each do |i| -%>
+<% node['datadog']['services']['redisdb']['instances'].each do |i| -%>
   - host: <%= i["server"] %>
     port: <%= i["port"] || 6379 %>
     <% if i.key?("password") -%>

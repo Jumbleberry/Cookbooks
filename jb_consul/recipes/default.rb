@@ -5,6 +5,13 @@ include_recipe "dnsmasq"
 
 cron_path = node["consul"]["config_dir"]
 
+# Create cluster group
+group "cluster" do
+  action :create
+  members ["root"]
+  append true
+end
+
 # Turn off the existing consul service
 service "consul" do
   supports :status => true, :restart => true, :reload => true, :stop => true
