@@ -5,6 +5,13 @@ include_recipe "redisio::sentinel"
 redis_path = '/etc/redis'
 consul_path = node["consul"]["config_dir"]
 
+# Add redis to the cluster group
+group "cluster" do
+  action :create
+  members ["redis", "root"]
+  append true
+end
+
 # Get every redis server for the current instance
 servers = node['redisio']['servers'];
 
@@ -33,11 +40,23 @@ servers.each do |server|
     template "#{consul_path}/redis#{server.port}.json" do
         source "redis_service.json.erb"
         owner "root"
-        group "root"
+        group "cluster"
+        mode "0664"
         variables ({
             "port" => server.port
         })
     end
+end
+
+#Creates the service configuration file
+template "#{consul_path}/sentinel_reconf_script.php" do
+    source "sentinel_reconf_script.php.erb"
+    owner "root"
+    group "root"
+    mode "0755"
+    variables ({
+        "currentip" => local_ip
+    })
 end
 
 execute "reload consul configuration" do

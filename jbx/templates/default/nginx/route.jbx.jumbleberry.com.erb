@@ -1,30 +1,13 @@
 server {
     listen       80;
     server_name  <%= @hostname %> *.<%= @hostname %>;
+    root <%= @path %>;
     
     index index.php;
-    
-    set $root_path '<%= @path %>';
-    root $root_path;
+    try_files $uri $uri/;
     
     access_log  /var/log/nginx/<%= @hostname %>.access.log  main;
-
-    location /status/nginx {
-        stub_status on;
-        access_log off;
-        allow 127.0.0.1;
-        deny all;
-    }
-
-    location /status/fpm {
-        access_log off;
-        allow 127.0.0.1;
-        deny all;
-        fastcgi_pass   127.0.0.1:9000;
-        fastcgi_index  index.php;
-        fastcgi_param  SCRIPT_FILENAME   $document_root$fastcgi_script_name;
-        include        fastcgi_params;
-    }
+    error_log  /var/log/nginx/<%= @hostname %>.error.log  warn;
     
     location ~ \.php$ {
         try_files $uri /index.php =404;
