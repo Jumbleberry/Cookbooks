@@ -15,6 +15,10 @@ define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
 //Consul config file
 define("CONSUL_CONFIG_FILE", '<%= node['consul']['config_dir'] %>/default.json');
 define("CONSUL_PORT", '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
+define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
+
+//Initialize consul external services
+define('EXTERNAL_SERVICES', '<%= @external_services %>');
 
 //Change home path for the aws command line tool
 putenv('HOME='.'/home/<%= node['user'] %>/');
@@ -46,8 +50,15 @@ while ($attempts--) {
     $tag = getLeader() === false? 'bootstrap': 'cluster';
     
     // Update the tags accordingly, depending whether or not we're in a cluster
-    if ($tag !== $current_tag) 
+    if ($tag !== $current_tag) {
         updateInstanceTag($current_instance, 'consul', ($current_tag = $tag));
+
+        // When cluster first reaches quorum, register external services
+        if($tag == 'cluster'){
+            $external_services = json_decode(EXTERNAL_SERVICES);
+            foreach ($external_services as $external_service) addConsulExternalService($external_service);
+        }
+    }
     
     if ($current_tag == 'cluster')
         break;
@@ -202,4 +213,32 @@ function getPeers() {
 function getLeader() {
     $leader = trim(@file_get_contents(CONSUL_URL . '/v1/status/leader'), '"');
     return (!empty($leader))? $leader : false;
+}
+
+/**
+ * Register external service on consul
+ * @param array $external_service
+ */
+function addConsulExternalService($external_service)
+{
+    putCurlRequest(CONSUL_BASE_URL . '/v1/catalog/register', json_encode($external_service));
+}
+
+/**
+ * Execute a curl put request with some data to the given url
+ * @param  string $url
+ * @param  string $data
+ * @return string
+ */
+function putCurlRequest($url, $data ='')
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
+    curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
+    $response = curl_exec($ch);
+    return @json_decode($response, true) ?: false;
 }

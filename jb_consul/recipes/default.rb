@@ -69,6 +69,9 @@ template "#{cron_path}/consul_cron.php" do
     source "consul_cron.php.erb"
     owner "root"
     group "root"
+    variables({
+        :external_services => node['jb_consul']['external_services'].to_json
+    })
 end
 
 #Run consul cron job
