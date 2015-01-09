@@ -1,5 +1,4 @@
 path        = node['github']['wrapper_path']
-username    = node['jbx']['user']
 key_name    = 'aws_deploy_key.key'
 
 # Creates gpg directory
@@ -26,8 +25,8 @@ end
 #Creates ssh folder for github keys
 directory path do
   action :create
-  owner username
-  group username
+  owner root
+  group root
   recursive true
 end
 
