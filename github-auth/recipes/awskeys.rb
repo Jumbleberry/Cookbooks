@@ -25,8 +25,8 @@ end
 #Creates ssh folder for github keys
 directory path do
   action :create
-  owner root
-  group root
+  owner "root"
+  group "root"
   recursive true
 end
 
