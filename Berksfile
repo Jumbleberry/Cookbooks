@@ -19,3 +19,4 @@ cookbook 'rc_mon', '~> 0.2.0'
 cookbook 'consul', '~> 0.6.0'
 cookbook 'hosts_file', '~> 0.0.0'
 cookbook "ulimit", ">= 0.1.2"
+cookbook 'apt-repo', '~> 0.1.1'

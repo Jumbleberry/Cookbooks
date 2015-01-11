@@ -1,6 +1,27 @@
 #Nginx package
+ppa "nginx/stable"
+
+# Update repository
+execute "apt-get-update-periodic" do
+  command "apt-get update"
+  ignore_failure true
+end
+
+#Removes the default virtual host if exists
+if (File.file?('/etc/nginx/sites-enabled/default'))
+    link '/etc/nginx/sites-enabled/default' do
+      action :delete
+    end
+end
+if (File.file?('/etc/nginx/sites-available/default'))
+    file '/etc/nginx/sites-available/default' do
+      action :delete
+    end
+end
+
+# Install latest nginx
 package 'nginx' do
-  action :install
+  action :upgrade
 end
 
 template '/etc/nginx/nginx.conf' do
@@ -9,14 +30,6 @@ template '/etc/nginx/nginx.conf' do
     "worker_processes" => node['nginx']['worker_processes'],
     "worker_connections" => node['nginx']['worker_connections']
   })
-end
-
-#Removes the default virtual host if exists
-file '/etc/nginx/sites-available/default' do
-  action :delete
-end
-link '/etc/nginx/sites-enabled/default' do
-  action :delete
 end
 
 virtualhost         = '/etc/nginx/sites-available/default'
