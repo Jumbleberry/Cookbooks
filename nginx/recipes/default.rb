@@ -7,21 +7,25 @@ execute "apt-get-update-periodic" do
   ignore_failure true
 end
 
-#Removes the default virtual host if exists
-if (File.file?('/etc/nginx/sites-enabled/default'))
-    link '/etc/nginx/sites-enabled/default' do
-      action :delete
-    end
-end
-if (File.file?('/etc/nginx/sites-available/default'))
-    file '/etc/nginx/sites-available/default' do
-      action :delete
-    end
-end
-
 # Install latest nginx
 package 'nginx' do
   action :upgrade
+  options '--force-yes'
+  options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+end
+
+#Removes the default virtual host if exists
+['default', 'default.dpkg-dist'].each do | file |
+    if (File.file?('/etc/nginx/sites-enabled/' + file))
+        link '/etc/nginx/sites-enabled/' + file do
+          action :delete
+        end
+    end
+    if (File.file?('/etc/nginx/sites-available/' + file))
+        file '/etc/nginx/sites-available/' + file do
+          action :delete
+        end
+    end
 end
 
 template '/etc/nginx/nginx.conf' do
