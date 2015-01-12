@@ -1,2 +1,5 @@
 /github-auth/files/default/ssh/*.key
+/github-auth/files/default/ssh/*.pem
+/nginx/files/default/ssl/*.key
+/nginx/files/default/ssl/*.pem
 Berksfile.lock
