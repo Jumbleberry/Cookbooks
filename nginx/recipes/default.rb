@@ -47,8 +47,9 @@ link virtualhost_link do
   to virtualhost
 end
 
-
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action [ :enable, :start, :reload ]
 end
+
+include_recipe "nginx::certs"
