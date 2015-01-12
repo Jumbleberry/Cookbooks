@@ -30,7 +30,7 @@ server {
     <% end %>
     
     if ($http_host = "www.<%= node['admin']['hostname'] %>") {
-        return 301 $scheme://<%= node['admin']['hostname'] %>$request_uri;
+        return 301 $real_scheme://<%= node['admin']['hostname'] %>$request_uri;
     }
     
     index index.php;
