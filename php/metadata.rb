@@ -7,3 +7,4 @@ long_description 'Installs/Configures php for JB applications'
 version          '0.1.0'
 
 depends "apt"
+depends "web-server"
