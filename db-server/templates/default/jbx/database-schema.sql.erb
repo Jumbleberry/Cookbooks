@@ -17,10 +17,16 @@ FLUSH PRIVILEGES;
 USE `<%= @dbname %>`;
 --
 
+-- Fix timezone
+DELIMITER |
+CREATE PROCEDURE mysql.store_time_zone ()
+   IF NOT (POSITION('root@%' IN CURRENT_USER()) = 1) THEN
+       SET SESSION time_zone = 'America/Toronto';
+   END IF
+|
+DELIMITER ;
+
 DELIMITER $$
---
--- Procedures
---
 CREATE DEFINER=`root`@`%` PROCEDURE `cap_history_insert`(IN campaign_id int(10),
 IN old_value INT (11),
 IN new_value INT(11),
@@ -33,13 +39,114 @@ BEGIN
 END$$
 
 CREATE DEFINER=`root`@`%` PROCEDURE `credit_history_insert`(IN advertiser_id INT(11),
-IN old_value DECIMAL(10, 2), 
-IN new_value DECIMAL(10, 2), 
-IN created_by INT(11), 
+IN old_value DECIMAL(10, 2),
+IN new_value DECIMAL(10, 2),
+IN created_by INT(11),
 IN created DATETIME)
 BEGIN
     INSERT INTO advertiser_credit_history (advertiser_id, old_value, new_value, created_by, created)
     VALUES (advertiser_id, old_value, new_value, created_by, created);
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
+IN saleDate DATETIME,
+IN affiliateId INT(11),
+IN landingPageId INT(11),
+IN rejected INT(8),
+IN newEarned DECIMAL(10, 2),
+IN newPaid DECIMAL(10, 2),
+IN _c1 VARCHAR(100),
+IN _c2 VARCHAR(100),
+IN _c3 VARCHAR(100))
+BEGIN
+    DECLARE advertiserId INT;
+    DECLARE hourlyDate DATETIME;
+    DECLARE dailyDate DATETIME;
+    DECLARE updateRows INT;
+    DECLARE advertiserManagerId INT;
+    DECLARE campaignManagerId INT;
+    DECLARE affiliateManagerId INT;
+
+    -- Get advertiser ID
+    SELECT advertiser_id INTO advertiserId
+      FROM hitpath_campaigns
+     WHERE campaign_id = campaignId;
+
+    -- Format dates
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d') INTO dailyDate;
+
+    -- Update hourly log
+    UPDATE `summary_hitpath_hourly`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE transaction_date = hourlyDate
+       AND campaign_id = campaignId
+       AND affiliate_id = affiliateId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid
+       AND landing_page_id = landingPageId;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+        -- Get hitpath manager IDs
+        SELECT hitpath_manager_id INTO advertiserManagerId
+          FROM hitpath_advertisers
+         WHERE advertiser_id = advertiserId;
+
+        SELECT hitpath_manager_id INTO campaignManagerId
+          FROM hitpath_campaigns
+         WHERE campaign_id = campaignId;
+
+        SELECT hitpath_manager_id INTO affiliateManagerId
+          FROM hitpath_affiliates
+         WHERE affiliate_id = affiliateId;
+
+        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
+
+    -- Update daily log
+    UPDATE `summary_hitpath_daily`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE transaction_date = dailyDate
+       AND campaign_id = campaignId
+       AND affiliate_id = affiliateId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid
+       AND landing_page_id = landingPageId;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
+
+    -- Update daily detail log
+    UPDATE `summary_hitpath_daily_detail`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE transaction_date = dailyDate
+       AND campaign_id = campaignId
+       AND affiliate_id = affiliateId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid
+       AND landing_page_id = landingPageId
+       AND c1 = _c1
+       AND c2 = _c2
+       AND c3 = _c3;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), _c1, _c2, _c3, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
 END$$
 
 CREATE DEFINER=`root`@`%` PROCEDURE `prepay_history_insert`(IN advertiser_id INT(11),
@@ -52,77 +159,15 @@ BEGIN
     VALUES (advertiser_id, old_value, new_value, created_by, created);
 END$$
 
-CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
+CREATE DEFINER=`root`@`%` PROCEDURE `summary_hits_insert_update`(IN campaignId INT(11),
 IN hitDate DATETIME,
 IN affiliateId INT(11),
-IN newEarned DECIMAL(10, 2),
-IN newPaid DECIMAL(10, 2))
-BEGIN
-    DECLARE advertiserId INT;
-    DECLARE hourlyDate DATETIME;
-    DECLARE dailyDate DATETIME;
-    DECLARE updateRows INT;
-    DECLARE advertiserManagerId INT;
-    DECLARE campaignManagerId INT;
-    DECLARE affiliateManagerId INT;
-
-    -- Get advertiser ID
-    SELECT advertiser_id INTO advertiserId
-      FROM hitpath_campaigns
-     WHERE campaign_id = campaignId;
-
-    -- Format dates
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d') INTO dailyDate;
-
-    -- Update hourly log
-    UPDATE `summary_hitpath_hourly`
-       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + 1, updated = NOW()
-     WHERE transaction_date = hourlyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId;
-
-    SET updateRows = ROW_COUNT();
-    
-    IF (updateRows = 0) THEN
-        -- Get hitpath manager IDs
-        SELECT hitpath_manager_id INTO advertiserManagerId
-          FROM hitpath_advertisers
-         WHERE advertiser_id = advertiserId;
-
-        SELECT hitpath_manager_id INTO campaignManagerId
-          FROM hitpath_campaigns
-         WHERE campaign_id = campaignId;
-
-        SELECT hitpath_manager_id INTO affiliateManagerId
-          FROM hitpath_affiliates
-         WHERE affiliate_id = affiliateId;
-
-        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, 0, 1, newEarned, newPaid, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + 1, updated = NOW();
-    END IF;
-
-    -- Update daily log
-    UPDATE `summary_hitpath_daily`
-       SET hits = earned + newEarned, paid = paid + newPaid, sales = sales + 1, updated = NOW()
-     WHERE transaction_date = dailyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId;
-
-    SET updateRows = ROW_COUNT();
-    
-    IF (updateRows = 0) THEN
-
-        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, 0, 1, newEarned, newPaid, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + 1, updated = NOW();
-    END IF;
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_summary_insert_update`(IN campaignId INT(11),
-IN hitDate DATETIME,
-IN affiliateId INT(11))
+IN landingPageId INT(11),
+IN cpaOut DECIMAL,
+IN cpaIn DECIMAL,
+IN _c1 VARCHAR(100),
+IN _c2 VARCHAR(100),
+IN _c3 VARCHAR(100))
 BEGIN
     DECLARE advertiserId INT;
     DECLARE hourlyDate DATETIME;
@@ -149,7 +194,7 @@ BEGIN
        AND affiliate_id = affiliateId;
 
     SET updateRows = ROW_COUNT();
-    
+
     IF (updateRows = 0) THEN
         -- Get hitpath manager IDs
         SELECT hitpath_manager_id INTO advertiserManagerId
@@ -164,8 +209,8 @@ BEGIN
           FROM hitpath_affiliates
          WHERE affiliate_id = affiliateId;
 
-        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, 1, 0, 0.00, 0.00, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
             ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
     END IF;
 
@@ -175,24 +220,37 @@ BEGIN
      WHERE transaction_date = dailyDate
        AND campaign_id = campaignId
        AND affiliate_id = affiliateId;
-       
+
     SET updateRows = ROW_COUNT();
-    
+
     IF (updateRows = 0) THEN
 
-        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, 1, 0, 0.00, 0.00, 0.00, 0.00, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
+    END IF;
+
+    -- Update daily detail
+    UPDATE `summary_hitpath_daily_detail`
+       SET hits = hits + 1, updated = NOW()
+     WHERE transaction_date = dailyDate
+       AND campaign_id = campaignId
+       AND affiliate_id = affiliateId
+       AND c1 = _c1
+       AND c2 = _c2
+       AND c3 = _c3;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, _c1, _c2, _c3, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
             ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
     END IF;
 END$$
 
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `advertiser_credit`
---
 
 CREATE TABLE IF NOT EXISTS `advertiser_credit` (
   `advertiser_id` int(11) NOT NULL,
@@ -200,14 +258,10 @@ CREATE TABLE IF NOT EXISTS `advertiser_credit` (
   `notify_percent` decimal(5,2) NOT NULL,
   `notify_date` datetime DEFAULT NULL,
   `notify_status` enum('enabled','disabled') NOT NULL DEFAULT 'enabled',
-  `created_by` int(11) NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`advertiser_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `advertiser_credit`
---
 DROP TRIGGER IF EXISTS `advertiser_credit_insert`;
 DELIMITER //
 CREATE TRIGGER `advertiser_credit_insert` AFTER INSERT ON `advertiser_credit`
@@ -227,12 +281,6 @@ END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `advertiser_credit_history`
---
-
 CREATE TABLE IF NOT EXISTS `advertiser_credit_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `advertiser_id` int(11) NOT NULL,
@@ -241,13 +289,7 @@ CREATE TABLE IF NOT EXISTS `advertiser_credit_history` (
   `created_by` int(11) NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=22 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `advertiser_prepay`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `advertiser_prepay` (
   `advertiser_id` int(11) NOT NULL,
@@ -255,14 +297,10 @@ CREATE TABLE IF NOT EXISTS `advertiser_prepay` (
   `notify_percent` decimal(5,2) NOT NULL,
   `notify_date` datetime DEFAULT NULL,
   `notify_status` enum('enabled','disabled') NOT NULL DEFAULT 'enabled',
-  `created_by` int(11) NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`advertiser_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `advertiser_prepay`
---
 DROP TRIGGER IF EXISTS `advertiser_prepay_insert`;
 DELIMITER //
 CREATE TRIGGER `advertiser_prepay_insert` AFTER INSERT ON `advertiser_prepay`
@@ -282,12 +320,6 @@ END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `advertiser_prepay_history`
---
-
 CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `advertiser_id` int(11) NOT NULL,
@@ -296,59 +328,39 @@ CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
   `created_by` int(11) NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=46 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `affiliate_redirects`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `affiliate_redirects` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `affiliate_id` int(10) unsigned NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `affiliate_id` int(11) NOT NULL,
+  `affiliate_name` varchar(255) NOT NULL,
+  `token` varchar(8) NOT NULL,
   `status` enum('active','inactive','deleted') NOT NULL DEFAULT 'active',
-  `created_by` int(10) unsigned NOT NULL,
-  `created` datetime NOT NULL,
-  `updated_by` int(10) unsigned NOT NULL,
-  `updated` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `affiliate_redirect_offers`
---
+  `created_by` int(11) NOT NULL,
+  `created_on` datetime NOT NULL,
+  `modified_by` int(11) NOT NULL,
+  `modified_on` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_key` (`token`),
+  KEY `affiliate_id` (`affiliate_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `affiliate_redirect_offers` (
-  `affiliate_redirect_id` int(10) unsigned NOT NULL,
-  `campaign_id` int(10) unsigned NOT NULL,
-  `order` int(10) unsigned NOT NULL,
-  `daily_cap` int(10) unsigned NOT NULL,
-  `weekly_cap` int(10) unsigned NOT NULL,
+  `affiliate_redirect_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
+  `campaign_name` varchar(255) NOT NULL,
+  `order` int(11) NOT NULL,
+  `daily_cap` int(11) NOT NULL,
+  `weekly_cap` int(11) NOT NULL,
   `redirect_url` varchar(255) NOT NULL,
-  PRIMARY KEY (`affiliate_redirect_id`,`campaign_id`,`order`),
-  KEY `redirect_url` (`redirect_url`)
+  PRIMARY KEY (`affiliate_redirect_id`,`campaign_id`,`order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_countries`
---
 
 CREATE TABLE IF NOT EXISTS `campaign_countries` (
   `campaign_id` int(11) NOT NULL,
   `country_id` int(11) NOT NULL,
   UNIQUE KEY `idx_campaign_countries` (`campaign_id`,`country_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_crm`
---
 
 CREATE TABLE IF NOT EXISTS `campaign_crm` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -368,13 +380,7 @@ CREATE TABLE IF NOT EXISTS `campaign_crm` (
   UNIQUE KEY `campaign_id` (`campaign_id`),
   UNIQUE KEY `advertiser_id` (`advertiser_id`),
   UNIQUE KEY `campaign_id_2` (`campaign_id`,`advertiser_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=272 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_crm_api`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `campaign_crm_api` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -384,25 +390,13 @@ CREATE TABLE IF NOT EXISTS `campaign_crm_api` (
   `username` varchar(128) DEFAULT NULL,
   `password` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_languages`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `campaign_languages` (
   `campaign_id` int(11) NOT NULL,
   `language_id` int(11) NOT NULL,
   UNIQUE KEY `idx_campaign_languages` (`campaign_id`,`language_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_metadata`
---
 
 CREATE TABLE IF NOT EXISTS `campaign_metadata` (
   `campaign_id` int(11) NOT NULL,
@@ -426,12 +420,6 @@ CREATE TABLE IF NOT EXISTS `campaign_metadata` (
   PRIMARY KEY (`campaign_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_pairings`
---
-
 CREATE TABLE IF NOT EXISTS `campaign_pairings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `step1_campaign_id` int(11) NOT NULL,
@@ -443,13 +431,7 @@ CREATE TABLE IF NOT EXISTS `campaign_pairings` (
   PRIMARY KEY (`id`),
   KEY `step1_campaign_id` (`step1_campaign_id`,`active`),
   KEY `step2_campaign_id` (`step2_campaign_id`,`active`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=178 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_affiliate_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_affiliate_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -468,13 +450,7 @@ CREATE TABLE IF NOT EXISTS `crm_affiliate_log` (
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `crm_mapping_id` (`crm_mapping_id`,`affiliate_id`,`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_exception_log`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_exception_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -486,13 +462,7 @@ CREATE TABLE IF NOT EXISTS `crm_exception_log` (
   `trace` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=240870 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_log`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -510,13 +480,7 @@ CREATE TABLE IF NOT EXISTS `crm_log` (
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `crm_mapping_id` (`crm_mapping_id`,`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_mapping`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_mapping` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -533,13 +497,7 @@ CREATE TABLE IF NOT EXISTS `crm_mapping` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `hp_campaign_id` (`hp_campaign_id`,`child_name`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=372 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_payment_cycles`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_payment_cycles` (
   `id` smallint(5) NOT NULL AUTO_INCREMENT,
@@ -548,13 +506,7 @@ CREATE TABLE IF NOT EXISTS `crm_payment_cycles` (
   `date_added` datetime NOT NULL,
   `date_updated` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_payment_cycle_ranges`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_payment_cycle_ranges` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -563,13 +515,7 @@ CREATE TABLE IF NOT EXISTS `crm_payment_cycle_ranges` (
   `start` varchar(100) NOT NULL,
   `end` varchar(100) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_weekly_affiliate_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_weekly_affiliate_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -591,13 +537,7 @@ CREATE TABLE IF NOT EXISTS `crm_weekly_affiliate_log` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_set` (`crm_mapping_id`,`affiliate_id`,`payment_cycle_id`,`start_date`),
   KEY `crm_mapping_id` (`crm_mapping_id`,`start_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1588202 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `crm_weekly_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `crm_weekly_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -617,13 +557,7 @@ CREATE TABLE IF NOT EXISTS `crm_weekly_log` (
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_set` (`crm_mapping_id`,`payment_cycle_id`,`start_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=416972 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `cron_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `cron_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -636,26 +570,14 @@ CREATE TABLE IF NOT EXISTS `cron_log` (
   `args` text NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3476 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `departments`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `departments` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
   `parent_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=11 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `departments_users`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `departments_users` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -663,13 +585,7 @@ CREATE TABLE IF NOT EXISTS `departments_users` (
   `user` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `department` (`department`,`user`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=162 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `file_manager_files`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `file_manager_files` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -683,13 +599,7 @@ CREATE TABLE IF NOT EXISTS `file_manager_files` (
   PRIMARY KEY (`id`),
   KEY `filename` (`name`),
   KEY `parent_id` (`parent_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=11758 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `file_manager_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `file_manager_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -702,13 +612,7 @@ CREATE TABLE IF NOT EXISTS `file_manager_log` (
   PRIMARY KEY (`id`),
   KEY `user` (`user`,`file`),
   KEY `parent` (`parent`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=5261 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `file_manager_permissions`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `file_manager_permissions` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -721,13 +625,7 @@ CREATE TABLE IF NOT EXISTS `file_manager_permissions` (
   UNIQUE KEY `unique_user` (`user`,`file`),
   UNIQUE KEY `unique_department` (`department`,`file`),
   KEY `department` (`department`,`user`,`file`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3125 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `finance_campaign_caps`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `finance_campaign_caps` (
   `campaign_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -746,10 +644,6 @@ CREATE TABLE IF NOT EXISTS `finance_campaign_caps` (
   UNIQUE KEY `advertiser_id` (`advertiser_id`,`campaign_id`),
   KEY `campaign_id` (`campaign_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `finance_campaign_caps`
---
 DROP TRIGGER IF EXISTS `finance_campaign_caps_before_insert`;
 DELIMITER //
 CREATE TRIGGER `finance_campaign_caps_before_insert` BEFORE INSERT ON `finance_campaign_caps`
@@ -793,12 +687,6 @@ END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `finance_campaign_cap_history`
---
-
 CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) unsigned NOT NULL,
@@ -809,13 +697,7 @@ CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `cap_id` (`campaign_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=950 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `hitpath_advertisers`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `hitpath_advertisers` (
   `advertiser_id` int(11) unsigned NOT NULL,
@@ -837,12 +719,6 @@ CREATE TABLE IF NOT EXISTS `hitpath_advertisers` (
   KEY `active` (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `hitpath_affiliates`
---
-
 CREATE TABLE IF NOT EXISTS `hitpath_affiliates` (
   `affiliate_id` int(11) NOT NULL,
   `company` varchar(80) DEFAULT NULL,
@@ -862,12 +738,6 @@ CREATE TABLE IF NOT EXISTS `hitpath_affiliates` (
   KEY `hitpath_approved_by` (`hitpath_approved_by`),
   KEY `hitpath_manager_id` (`hitpath_manager_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `hitpath_campaigns`
---
 
 CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   `campaign_id` int(11) NOT NULL,
@@ -894,6 +764,7 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   `show_affiliates_while_inactive` enum('yes','no') NOT NULL DEFAULT 'no',
   `pay_affiliates_while_inactive` enum('yes','no') NOT NULL DEFAULT 'no',
   `pay_suspended_affiliates` enum('yes','no') NOT NULL DEFAULT 'no',
+  `tech_contact` text,
   `hitpath_manager_id` int(11) NOT NULL DEFAULT '0',
   `requires_sync` enum('yes','no') NOT NULL DEFAULT 'no',
   `updated` datetime NOT NULL,
@@ -903,10 +774,6 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   KEY `advertiser_campaign_id` (`advertiser_id`,`campaign_id`),
   KEY `status` (`status`,`lifetime`,`expiration_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `hitpath_campaigns`
---
 DROP TRIGGER IF EXISTS `hitpath_campaigns_insert`;
 DELIMITER //
 CREATE TRIGGER `hitpath_campaigns_insert` AFTER INSERT ON `hitpath_campaigns`
@@ -927,12 +794,6 @@ END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `hitpath_campaign_caps`
---
-
 CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
   `cap_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
@@ -951,18 +812,14 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
   KEY `idx_hitpath_campaign_caps` (`campaign_id`,`affiliate_id`,`period`,`status`,`cap_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `hitpath_hits`
---
-
 CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `hit_date` datetime NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
-  `landing_page_id` int(10) unsigned DEFAULT NULL,
+  `cpa_out` decimal(10,2) DEFAULT NULL,
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `ip` varchar(20) DEFAULT NULL,
   `c1` varchar(700) DEFAULT NULL,
   `c2` varchar(100) DEFAULT NULL,
@@ -974,10 +831,29 @@ CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   KEY `hit_date` (`hit_date`,`campaign_id`,`affiliate_id`),
   KEY `updated` (`updated`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+DROP TRIGGER IF EXISTS `hitpath_hits_cpa`;
+DELIMITER //
+CREATE TRIGGER `hitpath_hits_cpa` BEFORE INSERT ON `hitpath_hits`
+ FOR EACH ROW BEGIN
+    DECLARE newCpaIn DECIMAL;
+    DECLARE newCpaOut DECIMAL;
 
---
--- Triggers `hitpath_hits`
---
+    SELECT IF (o.override_cpa_in = 'yes', o.cpa_in, c.cpa_in), IF (o.override_cpa_out = 'yes', o.cpa_out, c.cpa_out) INTO newCpaIn, newCpaOut
+      FROM hitpath_campaigns c
+      LEFT JOIN hitpath_overrides o ON c.campaign_id = o.campaign_id
+       AND o.affiliate_id = new.affiliate_id
+       AND (((o.expiration_date < new.hit_date OR o.expiration_date IS NULL) AND o.lifetime = 'expires') OR o.lifetime = 'indefinite')
+       AND o.effective_date <= new.hit_date
+       AND o.status = 'active'
+     WHERE c.campaign_id = new.campaign_id
+     ORDER BY o.effective_date DESC
+     LIMIT 1;
+
+    SET new.cpa_in = newCpaIn;
+    SET new.cpa_out = newCpaOut;
+END
+//
+DELIMITER ;
 DROP TRIGGER IF EXISTS `hitpath_hits_delete`;
 DELIMITER //
 CREATE TRIGGER `hitpath_hits_delete` AFTER DELETE ON `hitpath_hits`
@@ -986,13 +862,31 @@ CREATE TRIGGER `hitpath_hits_delete` AFTER DELETE ON `hitpath_hits`
        SET hits = hits - 1, updated = NOW()
      WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d %H:00:00')
        AND campaign_id = old.campaign_id
-       AND affiliate_id = old.affiliate_id;
+       AND affiliate_id = old.affiliate_id
+       AND cpa_in = old.cpa_in
+       AND cpa_out = old.cpa_out
+       AND landing_page_id = old.landing_page_id;
 
     UPDATE `summary_hitpath_daily`
        SET hits = hits - 1, updated = NOW()
      WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
        AND campaign_id = old.campaign_id
-       AND affiliate_id = old.affiliate_id;
+       AND affiliate_id = old.affiliate_id
+       AND cpa_in = old.cpa_in
+       AND cpa_out = old.cpa_out
+       AND landing_page_id = old.landing_page_id;
+
+    UPDATE `summary_hitpath_daily_detail`
+       SET hits = hits - 1, updated = NOW()
+     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
+       AND campaign_id = old.campaign_id
+       AND affiliate_id = old.affiliate_id
+       AND cpa_in = old.cpa_in
+       AND cpa_out = old.cpa_out
+       AND landing_page_id = old.landing_page_id
+       AND c1 = old.c1
+       AND c2 = old.c2
+       AND c3 = old.c3;
 END
 //
 DELIMITER ;
@@ -1000,31 +894,51 @@ DROP TRIGGER IF EXISTS `hitpath_hits_insert`;
 DELIMITER //
 CREATE TRIGGER `hitpath_hits_insert` AFTER INSERT ON `hitpath_hits`
  FOR EACH ROW BEGIN
-    CALL hitpath_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_hits_update`;
-DELIMITER //
-CREATE TRIGGER `hitpath_hits_update` AFTER UPDATE ON `hitpath_hits`
- FOR EACH ROW BEGIN
-    CALL hitpath_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id);
+    CALL summary_hits_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, new.cpa_out, new.cpa_in, new.c1, new.c2, new.c3);
 END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `hitpath_sales`
---
+CREATE TABLE IF NOT EXISTS `hitpath_overrides` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `affiliate_id` varchar(20) DEFAULT NULL,
+  `campaign_id` int(10) unsigned DEFAULT NULL,
+  `segment_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `cpa_out` decimal(10,2) DEFAULT NULL,
+  `override_cpa_out` enum('yes','no') NOT NULL DEFAULT 'yes',
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `override_cpa_in` enum('yes','no') NOT NULL DEFAULT 'no',
+  `if_over` int(11) DEFAULT '0',
+  `if_under` int(11) DEFAULT NULL,
+  `effective_date` datetime DEFAULT NULL,
+  `expiration_date` datetime DEFAULT NULL,
+  `lifetime` enum('indefinite','expires') NOT NULL DEFAULT 'indefinite',
+  `status` enum('active','inactive') DEFAULT 'active',
+  `type` enum('std','volume','tiered') DEFAULT 'std',
+  `user` char(3) NOT NULL,
+  `c1` varchar(100) DEFAULT 'ALL',
+  `created` datetime DEFAULT NULL,
+  `created_by` int(10) unsigned DEFAULT NULL,
+  `deleted` datetime DEFAULT NULL,
+  `deleted_by` int(10) unsigned DEFAULT NULL,
+  `sub_var` varchar(4) DEFAULT NULL,
+  `override_type` enum('general','subid','event') NOT NULL DEFAULT 'general',
+  `operator` varchar(20) DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `affiliate_id` (`affiliate_id`,`campaign_id`),
+  KEY `campaign_id` (`campaign_id`),
+  KEY `user` (`user`),
+  KEY `c1` (`c1`),
+  KEY `search_key` (`campaign_id`,`affiliate_id`,`lifetime`,`expiration_date`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `sale_date` datetime NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
-  `landing_page_id` int(10) unsigned DEFAULT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `hit_date` datetime NOT NULL,
   `transaction_id` varchar(50) DEFAULT NULL,
   `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -1045,18 +959,24 @@ CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   KEY `updated` (`updated`),
   KEY `transaction_id` (`transaction_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `hitpath_sales`
---
+DROP TRIGGER IF EXISTS `hitpath_sales_delete`;
+DELIMITER //
+CREATE TRIGGER `hitpath_sales_delete` AFTER DELETE ON `hitpath_sales`
+ FOR EACH ROW BEGIN
+    IF (old.rejected = 'no') THEN
+        CALL hitpath_sales_summary_insert_update(old.campaign_id, old.sale_date, old.affiliate_id, old.landing_page_id, -1, (old.earned * -1), (old.paid * -1), old.c1, old.c2, old.c3);
+    END IF;
+END
+//
+DELIMITER ;
 DROP TRIGGER IF EXISTS `hitpath_sales_insert`;
 DELIMITER //
 CREATE TRIGGER `hitpath_sales_insert` AFTER INSERT ON `hitpath_sales`
  FOR EACH ROW BEGIN
     IF (new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.earned, new.paid);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
     ELSEIF (new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, 0, 0);
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 0, 0, 0, new.c1, new.c2, new.c3);
     END IF;
 END
 //
@@ -1064,23 +984,27 @@ DELIMITER ;
 DROP TRIGGER IF EXISTS `hitpath_sales_update`;
 DELIMITER //
 CREATE TRIGGER `hitpath_sales_update` AFTER UPDATE ON `hitpath_sales`
- FOR EACH ROW BEGIN            
-    IF (new.rejected != old.rejected AND new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, (new.earned * -1), (new.paid * -1));
-    ELSEIF (new.rejected != old.rejected AND new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.earned, new.paid);
-    ELSEIF ((old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.earned - old.earned, new.paid - old.paid);
+ FOR EACH ROW BEGIN
+    DECLARE cpaChanged TINYINT(1);
+
+    SET cpaChanged = (old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no';
+
+    IF ((new.rejected != old.rejected AND new.rejected = 'yes') OR cpaChanged = 1) THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, -1, (old.earned * -1), (old.paid * -1), new.c1, new.c2, new.c3);
+    END IF;
+
+    IF ((new.rejected != old.rejected AND new.rejected = 'no') OR cpaChanged = 1) THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
     END IF;
 END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_campaign_sessions`
---
+CREATE TABLE IF NOT EXISTS `key_value` (
+  `key` varchar(255) NOT NULL,
+  `value` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -1116,11 +1040,7 @@ CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   KEY `idx_affiliate` (`affiliate_id`,`advertiser_id`,`campaign_id`,`created`),
   KEY `created` (`created`),
   KEY `updated` (`updated`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=33 ;
-
---
--- Triggers `mesh_campaign_sessions`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 DROP TRIGGER IF EXISTS `mesh_campaign_sessions_insert`;
 DELIMITER //
 CREATE TRIGGER `mesh_campaign_sessions_insert` BEFORE INSERT ON `mesh_campaign_sessions`
@@ -1129,12 +1049,6 @@ CREATE TRIGGER `mesh_campaign_sessions_insert` BEFORE INSERT ON `mesh_campaign_s
 END
 //
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_global_sessions`
---
 
 CREATE TABLE IF NOT EXISTS `mesh_global_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -1154,13 +1068,7 @@ CREATE TABLE IF NOT EXISTS `mesh_global_sessions` (
   KEY `country_code` (`country_code`),
   KEY `created` (`created`),
   KEY `updated` (`updated`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=27 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_pixels`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `mesh_pixels` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -1174,13 +1082,7 @@ CREATE TABLE IF NOT EXISTS `mesh_pixels` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `campaign_id` (`campaign_id`,`type`,`custom_type`),
   KEY `dependency_id` (`dependency_id`,`active`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=7 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_pixel_log`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `mesh_pixel_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -1210,11 +1112,7 @@ CREATE TABLE IF NOT EXISTS `mesh_pixel_log` (
   KEY `mesh_campaign_session_id` (`mesh_campaign_session_id`),
   KEY `mesh_global_session_id` (`mesh_global_session_id`),
   KEY `hit_id` (`hit_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=63 ;
-
---
--- Triggers `mesh_pixel_log`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 DROP TRIGGER IF EXISTS `mesh_pixel_log_insert`;
 DELIMITER //
 CREATE TRIGGER `mesh_pixel_log_insert` BEFORE INSERT ON `mesh_pixel_log`
@@ -1223,12 +1121,6 @@ CREATE TRIGGER `mesh_pixel_log_insert` BEFORE INSERT ON `mesh_pixel_log`
 END
 //
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_pixel_raw_log`
---
 
 CREATE TABLE IF NOT EXISTS `mesh_pixel_raw_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -1256,11 +1148,7 @@ CREATE TABLE IF NOT EXISTS `mesh_pixel_raw_log` (
   KEY `idx_advertiser` (`advertiser_id`,`campaign_id`,`affiliate_id`,`created`),
   KEY `idx_affiliate` (`affiliate_id`,`advertiser_id`,`campaign_id`,`created`),
   KEY `mesh_campaign_session_id` (`mesh_campaign_session_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=63 ;
-
---
--- Triggers `mesh_pixel_raw_log`
---
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 DROP TRIGGER IF EXISTS `mesh_pixel_raw_log_insert`;
 DELIMITER //
 CREATE TRIGGER `mesh_pixel_raw_log_insert` BEFORE INSERT ON `mesh_pixel_raw_log`
@@ -1269,12 +1157,6 @@ CREATE TRIGGER `mesh_pixel_raw_log_insert` BEFORE INSERT ON `mesh_pixel_raw_log`
 END
 //
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_redirects`
---
 
 CREATE TABLE IF NOT EXISTS `mesh_redirects` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -1285,13 +1167,7 @@ CREATE TABLE IF NOT EXISTS `mesh_redirects` (
   `created_by` int(10) unsigned NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=9 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mesh_redirect_offers`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `mesh_redirect_offers` (
   `redirect_id` int(10) unsigned NOT NULL,
@@ -1304,22 +1180,10 @@ CREATE TABLE IF NOT EXISTS `mesh_redirect_offers` (
   KEY `redirect_url` (`redirect_url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `migration_versions`
---
-
 CREATE TABLE IF NOT EXISTS `migration_versions` (
   `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `notification_metrics`
---
 
 CREATE TABLE IF NOT EXISTS `notification_metrics` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1328,13 +1192,7 @@ CREATE TABLE IF NOT EXISTS `notification_metrics` (
   `group` enum('campaign','advertiser') NOT NULL DEFAULT 'campaign',
   PRIMARY KEY (`id`),
   KEY `group` (`group`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=19 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `notification_rules`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `notification_rules` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1351,13 +1209,7 @@ CREATE TABLE IF NOT EXISTS `notification_rules` (
   PRIMARY KEY (`id`),
   KEY `parent_id` (`parent_id`),
   KEY `metric_id` (`metric_id`,`metric_comparison_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=51 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `notification_rule_alerts`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `notification_rule_alerts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1367,26 +1219,14 @@ CREATE TABLE IF NOT EXISTS `notification_rule_alerts` (
   `value` decimal(10,2) NOT NULL,
   `date` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=823 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `notification_rule_recipients`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `notification_rule_recipients` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `notification_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=5 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `setting_countries`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `setting_countries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1394,32 +1234,21 @@ CREATE TABLE IF NOT EXISTS `setting_countries` (
   `name` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
   `iso3` char(3) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=242 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `setting_languages`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `setting_languages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(2) DEFAULT NULL,
   `name` varchar(80) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=186 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `summary_hitpath_daily`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `hits` int(10) unsigned NOT NULL DEFAULT '0',
   `sales` int(10) unsigned NOT NULL DEFAULT '0',
   `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -1430,7 +1259,7 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`),
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`cpa_in`,`cpa_out`),
   KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
   KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
@@ -1438,10 +1267,6 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   KEY `idx_summary_hitpath_daily` (`advertiser_id`,`transaction_date`,`affiliate_id`),
   KEY `transaction_date` (`transaction_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `summary_hitpath_daily`
---
 DROP TRIGGER IF EXISTS `summary_hitpath_daily_insert`;
 DELIMITER //
 CREATE TRIGGER `summary_hitpath_daily_insert` BEFORE INSERT ON `summary_hitpath_daily`
@@ -1451,17 +1276,43 @@ END
 //
 DELIMITER ;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `summary_hitpath_hourly`
---
+CREATE TABLE IF NOT EXISTS `summary_hitpath_daily_detail` (
+  `transaction_date` datetime NOT NULL,
+  `advertiser_id` int(10) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `hits` int(10) unsigned NOT NULL DEFAULT '0',
+  `sales` int(10) unsigned NOT NULL DEFAULT '0',
+  `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `paid` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `cpa_out` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `c1` varchar(700) NOT NULL DEFAULT '',
+  `c2` varchar(100) NOT NULL DEFAULT '',
+  `c3` varchar(100) NOT NULL DEFAULT '',
+  `advertiser_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`c1`,`c2`,`c3`,`cpa_in`,`cpa_out`),
+  KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
+  KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
+  KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
+  KEY `updated` (`updated`),
+  KEY `idx_summary_hitpath_daily` (`advertiser_id`,`transaction_date`,`affiliate_id`),
+  KEY `transaction_date` (`transaction_date`),
+  KEY `c1` (`c1`),
+  KEY `c2` (`c2`),
+  KEY `c3` (`c3`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `hits` int(10) unsigned NOT NULL DEFAULT '0',
   `sales` int(10) unsigned NOT NULL DEFAULT '0',
   `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -1472,7 +1323,7 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   `campaign_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `affiliate_hitpath_manager_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`),
+  PRIMARY KEY (`campaign_id`,`transaction_date`,`affiliate_id`,`landing_page_id`,`cpa_in`,`cpa_out`),
   KEY `advertiser_hitpath_manager_id` (`advertiser_hitpath_manager_id`),
   KEY `campaign_hitpath_manager_id` (`campaign_hitpath_manager_id`),
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
@@ -1480,10 +1331,6 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   KEY `advertiser_id` (`advertiser_id`,`transaction_date`,`affiliate_id`),
   KEY `transaction_date` (`transaction_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Triggers `summary_hitpath_hourly`
---
 DROP TRIGGER IF EXISTS `summary_hitpath_hourly_insert`;
 DELIMITER //
 CREATE TRIGGER `summary_hitpath_hourly_insert` BEFORE INSERT ON `summary_hitpath_hourly`
@@ -1492,12 +1339,6 @@ CREATE TRIGGER `summary_hitpath_hourly_insert` BEFORE INSERT ON `summary_hitpath
 END
 //
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1511,13 +1352,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `hash` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `last_ip` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=89 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_call_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `user_call_log` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -1534,13 +1369,7 @@ CREATE TABLE IF NOT EXISTS `user_call_log` (
   `transaction_date` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `Unique` (`user_id`,`from`,`to`,`extension`,`transaction_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=403403 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_list_views`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `user_list_views` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -1549,13 +1378,7 @@ CREATE TABLE IF NOT EXISTS `user_list_views` (
   `columns` text COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_list` (`user_id`,`list_name`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=33 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_log`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `user_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -1564,13 +1387,7 @@ CREATE TABLE IF NOT EXISTS `user_log` (
   `status` enum('in','out') NOT NULL DEFAULT 'out',
   `added` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=5609 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_permissions`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `user_permissions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1579,13 +1396,7 @@ CREATE TABLE IF NOT EXISTS `user_permissions` (
   `user_id` int(11) DEFAULT NULL,
   `permission` enum('allow','deny') CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=206 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_profiles`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `user_profiles` (
   `user_id` int(11) NOT NULL,
@@ -1613,24 +1424,12 @@ CREATE TABLE IF NOT EXISTS `user_profiles` (
   KEY `role_id` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `user_resources`
---
-
 CREATE TABLE IF NOT EXISTS `user_resources` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `resource` varchar(128) CHARACTER SET utf8 NOT NULL,
   `type` enum('access','action') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'access',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=60 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_roles`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `user_roles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1638,13 +1437,7 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
   `status` enum('active','inactive') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'active',
   `parent_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10 ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `values`
---
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `values` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1652,8 +1445,4 @@ CREATE TABLE IF NOT EXISTS `values` (
   `description` text,
   `current` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=10 ;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;

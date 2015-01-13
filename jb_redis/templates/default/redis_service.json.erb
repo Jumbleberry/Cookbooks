@@ -1,0 +1,14 @@
+{
+    "service": {
+        "id": "redis<%= @port %>",
+        "name": "redis",
+        "port": <%= @port %>,
+        "tags": [
+            "redis"
+        ],
+        "check": {
+            "script": "<%= @consul_path %>/redis_check.php <%= @currentip %> <%= @port %>",
+            "interval": "5s"
+        }
+    }
+}

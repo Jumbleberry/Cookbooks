@@ -7,3 +7,4 @@ long_description 'Adds deployment key to the server'
 version          '0.1.0'
 
 depends "apt"
+depends "aws_deploy"

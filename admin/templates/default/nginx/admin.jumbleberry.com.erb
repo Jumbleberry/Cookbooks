@@ -1,19 +1,58 @@
+<% ssl = File.file?("/etc/nginx/ssl/#{node['admin']['hostname']}.pem") %>
+# Find the real scheme of the request
+map $http_x_forwarded_proto $real_scheme {
+    default $http_x_forwarded_proto;
+    ''      $scheme;
+}
+
 server {
     listen 80;
-    server_name <%= @hostname %> *.<%= @hostname %> _;
-    root <%= @path %>;
-
-    index index.php index.html index.htm;
-
+    server_name <%= node['admin']['hostname'] %> www.<%= node['admin']['hostname'] %>;
+    root <%= node['admin']['path'] %>/public;
+    
+    <% if (ssl) %>
+    listen 443 ssl;
+    
+    # Redirect non ELB traffic to https
+    if ($real_scheme != "https") {
+        return 301 https://$server_name$request_uri;
+    }
+    
+    ssl_protocols               TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers                 EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:EECDH+RC4:RSA+RC4:!MD5;
+    ssl_prefer_server_ciphers   on;
+    ssl_session_cache           shared:SSL:10m;
+    ssl_session_timeout         10m;
+    
+    ssl_certificate     /etc/nginx/ssl/<%= node['admin']['hostname'] %>.pem;
+    ssl_certificate_key /etc/nginx/ssl/<%= node['admin']['hostname'] %>.key;
+    
+    <% end %>
+    
+    if ($http_host = "www.<%= node['admin']['hostname'] %>") {
+        return 301 $real_scheme://<%= node['admin']['hostname'] %>$request_uri;
+    }
+    
+    index index.php;
     try_files $uri $uri/ /index.php?it=$uri&$args;
-
+    
+    access_log  /var/log/nginx/<%= node['admin']['hostname'] %>.access.log  main;
+    error_log  /var/log/nginx/<%= node['admin']['hostname'] %>.error.log  warn;
+    
+    location /s3/ {
+        root /mnt/;
+        try_files $uri =404;
+    }
+    
     location ~ \.php$ {
         try_files $uri /index.php =404;
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
         fastcgi_index index.php;
+        fastcgi_split_path_info       ^(.+\.php)(/.+)$;
+        fastcgi_param PATH_INFO       $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param APPLICATION_ENV <%= @app-env %>;
+        fastcgi_param APPLICATION_ENV <%= node['admin']['environment'] %>;
         include fastcgi_params;
     }
 }

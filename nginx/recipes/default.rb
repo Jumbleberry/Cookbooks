@@ -1,11 +1,31 @@
 #Nginx package
-package 'nginx' do
-  action :install
+ppa "nginx/stable"
+
+# Update repository
+execute "apt-get-update-periodic" do
+  command "apt-get update"
+  ignore_failure true
 end
 
-#Nginx service
-service 'nginx' do
-  action :nothing
+# Install latest nginx
+package 'nginx' do
+  action :upgrade
+  options '--force-yes'
+  options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+end
+
+#Removes the default virtual host if exists
+['default', 'default.dpkg-dist'].each do | file |
+    if (File.file?('/etc/nginx/sites-enabled/' + file))
+        link '/etc/nginx/sites-enabled/' + file do
+          action :delete
+        end
+    end
+    if (File.file?('/etc/nginx/sites-available/' + file))
+        file '/etc/nginx/sites-available/' + file do
+          action :delete
+        end
+    end
 end
 
 template '/etc/nginx/nginx.conf' do
@@ -16,10 +36,20 @@ template '/etc/nginx/nginx.conf' do
   })
 end
 
-#Removes the default virtual host if exists
-file '/etc/nginx/sites-available/default' do
-  action :delete
+virtualhost         = '/etc/nginx/sites-available/default'
+virtualhost_link    = '/etc/nginx/sites-enabled/default'
+
+template virtualhost do
+  source    "default.erb"
 end
-link '/etc/nginx/sites-enabled/default' do
-  action :delete
+
+link virtualhost_link do
+  to virtualhost
 end
+
+service 'nginx' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action [ :enable, :start, :reload ]
+end
+
+include_recipe "nginx::certs"

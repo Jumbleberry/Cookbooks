@@ -16,18 +16,11 @@ template '/etc/sysctl.conf' do
   notifies :run, "execute[sysctl-config]", :immediately
 end
 
-# Custom repositories
-apt_repository 'php5.5-ppa' do
-  uri           'ppa:ondrej/php5'
-  distribution  'precise'
-  components    ['main', 'stable']
-end
-
 execute "sudo apt-get update" do
 end
 
 #System packages
-syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl']
+syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl', 'unzip']
 syspackages.each do |pkg|
   package "#{pkg}" do
     action :install

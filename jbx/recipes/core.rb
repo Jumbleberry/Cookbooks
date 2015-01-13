@@ -1,3 +1,10 @@
+include_recipe "timezone-ii"
+include_recipe "web-server"
+include_recipe "github-auth"
+include_recipe "nginx"
+include_recipe "php"
+include_recipe "phalcon"
+
 # Set the branch to checkout
 branch = ENV['JBX_CORE_BRANCH'] || node['jbx']['core']['branch']
 
@@ -13,8 +20,14 @@ git node['jbx']['core']['path'] do
   end
   repository node['jbx']['core']['git-url']
   revision branch
-  user node['jbx']['user']
+  user 'root'
   action :sync
+end
+
+execute "chown-data-www" do
+  command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['core']['path']}"
+  user "root"
+  action :run
 end
 
 # Run the deploy script
@@ -31,12 +44,12 @@ credentials_file_template = "credentials.json.erb"
 template credentials_file do
   source credentials_file_template
   variables ({
-      "mysql_read_host"         => 'read1.mysql.jumbleberry.com',
+      "mysql_read_host"         => node['jbx']['credentials']['mysql_read']['host'],
       "mysql_read_username"     => node['jbx']['credentials']['mysql_read']['username'],
       "mysql_read_password"     => node['jbx']['credentials']['mysql_read']['password'],
       "mysql_read_database"     => node['jbx']['credentials']['mysql_read']['dbname'],
 
-      "mysql_write_host"        => 'write1.mysql.jumbleberry.com',
+      "mysql_write_host"        => node['jbx']['credentials']['mysql_write']['host'],
       "mysql_write_username"    => node['jbx']['credentials']['mysql_write']['username'],
       "mysql_write_password"    => node['jbx']['credentials']['mysql_write']['password'],
       "mysql_write_database"    => node['jbx']['credentials']['mysql_write']['dbname'],
@@ -46,7 +59,7 @@ template credentials_file do
       "hitpath_password"        => node['jbx']['credentials']['hitpath']['password'],
       "hitpath_database"        => node['jbx']['credentials']['hitpath']['dbname'],
 
-      "redis_host"              => 'read1.redis.jumbleberry.com',
+      "redis_host"              => node['jbx']['credentials']['redis']['host'],
       "redis_port"              => node['jbx']['credentials']['redis']['port'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],

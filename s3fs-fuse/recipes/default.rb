@@ -1,67 +1,62 @@
-#Configurations
-path = "/tmp/s3fs-fuse/"
-mnt_path = "/mnt/s3"
-password_file = "/etc/passwd-s3fs"
-dependencies = ["build-essential", "git", "libfuse-dev", "libcurl4-openssl-dev", "libxml2-dev", "mime-support", "automake", "libtool"]
+#
+# Cookbook Name:: s3fs-fuse
+# Recipe:: default
+#
 
-#Install library dependencies
-dependencies.each do |pkg|
-    package "#{pkg}" do
-        action :install
+mounted_directories = node[:s3fs_fuse][:mounts]
+if(mounted_directories.is_a?(Hash) || !mounted_directories.respond_to?(:each))
+  mounted_directories = [node[:s3fs_fuse][:mounts]].compact
+end
+
+include_recipe "s3fs-fuse::install"
+
+if(node[:s3fs_fuse][:bluepill])
+  include_recipe 's3fs-fuse::bluepill'
+elsif(node[:s3fs_fuse][:rc_mon])
+  include_recipe 's3fs-fuse::rc_mon'
+else
+  mounted_directories.each do |dir_info|
+    
+    #unmount a drive
+    mount dir_info[:path] do
+      device "s3fs##{dir_info[:bucket]}"
+      fstype 'fuse'
+      action [:umount, :disable]
     end
-end
-
-#Clone library
-git path do
-    repository "https://github.com/s3fs-fuse/s3fs-fuse.git"
-    action :sync
-end
-
-#Moves installation script to cloned repo
-cookbook_file "#{path}install_s3fs.sh" do
-    source "install_s3fs.sh"
-    owner "root"
-    group "root"
-    mode 0777
-end
-
-#Execute installation script
-execute  "s3fs-fuse-installation" do
-    cwd "#{path}"
-    user "root"
-    command "./install_s3fs.sh"
-    not_if { ::File.exists?(password_file)}
-end
-
-#Adds password file
-file "s3fs-fuse-password" do
-    path password_file
-    content node['s3fs-fuse']['password']
-    owner "root"
-    group "root"
-    mode 0640
-end
-
-#Creates mount folder
-directory mnt_path do
-    action :create
-    owner "root"
-    group "root"
-end
-
-#Adds new mnt path to fstab for automount
-ruby_block "adds to fstab" do
-    block do
-        fstab = Chef::Util::FileEdit.new("/etc/fstab")
-        fstab.insert_line_if_no_match("/s3fs/", "s3fs#jbdocstorage #{mnt_path} fuse    allow_other,_netdev,use_cache=/tmp 0 0")
-        fstab.write_file
+    
+    # Force unmount - don't care if it works
+    execute "umount #{dir_info[:path]} || true"
+    
+    dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
+    
+    # delete the cache
+    directory dir do
+        recursive true
+        action :delete
     end
-    not_if "grep -q s3fs /etc/fstab"
-end
-
-#Mount the new partition
-execute "mount s3fs partition" do
-    user "root"
-    command "s3fs jbdocstorage /mnt/s3 -ouse_cache=/tmp -o allow_other"
-    not_if "df | grep -q s3fs"
+    
+    # Delete the mount dir
+    directory dir_info[:path] do
+        recursive true
+        action :delete
+        only_if { Dir[dir_info[:path] + '/*'].empty? }
+    end
+    
+    # Create the mount dir
+    directory dir_info[:path] do
+        recursive true
+        action :create
+        not_if { File.directory? dir_info[:path] }
+    end
+    
+    # Mount the drive
+    mount dir_info[:path] do
+      device "s3fs##{dir_info[:bucket]}"
+      fstype 'fuse'
+      dump 0
+      pass 0
+      options "allow_other,url=#{node[:s3fs_fuse][:s3_url]},stat_cache_expire=300,passwd_file=/etc/passwd-s3fs,use_cache=#{dir_info[:tmp_store] || '/tmp/s3_cache'},retries=20#{",noupload" if dir_info[:no_upload]},#{dir_info[:read_only] ? 'ro' : 'rw'}"
+      action [:mount, :enable]
+    end
+  end
 end

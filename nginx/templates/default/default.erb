@@ -1,0 +1,27 @@
+server {
+    listen 80 default_server;
+    server_name _ default;
+    
+    location / {
+        return 204;
+    }
+    
+    location /nginx {
+        stub_status on;
+        access_log off;
+    }
+
+    location /fpm {
+        access_log off;
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        include        fastcgi_params;
+    }
+    
+    location ^~ /consul/ {
+        proxy_pass http://127.0.0.1:8500/ui/;
+    }
+
+    location ^~ /v1/ {
+        proxy_pass http://127.0.0.1:8500/v1/;
+    }
+}

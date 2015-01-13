@@ -1,0 +1,1 @@
+default['jb_consul']['external_services'] = []

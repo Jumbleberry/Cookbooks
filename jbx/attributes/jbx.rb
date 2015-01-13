@@ -12,6 +12,11 @@ default['jbx']['mesh']['git-url'] = 'git@github.com:Jumbleberry/JBX-Mesh.git'
 default['jbx']['mesh']['branch'] = 'master'
 default['jbx']['mesh']['github_key'] = ''
 
+default['jbx']['route']['path'] = '/vagrant/www/route'
+default['jbx']['route']['git-url'] = 'git@github.com:Jumbleberry/jbx-router.git'
+default['jbx']['route']['branch'] = 'master'
+default['jbx']['route']['github_key'] = ''
+
 default['jbx']['credentials']['mysql_read']['host'] = ''
 default['jbx']['credentials']['mysql_read']['username'] = ''
 default['jbx']['credentials']['mysql_read']['password'] = ''

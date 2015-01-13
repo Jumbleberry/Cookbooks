@@ -1,0 +1,39 @@
+#!/usr/bin/php
+<?php
+//Current instance configurations
+define('CURRENT_IP', $argv[1]);
+define('CURRENT_PORT', $argv[2]);
+define('SENTINEL_PORT', '<%= node['redisio']['sentinels'][0]['port'] %>');
+
+$ping = runRedisCommand('ping');
+//Check if the client is responding
+if($ping[0] != 'PONG')
+    exit(2);
+
+//Get the current redis master from sentinel
+$masters = runRedisCommand("sentinel masters | grep -A1 'ip$\\|port$'", SENTINEL_PORT);
+$f_masters = array_flip($masters);
+$master_ip = $masters[$f_masters['ip'] + 1];
+$master_port = $masters[$f_masters['port'] + 1];
+
+//Check if we can write a value on the current master
+if($master_ip == CURRENT_IP && $master_port == CURRENT_PORT){
+    $output = runRedisCommand('SET consul:health:redis "'.uniqid().'"');
+    if($output[0] != 'OK')
+        exit(2);
+}
+
+exit(0);
+
+/**
+ * Execute a redis command and return the output of it
+ * @param  string $command
+ * @param  string $port
+ * @param  string $ip
+ * @return array
+ */
+function runRedisCommand($command, $port = CURRENT_PORT, $ip = CURRENT_IP)
+{
+    exec('redis-cli -p ' . $port . ' -h ' . $ip . ' ' . $command, $output);
+    return $output;
+}

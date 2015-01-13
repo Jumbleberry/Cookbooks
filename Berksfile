@@ -1,0 +1,22 @@
+source "https://supermarket.getchef.com"
+
+cookbook 'apt'
+cookbook 'build-essential', '~> 2.1.3'
+cookbook 'chef_handler', '~> 1.1.6'
+cookbook 'datadog', '~> 2.0.0'
+cookbook 'dmg', '~> 2.2.2'
+cookbook 'git', '~> 4.0.2'
+cookbook 'logentries', '~> 0.1.3'
+cookbook 'runit', '~> 1.5.10'
+cookbook 'ssh_known_hosts', '~> 2.0.0'
+cookbook 'windows', '~> 1.34.8'
+cookbook 'yum', '~> 3.5.1'
+cookbook 'yum-epel', '~> 0.5.3'
+cookbook 'timezone-ii', '~> 0.2.0'
+cookbook 'route53', '~> 0.3.8'
+cookbook 'aws', '~> 2.5.0'
+cookbook 'rc_mon', '~> 0.2.0'
+cookbook 'consul', '~> 0.6.0'
+cookbook 'hosts_file', '~> 0.0.0'
+cookbook "ulimit", ">= 0.1.2"
+cookbook 'apt-repo', '~> 0.1.1'

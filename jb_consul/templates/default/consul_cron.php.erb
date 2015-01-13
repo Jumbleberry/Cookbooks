@@ -1,0 +1,244 @@
+<?php
+/**
+ * Setup consul cluster for the Jumbleberry Infrastructure
+ */
+
+//Server environment
+define("ENVIRONMENT", '<%= node['environment'] %>');
+define("CONSUL_URL", 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
+
+//Base aws commands
+define("AWS_DESCRIBE_CLI", "aws --region " . '<%= node['aws']['region'] %>' . " --profile default ec2 describe-instances \
+            --filter 'Name=instance-state-code,Values=16,0' 'Name=tag:environment,Values=" . ENVIRONMENT . "'");
+define("AWS_UPDATE_TAG_CLI", "aws ec2 create-tags");
+
+//Consul config file
+define("CONSUL_CONFIG_FILE", '<%= node['consul']['config_dir'] %>/default.json');
+define("CONSUL_PORT", '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
+define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
+
+//Initialize consul external services
+define('EXTERNAL_SERVICES', '<%= @external_services %>');
+
+//Change home path for the aws command line tool
+putenv('HOME='.'/home/<%= node['user'] %>/');
+putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
+
+//Get current consul configuration
+$consul_config      = getConsulConfig();
+
+//Check the current status of consul on the current server
+$current_instance   = getCurrentInstance();
+$current_ip         = $current_instance['PrivateIpAddress'];
+$current_tag        = getTag('consul', $current_instance['Tags']);
+
+$attempts           = 5;
+
+// Check to see if the cluster was started
+while ($attempts--) {
+    
+    //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
+    $cluster_instances  = getInstancesByTag('consul', 'cluster');
+        
+    // Get all the cluster instances we can join, if a cluster is set up, otherwise get all the bootstrap instances we can join
+    $instancesToJoin    = count($cluster_instances)? $cluster_instances : getInstancesByTag('consul', 'bootstrap');
+    
+    //Add the list of instances to the join list of consul
+    addInstancesToJoinList($consul_config, $instancesToJoin, $current_ip);
+    
+    // Which type of tag should we have
+    $tag = getLeader() === false? 'bootstrap': 'cluster';
+    
+    // Update the tags accordingly, depending whether or not we're in a cluster
+    if ($tag !== $current_tag) {
+        updateInstanceTag($current_instance, 'consul', ($current_tag = $tag));
+
+        // When cluster first reaches quorum, register external services
+        if($tag == 'cluster'){
+            $external_services = json_decode(EXTERNAL_SERVICES);
+            foreach ($external_services as $external_service) addConsulExternalService($external_service);
+        }
+    }
+    
+    if ($current_tag == 'cluster')
+        break;
+    
+    sleep(5);
+}
+
+/**
+ * Get the current consul configuration from the default config file
+ * @return array
+ */
+function getConsulConfig()
+{
+    $config_file = file_get_contents(CONSUL_CONFIG_FILE);
+    return json_decode($config_file, true);
+}
+
+/**
+ * Get the consul tag for the current instance
+ * @return string
+ */
+function getCurrentInstance()
+{
+    $instance = getInstancesByTag('opsworks:instance', gethostname());
+    return @$instance[0]['Instances'][0] ?: null;
+}
+
+/**
+ * Get the array of instances with the given tag
+ * @param  string tag_name
+ * @param  string tag_value
+ * @return array
+ */
+function getInstancesByTag($tag_name, $tag_value)
+{
+    $reservations = callAwsCli(" 'Name=tag:" . $tag_name . ",Values=" . $tag_value . "'");
+    return @$reservations['Reservations'] ?: array();
+}
+
+/**
+ * Get a tag value by it's name from a tag array
+ * @param  string tag_name
+ * @param  array tags
+ * @return string
+ */
+function getTag($tag_name, $tags)
+{
+    if (is_array($tags)) {
+        foreach ($tags as $key => $tag) {
+            if($tag['Key'] == $tag_name)
+                return $tag['Value'];
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * add multiple instances to the consul join list
+ * @param array
+ */
+function addInstancesToJoinList(&$consul_config, $reservations, $current_ip)
+{
+    $retry_join = array();
+    foreach ($reservations as $reservation) {
+        if (isset($reservation['Instances'])) {
+            foreach ($reservation['Instances'] as $instance) {
+                if (isset($instance['PrivateIpAddress']) && $instance['PrivateIpAddress'] != $current_ip && !empty($instance['PrivateIpAddress']))
+                    $retry_join[] = $instance['PrivateIpAddress'];
+            }
+        }
+    }
+    
+    if (!isset($consul_config['retry_join']))
+        $consul_config['retry_join'] = array();
+    
+    // Update if the configuration has changed
+    if (count(array_diff($retry_join, $consul_config['retry_join'])) || count(array_diff($consul_config['retry_join'], $retry_join))) {
+        $consul_config['retry_join'] = $retry_join;
+        file_put_contents(CONSUL_CONFIG_FILE, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
+        
+        return consulJoin($retry_join);
+    }
+    
+    return false;
+}
+
+/**
+ * Update a tag value of a given instance
+ * @param  array instance
+ * @param  string tag_name
+ * @param  string tag_value
+ * @return void
+ */
+function updateInstanceTag($instance, $tag_name, $tag_value)
+{
+    if( !in_array(ENVIRONMENT, array('testing', 'development')) ) {
+        callAwsCli(" --resources " . $instance['InstanceId'] . " --tags Key=" . $tag_name . ",Value=" . $tag_value, AWS_UPDATE_TAG_CLI);
+    }
+}
+
+/**
+ * Execute the Aws cli tool with the given options
+ * @param  string
+ * @return array
+ */
+function callAwsCli($options = '', $cli_command = AWS_DESCRIBE_CLI)
+{
+    if( !in_array(ENVIRONMENT, array('testing', 'development')) ){
+        exec($cli_command . $options, $output);
+        if(!empty($output))
+            return @json_decode(implode(PHP_EOL, $output), true) ?: false;
+        else
+            return true;
+    } else {
+        //If we are on a development environment, use a mocked json file
+        $config_file = file_get_contents(realpath(dirname(__FILE__)) . '/mocked_stack.json');
+        return json_decode($config_file, true);
+    }
+}
+
+/**
+ * Connect consul to another instance
+ * @return void
+ */
+function consulJoin($ips = array())
+{
+    if (count($ips))
+        exec('consul reload; consul join ' . implode(':' . CONSUL_PORT . ' ', $ips) . ':' . CONSUL_PORT);
+    
+    return true;
+}
+
+/**
+ * getPeers function.
+ *  Find all peers to this consul instance
+ * 
+ * @access public
+ * @return array a list of the ips of our peers (including our own)
+ */
+function getPeers() {
+    return @json_decode(@file_get_contents(CONSUL_URL . '/v1/status/peers'), true) ?: array();
+}
+
+/**
+ * getLeader function
+ *  Check if there's a consul leader
+ * 
+ * @access public
+ * @return mixed string of the leader ip on success, false on failure
+ */
+function getLeader() {
+    $leader = trim(@file_get_contents(CONSUL_URL . '/v1/status/leader'), '"');
+    return (!empty($leader))? $leader : false;
+}
+
+/**
+ * Register external service on consul
+ * @param array $external_service
+ */
+function addConsulExternalService($external_service)
+{
+    putCurlRequest(CONSUL_BASE_URL . '/v1/catalog/register', json_encode($external_service));
+}
+
+/**
+ * Execute a curl put request with some data to the given url
+ * @param  string $url
+ * @param  string $data
+ * @return string
+ */
+function putCurlRequest($url, $data ='')
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
+    curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
+    $response = curl_exec($ch);
+    return @json_decode($response, true) ?: false;
+}

@@ -1,3 +1,11 @@
+include_recipe "timezone-ii"
+include_recipe "web-server"
+include_recipe "github-auth"
+include_recipe "nginx"
+include_recipe "php"
+include_recipe "phalcon"
+include_recipe "jbx::core"
+
 # Set the branch to checkout
 branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['mesh']['branch']
 
@@ -7,23 +15,34 @@ git node['jbx']['mesh']['path'] do
   end
   repository node['jbx']['mesh']['git-url']
   revision branch
-  user node['jbx']['user']
+  user 'root'
   action :sync
 end
 
+execute "chown-data-www" do
+  command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['mesh']['path']}"
+  user "root"
+  action :run
+end
+
 # Creates the nginx virtual host
-virtualhost         = '/etc/nginx/sites-available/mesh.jbx.jumbleberry.com'
-virtualhost_link    = '/etc/nginx/sites-enabled/mesh.jbx.jumbleberry.com'
+virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['mesh']['hostname']
+virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['mesh']['hostname']
 
 template virtualhost do
   source    "nginx/mesh.jbx.jumbleberry.com.erb"
   variables ({
-    "hostname"  => node['jbx']['hostname'],
+    "hostname"  => node['jbx']['mesh']['hostname'],
     "path"      => "#{node['jbx']['core']['path']}/public"
   })
 end
 
+service 'nginx' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :nothing
+end
+
 link virtualhost_link do
   to virtualhost
-  notifies :restart, "service[nginx]", :delayed
+  notifies :reload, "service[nginx]"
 end

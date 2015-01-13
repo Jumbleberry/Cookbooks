@@ -1,0 +1,21 @@
+{
+    "Reservations": [
+        {
+            "Instances": [
+                {
+                    "PrivateIpAddress": "<%= @ip %>",
+                    "Tags": [
+                        {
+                            "Value": "<%= @environment %>", 
+                            "Key": "environment"
+                        }, 
+                        {
+                            "Value": "bootstrap", 
+                            "Key": "consul"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
