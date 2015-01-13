@@ -1,5 +1,6 @@
 include_recipe "aws"
 include_recipe "tags"
+include_recipe "php"
 include_recipe "consul"
 include_recipe "dnsmasq"
 
