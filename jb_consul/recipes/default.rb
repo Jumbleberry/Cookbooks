@@ -1,4 +1,5 @@
 include_recipe "aws"
+include_recipe "awscli"
 include_recipe "tags"
 include_recipe "php"
 include_recipe "consul"
