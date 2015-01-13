@@ -1,7 +1,7 @@
 # Make sure directory exists
 directory "/var/www/lib/zf1" do
-  owner node["jbx"]["user"]
-  group node["jbx"]["user"]
+  owner node["user"]
+  group node["user"]
   recursive true
 end
 

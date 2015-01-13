@@ -29,8 +29,8 @@ end
 
 # Make sure directory exists
 directory "/var/www/" do
-  owner node["jbx"]["user"]
-  group node["jbx"]["user"]
+  owner node["user"]
+  group node["user"]
 end
 
 ssh_known_hosts_entry 'github.com'
