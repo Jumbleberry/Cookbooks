@@ -71,6 +71,15 @@ sentinels.each do |sentinel|
     end
 end
 
+if servers.empty? && !sentinels.empty?
+    #Run consul cron job
+    cron "Redis Sentinel cron" do
+        command "/usr/bin/php #{redis_path}/redis_cron.php"
+        user "root"
+        action :create
+    end
+end
+
 #Creates the service configuration file
 template "#{consul_path}/sentinel_reconf_script.php" do
     source "sentinel_reconf_script.php.erb"

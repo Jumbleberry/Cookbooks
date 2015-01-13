@@ -1,7 +1,7 @@
 <?php
 //Current instance configurations
-define('CURRENT_IP', $argv[1]);
-define('CURRENT_PORT', $argv[2]);
+define('CURRENT_IP', @$argv[1] ?: false);
+define('CURRENT_PORT', @$argv[2] ?: false);
 define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
 define('CONSUL_CONFIG_PATH', '<%= node['consul']['config_dir'] %>');
 define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
@@ -15,32 +15,41 @@ $consul_leader = getConsulLeader();
 if($consul_leader === false)
     exit();
 
+// Tag for the non-master instance
+// If server is not running redis, it's simply a sentinel service, otherwise it would be a slave
+$instance_type = (!CURRENT_IP && !CURRENT_PORT)? 'sentinel': 'slave';
+
 //Check if there is already a master runing
 $redis_master = getRedisMaster();
 if (!empty($redis_master)) {
     // Only if the current master is not the current service
     if (($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT)) {
         //Check if the current redis service is already part of the cluster with the slave tag on cluster
-        if(!serviceHasTagOnConsul('slave')){
-            //Start redis server as a slave of the current master
-            startRedisServer($redis_master);
+        if(!serviceHasTagOnConsul($instance_type)){
+
+            //Start redis server as a slave of the current master (if we're not a sentinel server)
+            if ($instance_type != 'sentinel')
+                startRedisServer($redis_master);
+            
             //Start sentinel server pointing to the new master
             startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
             //Add the slave tag to the current service
-            addTagOnConsul('slave');
+            addTagOnConsul($instance_type);
         }
     }
     exit();
 }
 
+// Never attempt to nominate self as a master if we're not running redis
+if ($instance_type == 'sentinel')
+    exit();
+
 //Get the lock to start the leader election
 $session_id = getConsulSession();
 $redis_lock = getRedisLock($session_id);
 if($redis_lock) {
-    echo $session_id . " I has the lock\n";
     $redis_master = getRedisMaster();
     if(empty($redis_master)){
-        echo "Im the new redis master\n";
         //Start redis server as master
         startRedisServer();
         //Start sentinel server pointing to the new master
@@ -202,9 +211,11 @@ function updateRedisConfigurationFile($master_instance)
  */
 function startSentinelServer($master_ip, $master_port)
 {
+    $sentinel_config_file_path = REDIS_CONFIG_PATH . '/' . SENTINEL_NAME . '.conf';
+    $sentinel_config = file_get_contents($sentinel_config_file_path);
     //Check if sentinel was already configured by another service
     if(!preg_match("/^sentinel.monitor.*/m", $sentinel_config)){
-        updateSentinelConfigurationFile($master_ip, $master_port);
+        updateSentinelConfigurationFile($master_ip, $master_port, $sentinel_config_file_path, $sentinel_config);
         exec('sudo service redis_' . SENTINEL_NAME . ' stop');
         exec('sudo service redis_' . SENTINEL_NAME . ' start');
     }
@@ -216,10 +227,8 @@ function startSentinelServer($master_ip, $master_port)
  * @param  string $master_port
  * @return void
  */
-function updateSentinelConfigurationFile($master_ip, $master_port)
+function updateSentinelConfigurationFile($master_ip, $master_port, $sentinel_config_file_path, $sentinel_config)
 {
-    $sentinel_config_file_path = REDIS_CONFIG_PATH . '/' . SENTINEL_NAME . '.conf';
-    $sentinel_config = file_get_contents($sentinel_config_file_path);
     //Remove previos "sentinel monitor" from configuration
     $sentinel_config = preg_replace("/^sentinel.monitor.*/m", null, $sentinel_config);
     //Add the current instance as the sentinel master
