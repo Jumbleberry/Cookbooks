@@ -3,17 +3,8 @@ if node.attribute?('aws_deploy_key')
     include_recipe "github-auth::awskeys"
 end
 
-#Get all the applications keys
-apps = {}
-#JBX
-apps['core'] = node['jbx']['core']['github_key'];
-apps['mesh'] = node['jbx']['mesh']['github_key'];
-apps['route'] = node['jbx']['route']['github_key'];
-#Jb-Admin
-apps['admin'] = node['admin']['github_key'];
-
 #Creates tmp ssh folder for github keys
-tmp_ssh_folder = node['github']['wrapper_path']
+tmp_ssh_folder = node['github-auth']['wrapper_path']
 
 directory tmp_ssh_folder do
   action :create
@@ -23,7 +14,7 @@ directory tmp_ssh_folder do
 end
 
 #Creates one key file and ssh wrapper for each app
-apps.each do |app, github_key|
+node['github-auth']['keys'].each do |github_key|
     if !github_key.empty?
         key_name = github_key + ".key"
         ssh_wrapper_name = github_key + "_wrapper.sh"
