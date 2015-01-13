@@ -16,7 +16,7 @@ end
 
 git node['jbx']['core']['path'] do
   if !node['jbx']['core']['github_key'].empty?
-    ssh_wrapper node['github']['wrapper_path'] + "/" + node['jbx']['core']['github_key'] + "_wrapper.sh"
+    ssh_wrapper node['github-auth']['wrapper_path'] + "/" + node['jbx']['core']['github_key'] + "_wrapper.sh"
   end
   repository node['jbx']['core']['git-url']
   revision branch

@@ -9,7 +9,7 @@ branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['route']['branch']
 
 git node['jbx']['route']['path'] do
   if !node['jbx']['route']['github_key'].empty?
-    ssh_wrapper node['github']['wrapper_path'] + "/" + node['jbx']['route']['github_key'] + "_wrapper.sh"
+    ssh_wrapper node['github-auth']['wrapper_path'] + "/" + node['jbx']['route']['github_key'] + "_wrapper.sh"
   end
   repository node['jbx']['route']['git-url']
   revision branch
