@@ -46,17 +46,8 @@ template credentials_file do
       "mysql_read_username"     => node['jbx']['credentials']['mysql_read']['username'],
       "mysql_read_password"     => node['jbx']['credentials']['mysql_read']['password'],
       "mysql_read_database"     => node['jbx']['credentials']['mysql_read']['dbname'],
-
-      "hitpath_host"            => node['jbx']['credentials']['hitpath']['host'],
-      "hitpath_username"        => node['jbx']['credentials']['hitpath']['username'],
-      "hitpath_password"        => node['jbx']['credentials']['hitpath']['password'],
-      "hitpath_database"        => node['jbx']['credentials']['hitpath']['dbname'],
-
       "redis_host"              => node['jbx']['credentials']['redis']['host'],
       "redis_port"              => node['jbx']['credentials']['redis']['port'],
-
-      "crypt"                   => node['jbx']['credentials']['crypt'],
-      "raygun"                  => node['jbx']['credentials']['raygun']
     })
 end
 
