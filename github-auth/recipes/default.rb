@@ -17,8 +17,8 @@ end
 if !node['github-auth']['keys'].empty?
     node['github-auth']['keys'].each do |github_key|
         if !github_key.empty?
-            key_name = github_key[/[^\.]+/]
-            ssh_wrapper_name = github_key + "_wrapper.sh"
+            key_name = github_key
+            ssh_wrapper_name = github_key[/[^\.]+/] + "_wrapper.sh"
     
             if( !node.attribute?('aws_deploy_key') )
                 #Copy private key to tmp folder
