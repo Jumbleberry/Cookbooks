@@ -101,5 +101,6 @@ end
 
 execute "reload consul configuration" do
     command "consul reload"
+    ignore_failure true
     user "root"
 end
