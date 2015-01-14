@@ -102,7 +102,7 @@ template "#{consul_path}/redis_check.php" do
 end
 
 execute "reload consul configuration" do
-    command "consul reload"
+    command "consul reload || true"
     ignore_failure true
     user "root"
 end
