@@ -1,15 +1,14 @@
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
-  action [ :stop ]
+  action :nothing
 end
 
 #Nginx package
-ppa "nginx/stable"
-
-# Update repository
-execute "apt-get-update-periodic" do
-  command "apt-get update"
-  ignore_failure true
+apt_repository 'nginx-stable' do
+  uri           'ppa:nginx/stable'
+  distribution  'precise'
+  components    ['main', 'stable']
+  notifies :stop, "service[nginx]", :immediately
 end
 
 # Install latest nginx
@@ -20,7 +19,7 @@ package 'nginx' do
 end
 
 #Removes the default virtual host if exists
-['default', 'default.dpkg-dist'].each do | file |
+['default.dpkg-dist'].each do | file |
     if (File.file?('/etc/nginx/sites-enabled/' + file))
         link '/etc/nginx/sites-enabled/' + file do
           action :delete
@@ -53,3 +52,9 @@ link virtualhost_link do
 end
 
 include_recipe "nginx::certs"
+
+#Force the restart of the nginx service
+execute "reload nginx service" do
+  command "service nginx restart"
+  user 'root'
+end
