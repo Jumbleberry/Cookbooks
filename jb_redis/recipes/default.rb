@@ -29,33 +29,35 @@ end
 # Get the ip of the interface on the consul attributes
 local_ip = node["network"]["interfaces"][node['consul']['bind_interface']]["addresses"].detect{|k,v| v[:family] == "inet"}.first
 
-servers.each do |server|
-    #Run consul cron job
-    cron "Redis cron #{server.port}" do
-        command "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port}"
-        user "root"
-        action :create
-    end
+unless servers.empty?
+    servers.each do |server|
+        #Run consul cron job
+        cron "Redis cron #{server.port}" do
+            command "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port}"
+            user "root"
+            action :create
+        end
 
-    #Creates the service configuration file
-    template "#{consul_path}/redis#{server.port}.json" do
-        source "redis_service.json.erb"
-        owner "root"
-        group "cluster"
-        mode "0664"
-        variables ({
-            "port" => server.port,
-            "currentip" => local_ip,
-            "consul_path" => consul_path
-        })
-    end
+        #Creates the service configuration file
+        template "#{consul_path}/redis#{server.port}.json" do
+            source "redis_service.json.erb"
+            owner "root"
+            group "cluster"
+            mode "0664"
+            variables ({
+                "port" => server.port,
+                "currentip" => local_ip,
+                "consul_path" => consul_path
+            })
+        end
 
-    #Create log file with the right permissions
-    if(server[:logfile])
-        file server.logfile do
-            owner "redis"
-            group "redis"
-            mode  "0644"
+        #Create log file with the right permissions
+        if(server[:logfile])
+            file server.logfile do
+                owner "redis"
+                group "redis"
+                mode  "0644"
+            end
         end
     end
 end
