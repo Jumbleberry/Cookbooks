@@ -214,11 +214,9 @@ function startSentinelServer($master_ip, $master_port)
     $sentinel_config_file_path = REDIS_CONFIG_PATH . '/' . SENTINEL_NAME . '.conf';
     $sentinel_config = file_get_contents($sentinel_config_file_path);
     //Check if sentinel was already configured by another service
-    if(!preg_match("/^sentinel.monitor.*/m", $sentinel_config)){
-        updateSentinelConfigurationFile($master_ip, $master_port, $sentinel_config_file_path, $sentinel_config);
-        exec('sudo service redis_' . SENTINEL_NAME . ' stop');
-        exec('sudo service redis_' . SENTINEL_NAME . ' start');
-    }
+    updateSentinelConfigurationFile($master_ip, $master_port, $sentinel_config_file_path, $sentinel_config);
+    exec('sudo service redis_' . SENTINEL_NAME . ' stop');
+    exec('sudo service redis_' . SENTINEL_NAME . ' start');
 }
 
 /**
