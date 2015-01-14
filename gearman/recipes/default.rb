@@ -32,8 +32,6 @@ template '/etc/default/gearman-job-server' do
     mode '0644'
 end
 
-#Register service
-service 'gearman-job-server' do
-    supports :start => true, :restart => true, :stop => true
-    action :restart
+execute "sudo service gearman-job-server restart" do
+    user "root"
 end
