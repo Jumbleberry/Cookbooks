@@ -34,5 +34,6 @@ end
 
 #Register service
 service 'gearman-job-server' do
+    supports :start => true, :restart => true, :stop => true
     action :restart
 end
