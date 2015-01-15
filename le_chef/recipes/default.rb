@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+include_recipe "apt"
+
 if platform_family?('rhel')
   yum_repository 'logentries' do
     description 'Logentries repo'
