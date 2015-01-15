@@ -1,3 +1,5 @@
+include_recipe "apt"
+
 # Custom repositories
 apt_repository 'php5.5-ppa' do
   uri           'ppa:ondrej/php5'

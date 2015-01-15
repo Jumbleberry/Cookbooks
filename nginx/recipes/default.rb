@@ -1,3 +1,5 @@
+include_recipe "apt"
+
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :nothing
