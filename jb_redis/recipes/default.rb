@@ -29,7 +29,7 @@ end
 # Get the ip of the interface on the consul attributes
 local_ip = node["network"]["interfaces"][node['consul']['bind_interface']]["addresses"].detect{|k,v| v[:family] == "inet"}.first
 
-unless servers.empty?
+if servers.kind_of?(Array) && !servers.empty?
     servers.each do |server|
         #Run consul cron job
         cron "Redis cron #{server.port}" do
@@ -37,7 +37,12 @@ unless servers.empty?
             user "root"
             action :create
         end
-
+        
+        # Run the cron
+        execute "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port} &" do
+            user "root"
+        end
+        
         #Creates the service configuration file
         template "#{consul_path}/redis#{server.port}.json" do
             source "redis_service.json.erb"

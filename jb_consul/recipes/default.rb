@@ -82,3 +82,8 @@ cron "Consul cron" do
   user "root"
   action :create
 end
+
+# Run the cron
+execute "/usr/bin/php #{cron_path}/consul_cron.php &" do
+    user "root"
+end
