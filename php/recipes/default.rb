@@ -35,7 +35,7 @@ directory '/var/log/php/' do
     group 'www-data'
 end
 
-file '/var/log/php/errors.log' do
+file '/var/log/php/error.log' do
     owner 'www-data'
     group 'www-data'
     action :create_if_missing
