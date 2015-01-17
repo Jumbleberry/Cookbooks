@@ -1,6 +1,3 @@
-# Override the default datadog name
-node.override['datadog']['hostname'] =  node.name + '.' + default['role'] + '.' + default['environment']
-
 include_recipe "datadog::dd-handler"
 include_recipe "datadog::dd-agent"
 
