@@ -1,6 +1,6 @@
 # Default
 default['le']['account_key'] = ''
-default['le']['hostname'] = node['hostname']
+default['le']['hostname'] = node['hostname'] + '.' + node['role'] + '.' + node['environment']
 default['le']['logs_to_follow'] = ['/var/log/syslog']
 
 # Datahub
