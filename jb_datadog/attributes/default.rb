@@ -1,2 +1,2 @@
 # Override the default datadog name
-override['datadog']['hostname'] =  node.name + '.' + node['role'] + '.' + node['environment']
+override['datadog']['hostname'] =  node['hostname'] + '.' + node['role'] + '.' + node['environment']
