@@ -30,6 +30,17 @@ if node.recipes.include?('admin')
   include_path = include_path + node['admin']['include_path']
 end
 
+directory '/var/log/php/' do
+    owner 'www-data'
+    group 'www-data'
+end
+
+file '/var/log/php/errors.log' do
+    owner 'www-data'
+    group 'www-data'
+    action :create_if_missing
+end
+
 #Fpm configurations
 template '/etc/php5/fpm/php.ini' do
   source 'fpm/php.ini.erb'
