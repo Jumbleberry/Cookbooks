@@ -41,20 +41,20 @@ $dbConfig["slave"] = array(
 
 // Hitpath Slave Server
 $dbConfig["hitpath_main"] = array(
-    "host"          => "<%= node['admin']['hitpath']['host'] %>",
-    "username"      => "<%= node['admin']['hitpath']['username'] %>",
-    "password"      => "<%= node['admin']['hitpath']['password'] %>",
-    "dbname"        => "<%= node['admin']['hitpath']['dbname'] %>",
-    "default"       => "<%= node['admin']['hitpath']['default'] %>"
+    "host"          => "<%= node['admin']['hitpath_read']['host'] %>",
+    "username"      => "<%= node['admin']['hitpath_read']['username'] %>",
+    "password"      => "<%= node['admin']['hitpath_read']['password'] %>",
+    "dbname"        => "<%= node['admin']['hitpath_read']['dbname'] %>",
+    "default"       => "<%= node['admin']['hitpath_read']['default'] %>"
 );
  
 /**
  * Email SMTP Settings
  */
 $emailConfig =  array(
-    "server"    => "<%= node['admin']['email']['server'] %>",
-    "username"  => "<%= node['admin']['email']['username'] %>",
-    "password"  => "<%= node['admin']['email']['password'] %>",
-    "auth"      => "<%= node['admin']['email']['auth'] %>",
-    "port"      => "<%= node['admin']['email']['port'] %>"
+    "server"    => "<%= node['admin']['mail']['host'] %>",
+    "username"  => "<%= node['admin']['mail']['username'] %>",
+    "password"  => "<%= node['admin']['mail']['password'] %>",
+    "auth"      => "<%= node['admin']['mail']['auth'] %>",
+    "port"      => "<%= node['admin']['mail']['port'] %>"
 );

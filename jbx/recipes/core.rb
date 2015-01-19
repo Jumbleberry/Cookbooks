@@ -15,9 +15,7 @@ directory node['jbx']['core']['path'] do
 end
 
 git node['jbx']['core']['path'] do
-  if !node['jbx']['core']['github_key'].empty?
-    ssh_wrapper node['github-auth']['wrapper_path'] + "/" + node['jbx']['core']['github_key'] + "_wrapper.sh"
-  end
+  ssh_wrapper node['github-auth']['wrapper_path'] + "/" + "core_wrapper.sh"
   repository node['jbx']['core']['git-url']
   revision branch
   user 'root'
@@ -54,10 +52,10 @@ template credentials_file do
       "mysql_write_password"    => node['jbx']['credentials']['mysql_write']['password'],
       "mysql_write_database"    => node['jbx']['credentials']['mysql_write']['dbname'],
 
-      "hitpath_host"            => node['jbx']['credentials']['hitpath']['host'],
-      "hitpath_username"        => node['jbx']['credentials']['hitpath']['username'],
-      "hitpath_password"        => node['jbx']['credentials']['hitpath']['password'],
-      "hitpath_database"        => node['jbx']['credentials']['hitpath']['dbname'],
+      "hitpath_host"            => node['jbx']['credentials']['hitpath_read']['host'],
+      "hitpath_username"        => node['jbx']['credentials']['hitpath_read']['username'],
+      "hitpath_password"        => node['jbx']['credentials']['hitpath_read']['password'],
+      "hitpath_database"        => node['jbx']['credentials']['hitpath_read']['dbname'],
 
       "redis_host"              => node['jbx']['credentials']['redis']['host'],
       "redis_port"              => node['jbx']['credentials']['redis']['port'],

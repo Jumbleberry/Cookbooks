@@ -44,11 +44,11 @@ user_images.directory                               = "<%= node['admin']['storag
 user_images.uploadDirectory                         = "<%= node['admin']['storage']['base'] + node['admin']['storage']['user_images'] %>"
 
 ; Mail SMTP
-email.server                                        = "<%= node['admin']['email']['email_server'] %>"
-email.config.username                               = "<%= node['admin']['email']['username'] %>"
-email.config.password                               = "<%= node['admin']['email']['password'] %>"
-email.config.auth                                   = "<%= node['admin']['email']['auth'] %>"
-email.config.port                                   = "<%= node['admin']['email']['port'] %>"
+email.server                                        = "<%= node['admin']['mail']['host'] %>"
+email.config.username                               = "<%= node['admin']['mail']['username'] %>"
+email.config.password                               = "<%= node['admin']['mail']['password'] %>"
+email.config.auth                                   = "<%= node['admin']['mail']['auth'] %>"
+email.config.port                                   = "<%= node['admin']['mail']['port'] %>"
 
 [<%= node['admin']['environment'] %> : main]
 ; Database : Master 

@@ -16,9 +16,7 @@ end
 branch = ENV['JB_ADMIN_BRANCH'] || node['admin']['branch']
 
 git node['admin']['path'] do
-  if !node['admin']['github_key'].empty?
-    ssh_wrapper node['github-auth']['wrapper_path'] + "/" + node['admin']['github_key'] + "_wrapper.sh"
-  end
+  ssh_wrapper node['github-auth']['wrapper_path'] + "/admin_wrapper.sh"
   repository node['admin']['git-url']
   revision branch
   user 'root'

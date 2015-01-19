@@ -1,8 +1,8 @@
 instances:
 <% node['datadog']['services']['mysql'].each do |i| -%>
-  - server: <%= i['server'] %>
+  - server: <%= i['host'] %>
     user: <%= i['user'] %>
-    pass: <%= i['pass'] %>
+    pass: <%= i['password'] %>
     <% if i.key?('sock') -%>
     sock: <%= i['sock'] %>
     <% end -%>

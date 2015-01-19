@@ -4,9 +4,7 @@ include_recipe "jbx::core"
 branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['mesh']['branch']
 
 git node['jbx']['mesh']['path'] do
-  if !node['jbx']['mesh']['github_key'].empty?
-    ssh_wrapper node['github-auth']['wrapper_path'] + "/" + node['jbx']['mesh']['github_key'] + "_wrapper.sh"
-  end
+  ssh_wrapper node['github-auth']['wrapper_path'] + "/mesh_wrapper.sh"
   repository node['jbx']['mesh']['git-url']
   revision branch
   user 'root'
