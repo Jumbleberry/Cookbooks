@@ -23,7 +23,7 @@ if !node['github-auth']['keys'].empty?
         #Unencrypt key using the previosuly imported gpg key
         execute "unencrypt key: #{key}" do
             cwd path
-            command "gpg --output #{key} --decrypt --batch --yes #{key}.key.gpg && chmod 0600 #{key}.key"
+            command "gpg --output #{key}.key --decrypt --batch --yes #{key}.key.gpg && chmod 0600 #{key}.key"
             user "root"
         end
     end
