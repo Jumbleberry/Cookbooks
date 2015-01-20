@@ -4,14 +4,19 @@
             "Instances": [
                 {
                     "PrivateIpAddress": "<%= @ip %>",
+                    "InstanceId": "id-<%= node['hostname'] %>",
                     "Tags": [
                         {
-                            "Value": "<%= @environment %>", 
+                            "Value": "<%= @environment %>",
                             "Key": "environment"
-                        }, 
+                        },
                         {
-                            "Value": "bootstrap", 
+                            "Value": "bootstrap",
                             "Key": "consul"
+                        },
+                        {
+                            "Value": "<%= node['hostname'] %>",
+                            "Key": "opsworks:instance"
                         }
                     ]
                 }

@@ -54,18 +54,6 @@ service "consul" do
   action :start
 end
 
-# Copy the mocked_stack script for non-production environments
-ip = node[:network][:interfaces][node[:consul][:bind_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
-template "#{cron_path}/mocked_stack.json" do
-    source "mocked_stack.json.erb"
-    owner "root"
-    group "root"
-    variables({
-        :ip          => ip,
-        :environment => node['environment']
-    })
-end
-
 #Copy the cron script to the consul configuration folder
 template "#{cron_path}/consul_cron.php" do
     source "consul_cron.php.erb"
@@ -73,6 +61,33 @@ template "#{cron_path}/consul_cron.php" do
     group "root"
     variables({
         :external_services => node['jb_consul']['external_services'].to_json
+    })
+end
+
+#Add the cron helper libraries to the consul config folder
+remote_directory "#{cron_path}/JbServerHelpers" do
+    source "JbServerHelpers"
+    files_mode "0664"
+    owner "root"
+    group "root"
+    mode "0770"
+end
+
+# Create Helpers data directory so it can be used by the templates
+directory "#{cron_path}/JbServerHelpers/data" do
+  owner "root"
+  group "root"
+end
+
+# Copy the mocked_stack script for non-production environments
+ip = node[:network][:interfaces][node[:consul][:bind_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
+template "#{cron_path}/JbServerHelpers/data/mocked_stack.json" do
+    source "mocked_stack.json.erb"
+    owner "root"
+    group "root"
+    variables({
+        :ip          => ip,
+        :environment => node['environment']
     })
 end
 
