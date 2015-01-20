@@ -3,25 +3,24 @@ include_recipe "route53"
 layerIps = []
 
 # Add all IPs
-if node['aws']['route53']['instance_destroy'] == false
-  node[:opsworks][:instance][:layers].each do | shortname |
-    node[:opsworks][:layers][shortname][:instances].each do | instanceshortname, instance |
-      publicIp = instance[:elastic_ip].nil?? instance[:ip]: instance[:elastic_ip]
+node[:opsworks][:instance][:layers].each do | shortname |
+  node[:opsworks][:layers][shortname][:instances].each do | instanceshortname, instance |
+    publicIp = instance[:elastic_ip].nil?? instance[:ip]: instance[:elastic_ip]
+    status   = node[:opsworks][:layers][shortname][:instances][instanceshortname][:status]
+
+    if status == "online"
       layerIps.push(publicIp)
     end
   end
-# If an instance is going down do not add it's IP
-else
-  node[:opsworks][:instance][:layers].each do | shortname |
-    node[:opsworks][:layers][shortname][:instances].each do | instanceshortname, instance |
-      publicIp = instance[:elastic_ip].nil?? instance[:ip]: instance[:elastic_ip]
-
-      if node['route53']['instanceIp'] != publicIp
-        layerIps.push(publicIp)
-      end
-    end
-  end
 end
+
+if node['aws']['route53']['instance_destroy'] == false
+  layerIps.push(default['route53']['instanceIp'])
+else
+  layerIps.delete(default['route53']['instanceIp'])
+end
+
+layerIps = layerIps.uniq
 
 node['aws']['route53']['entries'].each do | entry |
   route53_record "create a record" do
