@@ -13,4 +13,5 @@ attribute :aws_session_token,     :kind_of => String
 attribute :overwrite,             :kind_of => [ TrueClass, FalseClass ], :default => true
 attribute :alias_target,          :kind_of => Hash
 attribute :routing_policy,        :kind_of => Hash
+attribute :health_check_id,       :kind_of => String
 attribute :mock,                  kind_of: [TrueClass, FalseClass], default: false
