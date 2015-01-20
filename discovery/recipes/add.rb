@@ -15,9 +15,9 @@ node[:opsworks][:instance][:layers].each do | shortname |
 end
 
 if node['aws']['route53']['instance_destroy'] == false
-  layerIps.push(default['route53']['instanceIp'])
+  layerIps.push(node['route53']['instanceIp'])
 else
-  layerIps.delete(default['route53']['instanceIp'])
+  layerIps.delete(node['route53']['instanceIp'])
 end
 
 layerIps = layerIps.uniq
