@@ -5,6 +5,8 @@ apt_repository 'gearman-developers' do
   components    ['main', 'stable']
 end
 
+include_recipe "apt"
+
 #Add mysql library used by gearmam to handle persistent queues
 package 'libmysqld-dev' do
   action :install

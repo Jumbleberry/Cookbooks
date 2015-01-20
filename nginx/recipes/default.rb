@@ -1,5 +1,3 @@
-include_recipe "apt"
-
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :nothing
@@ -12,6 +10,8 @@ apt_repository 'nginx-stable' do
   components    ['main', 'stable']
   notifies :stop, "service[nginx]", :immediately
 end
+
+include_recipe "apt"
 
 # Install latest nginx
 package 'nginx' do
