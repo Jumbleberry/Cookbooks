@@ -38,6 +38,10 @@ def routing_policy
   @failover ||= new_resource.routing_policy
 end
 
+def health_check_id
+  @health_check_id ||= new_resource.health_check_id
+end
+
 def mock?
   @mock ||= new_resource.mock
 end
@@ -67,6 +71,7 @@ def record_attributes
   common_attributes = { :name => name, :type => type }
   common_attributes = common_attributes.merge(record_value_or_alias_attributes)  
   common_attributes = common_attributes.merge(routing_policy_attributes)
+  common_attributes = common_attributes.merge(health_check_attributes)
 end
 
 def record
@@ -86,6 +91,14 @@ end
 def routing_policy_attributes
   if routing_policy
     { :failover => routing_policy[:failover], :set_identifier => routing_policy[:set_identifier] }
+  else
+    {}
+  end
+end
+
+def health_check_attributes
+  if health_check_id
+    { :health_check_id => health_check_id }
   else
     {}
   end
