@@ -26,58 +26,62 @@ if ( node.attribute?('ec2') && node[:ec2].attribute?('instance_id') && /(i|snap|
 
   layerIps = layerIps.uniq
 
-  node['aws']['route53']['entries'].each do | entry |
-    route53_record "create a record" do
-      name  entry.name
-      type  entry.type
-      # Zone ID is the Route 53 Hosted Zone
-      zone_id entry.zone_id
+  node['aws']['route53']['entries'].each do | domain, entries |
+    entries.each do | entry |
+      route53_record "create a record" do
+        name  domain
+        type  entry.type
+        # Zone ID is the Route 53 Hosted Zone
+        zone_id entry.zone_id
 
-      # Check for TTL
-      if !entry['ttl'].nil?
-        ttl entry['ttl']
+        # Check for TTL
+        if !entry['ttl'].nil?
+          ttl entry['ttl']
+        else
+          ttl node['aws']['route53']['defaults']['ttl']
+        end
+
+        # Is it an alias record?
+        if !entry['target'].nil?
+          # Hosted Zone ID is the ID of the ELB
+          aliasTarget = {
+            :hosted_zone_id         => entry.hosted_zone_id,
+            :dns_name               => entry.target,
+            :evaluate_target_health => entry.evaluate_target_health,
+          }
+
+          alias_target aliasTarget
+        # Is there a specific IP?
+        elsif !entry['value'].nil?
+          value entry['value']
+        # Are there layer IPs?
+        elsif !layerIps.empty?
+          value layerIps
+        # Default to instance IP
+        else
+          value default['route53']['instanceIp']
+        end
+
+        # Is there a failover?
+        if !entry['failover_record_type'].nil?
+          routingPolicy = {
+            :failover       => entry.failover_record_type,
+            :set_identifier => entry.failover_record_type + "-" + domain
+          }
+
+          routing_policy routingPolicy
+        end
+
+        # Is there a health check?
+        if !entry['health_check_id'].nil?
+          health_check_id entry['health_check_id']
+        end
+
+        aws_access_key_id     node['aws']['aws_access_key_id']
+        aws_secret_access_key node['aws']['aws_secret_access_key']
+        overwrite true
+        action :create
       end
-
-      # Is it an alias record?
-      if !entry['target'].nil?
-        # Hosted Zone ID is the ID of the ELB
-        aliasTarget = {
-          :hosted_zone_id         => entry.hosted_zone_id,
-          :dns_name               => entry.target,
-          :evaluate_target_health => entry.evaluate_target_health,
-        }
-
-        alias_target aliasTarget
-      # Is there a specific IP?
-      elsif !entry['value'].nil?
-        value entry['value']
-      # Are there layer IPs?
-      elsif !layerIps.empty?
-        value layerIps
-      # Default to local IP
-      else
-        value default['route53']['instanceIp']
-      end
-
-      # Is there a failover?
-      if !entry['failover_record_type'].nil?
-        routingPolicy = {
-          :failover       => entry.failover_record_type,
-          :set_identifier => entry.failover_record_type + "-" + entry.name
-        }
-
-        routing_policy routingPolicy
-      end
-
-      # Is there a health check?
-      if !entry['health_check_id'].nil?
-        health_check_id entry['health_check_id']
-      end
-
-      aws_access_key_id     node['aws']['aws_access_key_id']
-      aws_secret_access_key node['aws']['aws_secret_access_key']
-      overwrite true
-      action :create
     end
   end
 end
