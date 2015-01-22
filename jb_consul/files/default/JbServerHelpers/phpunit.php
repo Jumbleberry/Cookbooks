@@ -12,6 +12,7 @@
 */
 require __DIR__.'/src/Consul.php';
 require __DIR__.'/src/Aws.php';
+require __DIR__.'/src/JbRedis.php';
 
 /*
 |--------------------------------------------------------------------------

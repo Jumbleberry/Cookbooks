@@ -124,10 +124,11 @@ class Consul
      * @param array $consul_config
      * @param string $file_name
      */
-    public function updateConfiguration($consul_config = null, $file_name = 'default.json')
+    public function saveConfiguration($consul_config = null, $file_name = 'default.json')
     {
         $consul_config = $consul_config ?: $this->config;
         file_put_contents($this->config_dir . '/' . $file_name, str_replace("\\",'',json_encode($consul_config, JSON_PRETTY_PRINT)));
+        //Reloads the new configuration in case it was changed from a different source
         $this->loadConfiguration($file_name);
     }
 
@@ -135,7 +136,7 @@ class Consul
      * Get the current loaded consul configuration
      * @return array
      */
-    public function getConfig()
+    public function getConfiguration()
     {
         return $this->config;
     }
@@ -155,14 +156,32 @@ class Consul
     /**
      * Save a specific service configuration on a config file
      * @param string $service_name
-     * @param array $service_config
      * @param null|string $service_config_file
+     * @param array $service_config
      */
-    public function updateServiceConfiguration($service_name, $service_config, $service_config_file = null)
+    public function saveServiceConfiguration($service_name, $service_config_file = null, $service_config = null)
     {
         $service_config_file = $service_config_file ?: $service_name . '.json';
+        $service_config = $service_config ?: $this->services_config[$service_name];
         file_put_contents($this->config_dir . '/' . $service_config_file, str_replace("\\",'',json_encode($service_config, JSON_PRETTY_PRINT)));
         $this->loadServiceConfiguration($service_name, $service_config_file);
+    }
+
+    /**
+     * Shortcut for adding a tag to a loaded service
+     * @param $service_name
+     * @param $tag_name
+     */
+    public function addTagToService($service_name, $tag_name)
+    {
+        if(!isset($this->services_config[$service_name]))
+            $this->loadServiceConfiguration($service_name);
+        $service_config = $this->getServiceConfiguration($service_name);
+        if(!isset($service_config['service']['tags']))
+            $service_config['service']['tags'] = [];
+        if(!in_array($tag_name, $service_config['service']['tags']))
+            $service_config['service']['tags'][] = $tag_name;
+        $this->services_config[$service_name] = $service_config;
     }
 
     /**
@@ -275,5 +294,62 @@ class Consul
             if(!in_array($ip, $ignore_list))
                 $updated = $this->addServerToJoinList($ip) ?: $updated;
         return $updated;
+    }
+
+    /**
+     * Get the session info of an active session
+     * @param $session_id
+     * @return array
+     */
+    public function getSessionInfo($session_id){
+        return Http::getJson($this->base_url . '/session/info/' . $session_id);
+    }
+
+    /**
+     * Creates a new session
+     * @param array $session_data
+     * @return string
+     */
+    public function createSession($session_data = array())
+    {
+        $result = Http::put($this->base_url . '/session/create', $session_data);
+        $result = @json_decode($result, true) ?: array('ID' => null);
+        return $result['ID'];
+    }
+
+    /**
+     * Destroy a current active session
+     * @param $session_id
+     * @return bool
+     */
+    public function destroySession($session_id)
+    {
+        Http::put($this->base_url . '/session/destroy/' . $session_id, null, $http_code);
+        return $http_code == 200;
+    }
+
+    /**
+     * Get a new lock
+     * @param $lock_name
+     * @param $session_id
+     * @param array $body
+     * @return bool
+     */
+    public function getLock($lock_name, $session_id, $body = array())
+    {
+        $lock = Http::put($this->base_url . '/kv/' . $lock_name . '?acquire=' . $session_id, $body, $http_code);
+        return $lock == 'true';
+    }
+
+    /**
+     * Releases a lock
+     * @param $lock_name
+     * @param $session_id
+     * @return bool
+     */
+    public function releaseLock($lock_name, $session_id)
+    {
+        $lock = Http::put($this->base_url . '/kv/' . $lock_name . '?release=' . $session_id, null, $http_code);
+        return $lock == 'true';
     }
 }

@@ -43,7 +43,7 @@ while ($attempts--) {
     $updated = $consul->addServerListToJoinList($instances_ip);
     if($updated){
         $consul->joinMultipleServers($instances_ip);
-        $consul->updateConfiguration();
+        $consul->saveConfiguration();
         $consul->reloadAgent();
     }
 

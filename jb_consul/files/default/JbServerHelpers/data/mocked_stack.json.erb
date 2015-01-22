@@ -1,0 +1,26 @@
+{
+    "Reservations": [
+        {
+            "Instances": [
+                {
+                    "PrivateIpAddress": "<%= @ip %>",
+                    "InstanceId": "mocked-instance-id",
+                    "Tags": [
+                        {
+                            "Value": "<%= @environment %>",
+                            "Key": "environment"
+                        },
+                        {
+                            "Value": "bootstrap",
+                            "Key": "consul"
+                        },
+                        {
+                            "Value": "<%= node['hostname'] %>",
+                            "Key": "opsworks:instance"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

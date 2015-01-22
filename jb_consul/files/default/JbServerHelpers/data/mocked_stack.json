@@ -1,0 +1,84 @@
+{
+  "Reservations": [
+    {
+      "Instances": [
+        {
+          "PrivateIpAddress": "192.168.10.60",
+          "InstanceId": "mocked-instance-id",
+          "Tags": [
+            {
+              "Value": "testing",
+              "Key": "environment"
+            },
+            {
+              "Value": "bootstrap",
+              "Key": "consul"
+            },
+            {
+              "Value": "JB-PABLOH02",
+              "Key": "opsworks:instance"
+            }
+          ]
+        },
+        {
+          "PrivateIpAddress": "192.168.10.61",
+          "InstanceId": "mocked-instance-id-1",
+          "Tags": [
+            {
+              "Value": "testing",
+              "Key": "environment"
+            },
+            {
+              "Value": "bootstrap",
+              "Key": "consul"
+            },
+            {
+              "Value": "JB-PABLOH03",
+              "Key": "opsworks:instance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Instances": [
+        {
+          "PrivateIpAddress": "192.168.10.62",
+          "InstanceId": "mocked-instance-id-2",
+          "Tags": [
+            {
+              "Value": "testing",
+              "Key": "environment"
+            },
+            {
+              "Value": "bootstrap",
+              "Key": "consul"
+            },
+            {
+              "Value": "JB-PABLOH04",
+              "Key": "opsworks:instance"
+            }
+          ]
+        },
+        {
+          "PrivateIpAddress": "192.168.10.63",
+          "InstanceId": "mocked-instance-id-3",
+          "Tags": [
+            {
+              "Value": "testing",
+              "Key": "environment"
+            },
+            {
+              "Value": "bootstrap",
+              "Key": "consul"
+            },
+            {
+              "Value": "JB-PABLOH05",
+              "Key": "opsworks:instance"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
