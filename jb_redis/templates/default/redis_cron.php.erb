@@ -1,18 +1,25 @@
 <?php
+require_once "<%= node['consul']['config_dir'] %>/JbServerHelpers/src/Consul.php";
+require_once "<%= node['consul']['config_dir'] %>/JbServerHelpers/src/JbRedis.php";
+
 //Current instance configurations
 define('CURRENT_IP', @$argv[1] ?: false);
 define('CURRENT_PORT', @$argv[2] ?: false);
-define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
+define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>/v1');
 define('CONSUL_CONFIG_PATH', '<%= node['consul']['config_dir'] %>');
+define('CONSUL_BIN', '<%= node['consul']['install_dir'] %>/consul');
+define('CONSUL_PORT', '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
 define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
-define('SENTINEL_NAME', 'sentinel_<%= node['redisio']['sentinels'][0]['name'] %>');
+define('SENTINEL_NAME', '<%= node['redisio']['sentinels'][0]['name'] %>');
 define('SENTINEL_QUORUM', '<%= node['redisio']['sentinels'][0]['quorum_count'] %>');
-define('HOSTNAME', gethostname());
-putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'); 
+putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin');
+
+$consul = new Consul(CONSUL_BASE_URL, CONSUL_CONFIG_PATH, CONSUL_BIN, CONSUL_PORT);
+$redis = new JbRedis(CURRENT_IP, CURRENT_PORT, REDIS_CONFIG_PATH, SENTINEL_NAME, SENTINEL_QUORUM);
 
 //Beacuse we depend on consul to elect the redis master, we have to wait until there is a consul leader before we can continue
-$consul_leader = getConsulLeader();
-if($consul_leader === false)
+$consul_leader = $consul->getLeader();
+if(empty($consul_leader))
     exit();
 
 // Tag for the non-master instance
@@ -20,22 +27,40 @@ if($consul_leader === false)
 $instance_type = (!CURRENT_IP && !CURRENT_PORT)? 'sentinel': 'slave';
 
 //Check if there is already a master runing
-$redis_master = getRedisMaster();
+$redis_master = $consul->getService('redis', 'master');
 if (!empty($redis_master)) {
+    //Get the first service from the services array
+    $redis_master = $redis_master[0];
     // Only if the current master is not the current service
     if (($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT)) {
-        //Check if the current redis service is already part of the cluster with the slave tag on cluster
-        if(!serviceHasTagOnConsul($instance_type)){
+        //Get the current node from consul
+        $current_node = $consul->getCurrentNode();
 
-            //Start redis server as a slave of the current master (if we're not a sentinel server)
-            if ($instance_type != 'sentinel')
-                startRedisServer($redis_master);
-            
-            //Start sentinel server pointing to the new master
-            startSentinelServer($redis_master['Address'], $redis_master['ServicePort']);
-            //Add the slave tag to the current service
-            addTagOnConsul($instance_type);
+        //If the service already have the tag, it means that it was already started and added to consul
+        if(isset($current_node['Services']['redis'.CURRENT_PORT]) && in_array($instance_type, $current_node['Services']['redis'.CURRENT_PORT]['Tags']))
+            exit();
+
+        //Start redis server as a slave of the current master (if we're not a sentinel server)
+        if ($instance_type != 'sentinel'){
+            $redis->setMaster($redis_master['Address'], $redis_master['ServicePort']);
+            $redis->saveConfiguration();
+            $redis->startService();
         }
+        
+        //Load sentinel configurations
+        $redis->loadSentinelConfiguration();
+        //Set the master to monitor
+        $redis->setSentinelMonitor($redis_master['Address'], $redis_master['ServicePort']);
+        //Save the new configurations
+        $redis->saveSentinelConfiguration();
+        //Restart the service
+        $redis->startService('_sentinel_' . SENTINEL_NAME);
+
+        //Load the configuration of the current instance
+        $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
+        $consul->addTagToService('redis' . CURRENT_PORT, $instance_type);
+        $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
+        $consul->reloadAgent();
     }
     exit();
 }
@@ -45,242 +70,33 @@ if ($instance_type == 'sentinel')
     exit();
 
 //Get the lock to start the leader election
-$session_id = getConsulSession();
-$redis_lock = getRedisLock($session_id);
+$session_id = $consul->createSession();
+$redis_lock = $consul->getLock('redis_master', $session_id, CURRENT_IP . ':' . CURRENT_PORT);
 if($redis_lock) {
-    $redis_master = getRedisMaster();
+    $redis_master = $consul->getService('redis', 'master');
     if(empty($redis_master)){
         //Start redis server as master
-        startRedisServer();
-        //Start sentinel server pointing to the new master
-        startSentinelServer(CURRENT_IP, CURRENT_PORT);
-        //Register the new redis master on consul
-        addTagOnConsul('master');
+        $redis->startService();
+
+        //Start sentinel with the new master
+        $redis->loadSentinelConfiguration();
+        $redis->setSentinelMonitor(CURRENT_IP, CURRENT_PORT);
+        $redis->saveSentinelConfiguration();
+        $redis->startService('_sentinel_' . SENTINEL_NAME);
+
+        //Update the consul service with the new master
+        $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
+        $consul->addTagToService('redis' . CURRENT_PORT, 'master');
+        $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
+        $consul->reloadAgent();
 
         //Wait until consul starts returning the 
-        while (empty(getRedisMaster()))
+        while (empty($consul->getService('redis', 'master')))
             sleep(10);
     }
     //Releses the current consul lock
-    releaseRedisLock($session_id);
+    $consul->releaseLock('redis_master', $session_id);
 }
 
 //Deltes current consul session
-deleteConsulSesssion($session_id);
-
-/**
- * Get redis configuration from config file
- * @return array
- */
-function getCurrentRedisServiceConfiguration()
-{
-    $config_file = 'redis' . CURRENT_PORT . '.json';
-    return json_decode(file_get_contents(CONSUL_CONFIG_PATH . '/' . $config_file), true);
-}
-
-/**
- * Update redis config file
- * @param  araray
- * @return void
- */
-function updateCurrentRedisConfig($content)
-{
-    $config_file = 'redis' . CURRENT_PORT . '.json';
-    file_put_contents(CONSUL_CONFIG_PATH . '/' . $config_file, str_replace("\\",'',json_encode($content, JSON_PRETTY_PRINT)));
-}
-
-/**
- * Get the current redis master from consul
- * @return string
- */
-function getRedisMaster()
-{
-    $master = null;
-    $result = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/catalog/service/redis?tag=master'), true);
-    if(count($result))
-        $master = $result[0];
-    return $master;
-}
-
-/**
- * Check the current service has the given tag
- * @return boolean
- */
-function serviceHasTagOnConsul($tag)
-{
-    //Get current node state
-    $node = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/catalog/node/'.HOSTNAME), true);
-    //Check if the service has the tag on consul
-    return isset($node['Services']['redis'.CURRENT_PORT]) && in_array($tag, $node['Services']['redis'.CURRENT_PORT]['Tags']);
-}
-
-/**
- * Add a tag to the current service on consul
- * @param string $tag
- */
-function addTagOnConsul($tag)
-{
-    $current_config = getCurrentRedisServiceConfiguration();
-    //Add master tag to configuration
-    if(!in_array($tag, $current_config['service']['tags'])){
-        $current_config['service']['tags'][] = $tag;
-        updateCurrentRedisConfig($current_config);
-        reloadConsulAgent();
-    }
-}
-
-/**
- * Get a lock from consul to start the leader election
- * @param  string $session_id
- * @return boolean
- */
-function getRedisLock($session_id)
-{
-    //Create the lock
-    $body = CURRENT_IP . ':' . CURRENT_PORT;
-    $lock = putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master?acquire=' . $session_id, $body);
-    return $lock;
-}
-
-/**
- * Release current lock on consul
- * @param  string $session_id [description]
- * @return boolean
- */
-function releaseRedisLock($session_id)
-{
-    return putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/master?release=' . $session_id);
-}
-
-/**
- * Get a session on consul 
- * @return string
- */
-function getConsulSession()
-{
-    //Get a new session from consul
-    $session_id = putCurlRequest(CONSUL_BASE_URL . '/v1/session/create');
-    return $session_id['ID'];
-}
-
-/**
- * Removes current session from consul
- * @param  string $session_id
- * @return boolean
- */
-function deleteConsulSesssion($session_id)
-{
-    return putCurlRequest(CONSUL_BASE_URL . '/v1/session/destroy/' . $session_id);
-}
-
-/**
- * Start the current redis service
- * @param  array $master_instance
- * @return void
- */
-function startRedisServer($master_instance = null)
-{
-    updateRedisConfigurationFile($master_instance);
-    exec('sudo service redis' . CURRENT_PORT . ' stop');
-    exec('sudo service redis' . CURRENT_PORT . ' start');
-}
-
-/**
- * Update redis configuration files for the current service
- * @param  array $master_instance
- * @return void
- */
-function updateRedisConfigurationFile($master_instance)
-{
-    $redis_config_file_path = REDIS_CONFIG_PATH . '/' . CURRENT_PORT . '.conf';
-    $redis_config = file_get_contents($redis_config_file_path);
-    //Remove previous "slaveof" configuration
-    $redis_config = preg_replace("/^slaveof.*/m", null, $redis_config);
-    if($master_instance){
-        //Adds the new master to the config file
-        $redis_config .= PHP_EOL . 'slaveof ' . $master_instance['Address'] . ' ' . $master_instance['ServicePort'];
-    }
-    file_put_contents($redis_config_file_path, $redis_config);
-}
-
-/**
- * Starts the sentinel service
- * @param  string $master_ip
- * @param  port $master_port
- * @return void
- */
-function startSentinelServer($master_ip, $master_port)
-{
-    $sentinel_config_file_path = REDIS_CONFIG_PATH . '/' . SENTINEL_NAME . '.conf';
-    $sentinel_config = file_get_contents($sentinel_config_file_path);
-    //Check if sentinel was already configured by another service
-    updateSentinelConfigurationFile($master_ip, $master_port, $sentinel_config_file_path, $sentinel_config);
-    exec('sudo service redis_' . SENTINEL_NAME . ' stop');
-    exec('sudo service redis_' . SENTINEL_NAME . ' start');
-}
-
-/**
- * Updates sentinel configuration files with the current master details
- * @param  string $master_ip
- * @param  string $master_port
- * @return void
- */
-function updateSentinelConfigurationFile($master_ip, $master_port, $sentinel_config_file_path, $sentinel_config)
-{
-    //Remove previos "sentinel monitor" from configuration
-    $sentinel_config = preg_replace("/^sentinel.monitor.*/m", null, $sentinel_config);
-    //Add the current instance as the sentinel master
-    $sentinel_config = 'sentinel monitor ' . SENTINEL_NAME . ' ' . $master_ip . ' ' . $master_port . ' ' . SENTINEL_QUORUM . PHP_EOL . $sentinel_config;
-    file_put_contents($sentinel_config_file_path, $sentinel_config);
-}
-
-/**
- * Reloads the consul agent with the new configurations (services)
- * @return void
- */
-function reloadConsulAgent()
-{
-    exec('consul reload');
-}
-
-/**
- * Execute a curl get request to the given url
- * @param  string url
- * @return string
- */
-function getCurlRequest($url)
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPGET,true);
-    return curl_exec($ch);
-}
-
-/**
- * Execute a curl put request with some data to the given url
- * @param  string $url
- * @param  string $data
- * @return string
- */
-function putCurlRequest($url, $data ='')
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HEADER, false);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
-    curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
-    $response = curl_exec($ch);
-    return @json_decode($response, true) ?: false;
-}
-
-/**
- * Get the current consul leader
- * @return mixed
- */
-function getConsulLeader()
-{
-    return @trim(getCurlRequest(CONSUL_BASE_URL . '/v1/status/leader'), '"') ?: false;
-}
+$consul->destroySession($session_id);

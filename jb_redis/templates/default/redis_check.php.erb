@@ -7,11 +7,15 @@ define('SENTINEL_PORT', '<%= node['redisio']['sentinels'][0]['port'] %>');
 
 $ping = runRedisCommand('ping');
 //Check if the client is responding
-if($ping[0] != 'PONG')
+if(!isset($ping[0]) || $ping[0] != 'PONG')
     exit(2);
 
 //Get the current redis master from sentinel
 $masters = runRedisCommand("sentinel masters | grep -A1 'ip$\\|port$'", SENTINEL_PORT);
+
+if(!count($masters))
+    exit(2);
+
 $f_masters = array_flip($masters);
 $master_ip = $masters[$f_masters['ip'] + 1];
 $master_port = $masters[$f_masters['port'] + 1];
