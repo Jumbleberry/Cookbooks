@@ -28,7 +28,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
     /**
      * Test if the agent is running
      */
-    public function testAgentRunning(){
+    public function testAgentRunning()
+    {
         $status = $this->consul->agentRunning();
         $this->assertTrue($status, "Can't get info from the agent, no agent running!");
     }
@@ -47,7 +48,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test for joining a different consul server
      * @depends testAgentRunning
      */
-    public function testJoinServer(){
+    public function testJoinServer()
+    {
         $server_ip = CONSUL_TEST_IP;
         $status = $this->consul->joinServer($server_ip);
         $this->assertTrue($status, 'Cant join the server ' . $server_ip);
@@ -61,7 +63,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
     /**
      * Test for joining multiple servers
      */
-    public function testJoinMultipleServers(){
+    public function testJoinMultipleServers()
+    {
         $servers_ip = array(CONSUL_TEST_IP, CONSUL_TEST_IP, CONSUL_TEST_IP);
         $status = $this->consul->joinMultipleServers($servers_ip);
         $this->assertTrue($status, 'Cant join multiple servers');
@@ -185,7 +188,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test for loading the consul configuration from file
      * @depends testAgentRunning
      */
-    public function testLoadConfiguration(){
+    public function testLoadConfiguration()
+    {
         $consul_config = $this->consul->getConfiguration();
         $this->assertNull($consul_config);
         $this->consul->loadConfiguration();
@@ -197,7 +201,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test to save the current configuration on a config file
      * @depends testAgentRunning
      */
-    public function testUpdateConfiguration(){
+    public function testUpdateConfiguration()
+    {
         $this->consul->loadConfiguration();
         $consul_config = $this->consul->getConfiguration();
         $this->assertArrayHasKey('server', $consul_config);
@@ -215,7 +220,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test to add a server to the current join list
      * @depends testAgentRunning
      */
-    public function testAddServerToJoinList(){
+    public function testAddServerToJoinList()
+    {
         $server_ip = CONSUL_TEST_IP;
         $this->consul->loadConfiguration();
         $this->consul->addServerToJoinList($server_ip);
@@ -227,7 +233,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
     /**
      * Test to add multiple server to the join list
      */
-    public function testAddServerListToJoinList(){
+    public function testAddServerListToJoinList()
+    {
         $servers_ip = array('192.168.10.60', '192.168.10.61', '192.168.10.62', '192.168.10.63');
         $ignore_list = array('192.168.10.60');
         $this->consul->loadConfiguration();
@@ -243,7 +250,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
     /**
      * Test to check if the add server to join list only return true when there was a change in the configuration
      */
-    public function testAddRepeatedServerToJoinList(){
+    public function testAddRepeatedServerToJoinList()
+    {
         $servers_ip = array('192.168.10.60', '192.168.10.61', '192.168.10.62', '192.168.10.63');
         $this->consul->loadConfiguration();
         $updated = $this->consul->addServerListToJoinList($servers_ip);
@@ -257,7 +265,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test to load a service configuration from file
      * @depends testAgentRunning
      */
-    public function testLoadServiceConfiguration(){
+    public function testLoadServiceConfiguration()
+    {
         $service_name = CONSUL_TEST_SERVICE_NAME;
         $service_config_file = CONSUL_TEST_SERVICE_CONFIG_FILE;
         $service_config = $this->consul->getServiceConfiguration($service_name);
@@ -272,7 +281,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test to save a service configuration to a config file
      * @depends testLoadServiceConfiguration
      */
-    public function testSaveServiceConfiguration(){
+    public function testSaveServiceConfiguration()
+    {
         $service_name = CONSUL_TEST_SERVICE_NAME;
         $service_config_file = CONSUL_TEST_SERVICE_CONFIG_FILE;
         $this->consul->loadServiceConfiguration($service_name, $service_config_file);
@@ -289,23 +299,28 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Add a tag to a loaded service configuration
      * @depends testSaveServiceConfiguration
      */
-    public function testAddTagToService()
+    public function testAddAndRemoveTagFromService()
     {
         $service_name = CONSUL_TEST_SERVICE_NAME;
         $service_config_file = CONSUL_TEST_SERVICE_CONFIG_FILE;
         $tag_name = 'test';
         $this->consul->loadServiceConfiguration($service_name, $service_config_file);
-        $this->consul->addTagToService($service_name, $tag_name);
+        $updated = $this->consul->addTagToService($service_name, $tag_name);
         $service_config = $this->consul->getServiceConfiguration($service_name);
+        $this->assertTrue($updated);
         $this->assertArrayHasKey('tags', $service_config['service']);
         $this->assertContains($tag_name, $service_config['service']['tags']);
+        $this->consul->removeTagFromService($service_name, $tag_name);
+        $service_config = $this->consul->getServiceConfiguration($service_name);
+        $this->assertNotContains($tag_name, $service_config['service']['tags']);
     }
 
     /**
      * Test for creating and destroy sessions on consul
      * @depends testAgentRunning
      */
-    public function testCreateAndDestroySession(){
+    public function testCreateAndDestroySession()
+    {
         $session_id = $this->consul->createSession();
         $this->assertNotEmpty($session_id);
         $session_info = $this->consul->getSessionInfo($session_id);
@@ -321,7 +336,8 @@ class ConsulTest extends PHPUnit_Framework_TestCase
      * Test for creating and releasing a lock
      * @depends testCreateAndDestroySession
      */
-    public function testGetAndReleaseALock(){
+    public function testGetAndReleaseALock()
+    {
         $lock_name = 'testing/lock';
         $session_id = $this->consul->createSession();
         $lock_acquire = $this->consul->getLock($lock_name, $session_id, ['testing' => 'lock']);
