@@ -1,4 +1,5 @@
 <?php
+
 define('REDIS_IP', '127.0.0.1');
 define('REDIS_PORT', 6379);
 define('REDIS_CONFIG_DIR', '/etc/redis');
@@ -8,18 +9,27 @@ define('SENTINEL_NAME', 'jbcluster');
 define('SENTINEL_QUORUM', 3);
 define('SENTINEL_PORT', 26379);
 
+/**
+ * Class JbRedisTest
+ */
 class JbRedisTest extends PHPUnit_Framework_TestCase {
     /**
      * @var JbRedis
      */
     private $redis;
 
+    /**
+     * Test initial setup
+     */
     protected function setUp()
     {
         $this->redis = new JbRedis(REDIS_IP, REDIS_PORT, REDIS_CONFIG_DIR, SENTINEL_NAME);
         parent::setUp();
     }
 
+    /**
+     * Test for loading and getting a loaded redis configuration
+     */
     public function testLoadAndGetConfiguration()
     {
         $redis_config = $this->redis->getConfiguration();
@@ -29,6 +39,9 @@ class JbRedisTest extends PHPUnit_Framework_TestCase {
         $this->assertContains('port '.REDIS_PORT, $redis_config);
     }
 
+    /**
+     * Test for saving a loaded configuration into a config file
+     */
     public function testSaveConfiguration()
     {
         $this->redis->loadConfiguration();
@@ -41,6 +54,9 @@ class JbRedisTest extends PHPUnit_Framework_TestCase {
         $this->redis->saveConfiguration($redis_config);
     }
 
+    /**
+     * Test for setting a master on the loaded configuration
+     */
     public function testSetMasterServer()
     {
         $this->redis->loadConfiguration();
@@ -49,6 +65,9 @@ class JbRedisTest extends PHPUnit_Framework_TestCase {
         $this->assertContains("slaveof " . REDIS_MASTER_IP . " " . REDIS_MASTER_PORT, $redis_config);
     }
 
+    /**
+     * Test for loading and getting the sentinel configuration
+     */
     public function testLoadAndGetSentinelConfiguration(){
         $sentinel_config = $this->redis->getSentinelConfiguration();
         $this->assertNull($sentinel_config);
@@ -57,13 +76,19 @@ class JbRedisTest extends PHPUnit_Framework_TestCase {
         $this->assertContains('port '.SENTINEL_PORT, $sentinel_config);
     }
 
+    /**
+     * Test for setting a redis master on the loaded sentinel configuration
+     */
     public function testSetSentinelMonitor(){
         $this->redis->loadSentinelConfiguration();
         $this->redis->setSentinelMonitor(REDIS_MASTER_IP, REDIS_MASTER_PORT);
         $sentinel_config = $this->redis->getSentinelConfiguration();
-        $this->assertContains("sentinel monitor " . SENTINEL_NAME . " " . REDIS_MASTER_IP . " " . REDIS_MASTER_PORT, $sentinel_config);
+        $this->assertContains("sentinel monitor sentinel_" . SENTINEL_NAME . " " . REDIS_MASTER_IP . " " . REDIS_MASTER_PORT, $sentinel_config);
     }
 
+    /**
+     * Test for saving the sentinel configuration into a config file
+     */
     public function testSaveSentinelConfiguration(){
         $this->redis->loadSentinelConfiguration();
         $sentinel_config = $this->redis->getSentinelConfiguration();
