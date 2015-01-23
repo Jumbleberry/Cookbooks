@@ -70,7 +70,7 @@ remote_directory "#{cron_path}/JbServerHelpers" do
     files_mode "0664"
     owner "root"
     group "root"
-    mode "0770"
+    mode "0775"
 end
 
 # Create Helpers data directory so it can be used by the templates
