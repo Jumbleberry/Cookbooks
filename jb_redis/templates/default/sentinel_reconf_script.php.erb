@@ -1,5 +1,7 @@
 #!/usr/bin/php
 <?php
+require_once "<%= node['consul']['config_dir'] %>/JbServerHelpers/src/Consul.php";
+
 define('MASTER_NAME', $argv[1]);
 define('ROLE', $argv[2]);
 define('STATE', $argv[3]);
@@ -7,194 +9,64 @@ define('FROM_IP', $argv[4]);
 define('FROM_PORT', $argv[5]);
 define('TO_IP', $argv[6]);
 define('TO_PORT', $argv[7]);
-define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>');
+define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>/v1');
 define('CURRENT_IP', '<%= @currentip %>');
 define('CONSUL_CONFIG_PATH', '<%= node['consul']['config_dir'] %>');
+define('CONSUL_BIN', '<%= node['consul']['install_dir'] %>/consul');
+define('CONSUL_PORT', '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
+
+$consul = new Consul(CONSUL_BASE_URL, CONSUL_CONFIG_PATH, CONSUL_BIN, CONSUL_PORT);
 
 $reload_consul = false;
 
 if(STATE == 'start'){
     //If a new master has been elected, we have to update the master on consul
-    $session_id = getConsulSession();
+    $session_id = $consul->createSession();
     //If we are on the old master server, remove the master tag
     if(FROM_IP == CURRENT_IP){
-        $lock_remove_master = getRedisLock($session_id, 'remove_master');
+        //Get a new lock for removing the master
+        $lock_remove_master = $consul->getLock('remove_master', $session_id);
         if($lock_remove_master){
-            if(removeTagOnConsul('master', FROM_PORT))
+            //Load redis service configuration
+            $service_name = 'redis' . FROM_PORT;
+            $consul->loadServiceConfiguration($service_name);
+            //Replace the master tag with the slave tag
+            if($consul->removeTagFromService($service_name, 'master'))
                 $reload_consul = true;
-            if(addTagOnConsul('slave', FROM_PORT))
+            if($consul->addTagToService($service_name, 'slave'))
                 $reload_consul = true;
-            //Releses the current reloase master lock
-            releaseRedisLock($session_id, 'remove_master');
+            //Save the changes of the service configuration
+            $consul->saveServiceConfiguration($service_name);
+            //Releses the current remove master lock
+            $consul->releaseLock('remove_master', $session_id);
         }
     }
 
     if(TO_IP == CURRENT_IP){
-        $lock_add_master = getRedisLock($session_id, 'add_master');
+        //Get a new lock for adding a new master
+        $lock_add_master = $consul->getLock('add_master', $session_id);
         if($lock_add_master){
-            $redis_master = getRedisMaster();
+            $redis_master = $consul->getService('redis', 'master');
             //If there is no redis master (it might be removed by this same script) or if the master is not the new one
-            if(empty($redis_master) || (!empty($redis_master) && ($redis_master['Address'] != TO_IP || $redis_master['ServicePort'] != TO_PORT))){
-                if(removeTagOnConsul('slave', TO_PORT))
+            if(empty($redis_master) || (!empty($redis_master) && ($redis_master[0]['Address'] != TO_IP || $redis_master[0]['ServicePort'] != TO_PORT))){
+                //Load redis service configuration
+                $service_name = 'redis' . TO_PORT;
+                $consul->loadServiceConfiguration($service_name);
+                //Replace the slave tag with the master tag
+                if($consul->removeTagFromService($service_name, 'slave'))
                     $reload_consul = true;
-                if(addTagOnConsul('master', TO_PORT))
+                if($consul->addTagToService($service_name, 'master'))
                     $reload_consul = true;
+                $consul->saveServiceConfiguration($service_name);
             }
-            releaseRedisLock($session_id, 'add_master');
+            //Releses the current add master lock
+            $consul->releaseLock('add_master', $session_id);
         }
     }
     
     //Deltes current consul session
-    deleteConsulSesssion($session_id);
+    $consul->destroySession($session_id);
 }
 
 if($reload_consul)
-    reloadConsulAgent();
-/**
- * Get a session on consul 
- * @return string
- */
-function getConsulSession()
-{
-    //Get a new session from consul
-    $session_id = putCurlRequest(CONSUL_BASE_URL . '/v1/session/create');
-    return $session_id['ID'];
-}
-
-/**
- * Removes current session from consul
- * @param  string $session_id
- * @return boolean
- */
-function deleteConsulSesssion($session_id)
-{
-    return putCurlRequest(CONSUL_BASE_URL . '/v1/session/destroy/' . $session_id);
-}
-
-/**
- * Get a lock from consul to start the leader election
- * @param  string $session_id
- * @return boolean
- */
-function getRedisLock($session_id, $lock_name, $body = CURRENT_IP)
-{
-    //Create the lock
-    $lock = putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/' . $lock_name . '?acquire=' . $session_id, $body);
-    return $lock;
-}
-
-/**
- * Release current lock on consul
- * @param  string $session_id [description]
- * @return boolean
- */
-function releaseRedisLock($session_id, $lock_name)
-{
-    return putCurlRequest(CONSUL_BASE_URL . '/v1/kv/redis/' . $lock_name . '?release=' . $session_id);
-}
-
-/**
- * Get the current redis master from consul
- * @return string
- */
-function getRedisMaster()
-{
-    $master = null;
-    $result = json_decode(getCurlRequest(CONSUL_BASE_URL . '/v1/catalog/service/redis?tag=master'), true);
-    if(count($result))
-        $master = $result[0];
-    return $master;
-}
-
-/**
- * Execute a curl get request to the given url
- * @param  string url
- * @return string
- */
-function getCurlRequest($url)
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPGET,true);
-    return curl_exec($ch);
-}
-
-/**
- * Execute a curl put request with some data to the given url
- * @param  string $url
- * @param  string $data
- * @return string
- */
-function putCurlRequest($url, $data ='')
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HEADER, false);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
-    curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
-    $response = curl_exec($ch);
-    return @json_decode($response, true) ?: false;
-}
-
-/**
- * Add a tag to the current service on consul
- * @param string $tag
- */
-function addTagOnConsul($tag, $port)
-{
-    $current_config = getCurrentRedisServiceConfiguration($port);
-    //Add master tag to configuration
-    if(!in_array($tag, $current_config['service']['tags'])){
-        $current_config['service']['tags'][] = $tag;
-        updateCurrentRedisConfig($current_config, $port);
-        return true;
-    }
-    return false;
-}
-
-function removeTagOnConsul($tag, $port)
-{
-    $current_config = getCurrentRedisServiceConfiguration($port);
-    $key = array_search($tag, $current_config['service']['tags']);
-    if($key !== false){
-        $current_config['service']['tags'] = array_splice($current_config['service']['tags'], $key - 1, 1);
-        updateCurrentRedisConfig($current_config, $port);
-        return true;
-    }
-    return false;
-}
-
-/**
- * Get redis configuration from config file
- * @return array
- */
-function getCurrentRedisServiceConfiguration($port)
-{
-    $config_file = 'redis' . $port . '.json';
-    return json_decode(file_get_contents(CONSUL_CONFIG_PATH . '/' . $config_file), true);
-}
-
-/**
- * Update redis config file
- * @param  araray
- * @return void
- */
-function updateCurrentRedisConfig($content, $port)
-{
-    $config_file = 'redis' . $port . '.json';
-    file_put_contents(CONSUL_CONFIG_PATH . '/' . $config_file, str_replace("\\",'',json_encode($content, JSON_PRETTY_PRINT)));
-    //Debug file
-    file_put_contents('/tmp/' . $config_file, str_replace("\\",'',json_encode($content, JSON_PRETTY_PRINT)));
-}
-
-/**
- * Reloads the consul agent with the new configurations (services)
- * @return void
- */
-function reloadConsulAgent()
-{
-    exec('consul reload');
-}
+    $consul->reloadAgent();
