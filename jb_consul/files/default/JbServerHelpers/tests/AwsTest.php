@@ -19,6 +19,10 @@ class AwsTest extends PHPUnit_Framework_TestCase {
     public static function setUpBeforeClass()
     {
         self::$onAws = @file_get_contents('http://instance-data.ec2.internal') ? true: false;
+        if(self::$onAws){
+            putenv('HOME=', '/home/ubuntu/');
+            putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin');
+        }
     }
 
     /**
