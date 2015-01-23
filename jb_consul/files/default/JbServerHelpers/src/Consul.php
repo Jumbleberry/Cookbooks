@@ -171,17 +171,40 @@ class Consul
      * Shortcut for adding a tag to a loaded service
      * @param $service_name
      * @param $tag_name
+     * @return bool
      */
     public function addTagToService($service_name, $tag_name)
     {
         if(!isset($this->services_config[$service_name]))
             $this->loadServiceConfiguration($service_name);
-        $service_config = $this->getServiceConfiguration($service_name);
-        if(!isset($service_config['service']['tags']))
-            $service_config['service']['tags'] = [];
-        if(!in_array($tag_name, $service_config['service']['tags']))
-            $service_config['service']['tags'][] = $tag_name;
-        $this->services_config[$service_name] = $service_config;
+
+        if(!isset($this->services_config[$service_name]['service']['tags']))
+            $this->services_config[$service_name]['service']['tags'] = [];
+        if(!in_array($tag_name, $this->services_config[$service_name]['service']['tags'])){
+            $this->services_config[$service_name]['service']['tags'][] = $tag_name;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Shortcut for removing a tag from a loaded service
+     * @param $service_name
+     * @param $tag_name
+     * @return bool
+     */
+    public function removeTagFromService($service_name, $tag_name){
+        if(!isset($this->services_config[$service_name]))
+            $this->loadServiceConfiguration($service_name);
+
+        if(isset($this->services_config[$service_name]['service']['tags'])){
+            $key = array_search($tag_name, $this->services_config[$service_name]['service']['tags']);
+            if($key !== false){
+                $this->services_config['service']['tags'] = array_splice($this->services_config[$service_name]['service']['tags'], $key, 1);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
