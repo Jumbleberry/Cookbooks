@@ -65,6 +65,9 @@ if servers.kind_of?(Array) && !servers.empty?
             end
         end
     end
+else
+    # Delete the redis cron file
+    execute "rm -rf #{consul_path}/redis*.json"
 end
 
 sentinels.each do |sentinel|
