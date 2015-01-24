@@ -4,7 +4,7 @@ server {
     root <%= @path %>;
 
     index index.php;
-    try_files $uri $uri/ index.php?_url=$uri&$args;
+    try_files $uri $uri/ /index.php?_url=$uri&$args;
     
     access_log  /var/log/nginx/<%= @hostname %>.access.log  main;
     error_log  /var/log/nginx/<%= @hostname %>.error.log  warn;
