@@ -22,11 +22,15 @@ virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['mesh']['hostn
 virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['mesh']['hostname']
 
 template virtualhost do
-  source    "nginx/mesh.jbx.jumbleberry.com.erb"
+  source    "nginx/mesh.erb"
   variables ({
     "hostname"  => node['jbx']['mesh']['hostname'],
     "path"      => "#{node['jbx']['core']['path']}/public"
   })
+end
+
+template "#{node['jbx']['mesh']['path']}/config/config.json" do
+    source "mesh/config.json.erb"
 end
 
 service 'nginx' do

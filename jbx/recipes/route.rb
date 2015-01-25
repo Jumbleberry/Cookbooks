@@ -26,7 +26,7 @@ virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['route']['host
 virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['route']['hostname']
 
 template virtualhost do
-  source    "nginx/route.jbx.jumbleberry.com.erb"
+  source    "nginx/route.erb"
   variables ({
     "hostname"  => node['jbx']['route']['hostname'],
     "path"      => node['jbx']['route']['path']

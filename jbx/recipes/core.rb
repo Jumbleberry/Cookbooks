@@ -28,13 +28,6 @@ execute "chown-data-www" do
   action :run
 end
 
-# Run the deploy script
-execute 'Deploy Script' do
-    cwd "#{node['jbx']['core']['path']}"
-    user "root"
-    command 'sh deploy.sh'
-end
-
 #Update application credentials
 credentials_file = "#{node['jbx']['core']['path']}/config/credentials.json"
 credentials_file_template = "credentials.json.erb"
@@ -63,6 +56,18 @@ template credentials_file do
       "crypt"                   => node['jbx']['credentials']['crypt'],
       "raygun"                  => node['jbx']['credentials']['raygun']
     })
+end
+
+template "#{node['jbx']['core']['path']}/config/config.json" do
+    source "config.json.erb"
+end
+
+
+# Run the deploy script
+execute 'Deploy Script' do
+    cwd "#{node['jbx']['core']['path']}"
+    user "root"
+    command 'sh deploy.sh'
 end
 
 # Run database migrations

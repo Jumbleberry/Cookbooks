@@ -1,0 +1,40 @@
+{
+    "constants": {
+        "debug_enabled" : false,
+        "cache"         : false,
+        "cache_key"     : "jbx_cache:",
+        "cache_lifetime": 31536000,
+        "version"       : "0.1.1"
+    },
+    "modules"  : {
+        "mesh"  : {
+            "domain"        : "<%= node['jbx']['mesh']['hostname'] %>",
+            "controllers"   : [
+                "Redirect",
+                "Pixel",
+                "Index"
+            ]
+        }
+    },
+    "namespaces" : {
+        "JBX"                                  : "/application/",
+        "JBX\\Enums"                           : "/application/enums/",
+        "JBX\\Exceptions"                      : "/application/exceptions/",        
+        "JBX\\Library"                         : "/application/library/",
+        "JBX\\Library\\Annotations"            : "/application/library/annotations/",
+        "JBX\\Library\\Cache"                  : "/application/library/cache/",
+        "JBX\\Library\\Models"                 : "/application/library/models/",
+        "JBX\\Library\\Models\\Behaviours"     : "/application/library/models/behaviours/",
+        "JBX\\Library\\Utils"                  : "/application/library/utils/",
+        "JBX\\Models"                          : "/application/models/internal/",
+        "JBX\\Models\\Behaviours"              : "/application/models/behaviours/",
+        "JBX\\Models\\Hitpath"                 : "/application/models/external/hitpath/",        
+        "JBX\\Modules"                         : "/application/modules/",
+        "JBX\\Objects"                         : "/application/objects/",
+        "JBX\\Responses"                       : "/application/responses/",
+        "JBX\\Services"                        : "/application/services/",
+        "JBX\\Tests"                           : "/tests/",
+        "JBX\\Tests\\Helpers"                  : "/tests/helpers"
+
+    }
+}
