@@ -2,8 +2,15 @@ include_recipe "aws"
 include_recipe "awscli"
 include_recipe "tags"
 include_recipe "php"
+
+# Install consul ui if we're supposed to serve it
+if (node['consul'].attribute?('serve_ui') && node['consul']['serve_ui'])
+    include_recipe "consul::ui"
+end
+
 include_recipe "consul"
 include_recipe "dnsmasq"
+
 
 cron_path = node["consul"]["config_dir"]
 
