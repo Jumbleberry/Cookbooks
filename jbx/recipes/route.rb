@@ -46,7 +46,7 @@ template credentials_file do
       "mysql_read_database"     => node['jbx']['credentials']['mysql_read']['dbname'],
       "redis_host"              => node['jbx']['credentials']['redis']['host'],
       "redis_port"              => node['jbx']['credentials']['redis']['port'],
-      "db_index"                => node['jbx']['route']['redis_db']
+      "redis_index"             => node['jbx']['route']['redis_db']
     })
 end
 

@@ -52,6 +52,7 @@ template credentials_file do
 
       "redis_host"              => node['jbx']['credentials']['redis']['host'],
       "redis_port"              => node['jbx']['credentials']['redis']['port'],
+      "redis_index"             => node['jbx']['core']['redis_db'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
       "raygun"                  => node['jbx']['credentials']['raygun']

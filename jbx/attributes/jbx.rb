@@ -6,6 +6,7 @@ default['jbx']['core']['path'] = '/vagrant/www'
 default['jbx']['core']['git-url'] = 'git@github.com:Jumbleberry/JBX.git'
 default['jbx']['core']['branch'] = 'master'
 default['jbx']['core']['github_key'] = ''
+default['jbx']['core']['redis_db'] = 1
 
 default['jbx']['mesh']['path'] = '/vagrant/www/application/modules/mesh'
 default['jbx']['mesh']['git-url'] = 'git@github.com:Jumbleberry/JBX-Mesh.git'
