@@ -120,12 +120,12 @@ class Aws {
 
     /**
      * Get current instance from aws
-     * @return array
+     * @return mixed
      */
     public function getCurrentInstance()
     {
         $reservations = $this->getInstancesByTag('opsworks:instance', gethostname());
-        return @$reservations[0]['Instances'][0] ?: array();
+        return @$reservations[0]['Instances'][0] ?: null;
     }
 
     /**
