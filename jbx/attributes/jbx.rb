@@ -16,6 +16,7 @@ default['jbx']['route']['path'] = '/vagrant/www/route'
 default['jbx']['route']['git-url'] = 'git@github.com:Jumbleberry/jbx-router.git'
 default['jbx']['route']['branch'] = 'master'
 default['jbx']['route']['github_key'] = ''
+default['jbx']['route']['redis_db'] = 8
 
 default['jbx']['credentials']['mysql_read']['host'] = ''
 default['jbx']['credentials']['mysql_read']['username'] = ''
