@@ -34,6 +34,11 @@ template '/etc/default/gearman-job-server' do
     mode '0644'
 end
 
+execute "sudo killall gearmand" do
+    user "root"
+end
+
+
 execute "sudo service gearman-job-server restart" do
     user "root"
 end
