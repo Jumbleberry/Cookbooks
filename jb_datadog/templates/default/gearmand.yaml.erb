@@ -1,6 +1,6 @@
 instances:
 <% node['datadog']['services']['gearmand'].each do |i| -%>
-  - server: <%= ipAddress %>
+  - server: <%= @ipAddress %>
     port: <%= i["port"] || 4730 %>
     <% if i.key?("tags") -%>
     tags:
