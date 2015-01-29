@@ -22,4 +22,5 @@ PARAMS="-q mysql \
     --mysql-password=<%= node['gearman']['mysql']['password'] %> \
     --mysql-db=<%= node['gearman']['mysql']['db'] %> \
     --mysql-table=<%= node['gearman']['mysql']['table'] %> \
-    --mysql-port=<%= node['gearman']['mysql']['port'] %>"
+    --mysql-port=<%= node['gearman']['mysql']['port'] %> \
+    -L <%= node['gearman']['ip'] %>"
