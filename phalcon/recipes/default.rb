@@ -11,8 +11,15 @@ git path do
   action :sync
 end
 
+# Modify install file
+cookbook_file build_path + '/install' do
+    source "install"
+    mode "0755"
+    action :create
+end
+
 execute  "phalcon-build" do
-  cwd "#{path}/build"
+  cwd build_path
   user "root"
   command %{./install}
 
