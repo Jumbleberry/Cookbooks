@@ -177,9 +177,16 @@ class Consul
     {
         if(!isset($this->services_config[$service_name]))
             $this->loadServiceConfiguration($service_name);
-
+        
+        if (!isset($this->services_config[$service_name]))
+            $this->services_config[$service_name] = ['service' => []];
+        
+        if(!isset($this->services_config[$service_name]['service']['name']))
+            $this->services_config[$service_name]['service']['name'] = $service_name
+        
         if(!isset($this->services_config[$service_name]['service']['tags']))
             $this->services_config[$service_name]['service']['tags'] = [];
+        
         if(!in_array($tag_name, $this->services_config[$service_name]['service']['tags'])){
             $this->services_config[$service_name]['service']['tags'][] = $tag_name;
             return true;
