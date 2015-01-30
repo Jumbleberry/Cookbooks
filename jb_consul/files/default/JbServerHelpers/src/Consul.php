@@ -182,7 +182,7 @@ class Consul
             $this->services_config[$service_name] = ['service' => []];
         
         if(!isset($this->services_config[$service_name]['service']['name']))
-            $this->services_config[$service_name]['service']['name'] = $service_name
+            $this->services_config[$service_name]['service']['name'] = $service_name;
         
         if(!isset($this->services_config[$service_name]['service']['tags']))
             $this->services_config[$service_name]['service']['tags'] = [];
