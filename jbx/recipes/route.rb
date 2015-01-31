@@ -5,7 +5,7 @@ include_recipe "nginx"
 include_recipe "php"
 
 # Set the branch to checkout
-branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['route']['branch']
+branch = ENV['JBX_ROUTE_BRANCH'] || node['jbx']['route']['branch']
 
 git node['jbx']['route']['path'] do
   ssh_wrapper node['github-auth']['wrapper_path'] + "/" + "route_wrapper.sh"
