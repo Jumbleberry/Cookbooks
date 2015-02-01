@@ -5,7 +5,7 @@ $code = 2;
 
 // Check if we can connect to service
 try {
-    $admin  = new GearmanAdmin(@$argv[1] ?: null);
+    $admin  = @(new GearmanAdmin(@$argv[1] ?: null));
     $code   = 0;
     
     // There's no functions registered but we connected - something is wrong but not fatal
