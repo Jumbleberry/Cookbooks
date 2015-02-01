@@ -1,0 +1,14 @@
+{
+    "service": {
+        "id": "gearman",
+        "name": "gearman",
+        "port": 4730,
+        "tags": [
+            "gearman"
+        ],
+        "check": {
+            "script": "<%= @consul_path %>/gearman_check.php <%= @currentip %>",
+            "interval": "5s"
+        }
+    }
+}
