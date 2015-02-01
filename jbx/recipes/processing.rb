@@ -1,6 +1,5 @@
 include_recipe "jbx::core"
 include_recipe "gearman"
-include_recipe "gearman::manager"
 
 # Set the branch to checkout
 branch = ENV['JBX_PROCESSING_BRANCH'] || node['jbx']['processing']['branch']
@@ -43,4 +42,31 @@ end
 link virtualhost_link do
   to virtualhost
   notifies :reload, "service[nginx]"
+end
+
+# Install gearman manager
+execute "echo 1 | /bin/bash install.sh" do
+    cwd "#{node['jbx']['core']['path']}/application/vendor/brianlmoon/gearmanmanager/install"
+    user "root"
+end
+
+# Delete the config script if it isnt a symlink to processing
+file "/etc/gearman-manager/config.ini" do
+    action :delete
+    not_if { File.symlink?("/etc/gearman-manager/config.ini") }
+end
+
+# Symlink our config script
+link "#{node['jbx']['processing']['path']}/config/config.ini" do
+    to "/etc/gearman-manager/config.ini"
+    action :create
+    not_if { File.symlink?("/etc/gearman-manager/config.ini") }
+    owner "www-data"
+    group "www-data"
+end
+
+# Start the service
+service "gearman-manager" do
+    supports :status => true, :restart => true, :start => true, :stop => true
+    action :restart
 end
