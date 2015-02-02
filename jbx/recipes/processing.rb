@@ -57,6 +57,15 @@ execute "echo 1 | /bin/bash install.sh" do
     user "root"
 end
 
+# We need to chmod gearman manager...
+file "/usr/local/bin/gearman-manager" do
+    action :touch
+    mode "0755"
+    owner "root"
+    group "root"
+end
+
+
 # Delete the config script if it isnt a symlink to processing
 file "/etc/gearman-manager/config.ini" do
     action :delete
