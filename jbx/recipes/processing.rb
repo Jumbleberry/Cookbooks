@@ -52,7 +52,7 @@ link "/etc/gearman-manager/config.ini" do
 end
 
 # Install gearman manager
-execute "echo 1 | /bin/bash install.sh" do
+execute "echo 2 | /bin/bash install.sh" do
     cwd "#{node['jbx']['core']['path']}/application/vendor/brianlmoon/gearmanmanager/install"
     user "root"
 end
@@ -64,7 +64,6 @@ file "/usr/local/bin/gearman-manager" do
     owner "root"
     group "root"
 end
-
 
 # Delete the config script if it isnt a symlink to processing
 file "/etc/gearman-manager/config.ini" do

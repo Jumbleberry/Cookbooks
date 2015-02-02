@@ -20,6 +20,11 @@ package 'gearman' do
     version node["gearman"]["version"]
 end
 
+# install gearman pear extension
+execute "pear install Net_Gearman-alpha" do
+    user "root"
+end
+
 #Update configuration file
 template '/etc/init/gearman-job-server.conf' do
     source 'gearman-job-server.conf.erb'
