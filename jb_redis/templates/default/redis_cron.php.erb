@@ -71,7 +71,7 @@ if ($instance_type == 'sentinel')
 
 //Get the lock to start the leader election
 $session_id = $consul->createSession();
-$redis_lock = $consul->getLock('redis_master', $session_id, CURRENT_IP . ':' . CURRENT_PORT);
+$redis_lock = $consul->getLock('redis_master', $session_id, CURRENT_IP . ':' . CURRENT_PORT, array(), '30s');
 if($redis_lock) {
     $redis_master = $consul->getService('redis', 'master');
     if(empty($redis_master)){

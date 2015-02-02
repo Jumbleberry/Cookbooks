@@ -363,11 +363,13 @@ class Consul
      * @param $lock_name
      * @param $session_id
      * @param array $body
+     * @param string $wait How long to wait on the query (ex: "10s", "5m")
      * @return bool
      */
-    public function getLock($lock_name, $session_id, $body = array())
+    public function getLock($lock_name, $session_id, $body = array(), $wait = null)
     {
-        $lock = Http::put($this->base_url . '/kv/' . $lock_name . '?acquire=' . $session_id, $body, $http_code);
+        $wait = !is_null($wait) ? '&wait=' . $wait : '';
+        $lock = Http::put($this->base_url . '/kv/' . $lock_name . '?acquire=' . $session_id . $wait, $body, $http_code);
         return $lock == 'true';
     }
 
