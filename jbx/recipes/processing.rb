@@ -44,6 +44,13 @@ link virtualhost_link do
   notifies :reload, "service[nginx]"
 end
 
+# Un-symlink our config script to prevent install file from overwriting our good version
+link "/etc/gearman-manager/config.ini" do
+    to "#{node['jbx']['processing']['path']}/config/config.ini"
+    action :delete
+    only_if { File.symlink?("/etc/gearman-manager/config.ini") }
+end
+
 # Install gearman manager
 execute "echo 1 | /bin/bash install.sh" do
     cwd "#{node['jbx']['core']['path']}/application/vendor/brianlmoon/gearmanmanager/install"
@@ -57,10 +64,9 @@ file "/etc/gearman-manager/config.ini" do
 end
 
 # Symlink our config script
-link "#{node['jbx']['processing']['path']}/config/config.ini" do
-    to "/etc/gearman-manager/config.ini"
+link "/etc/gearman-manager/config.ini" do
+    to "#{node['jbx']['processing']['path']}/config/config.ini"
     action :create
-    not_if { File.symlink?("/etc/gearman-manager/config.ini") }
     owner "www-data"
     group "www-data"
 end
