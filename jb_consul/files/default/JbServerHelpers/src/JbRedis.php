@@ -164,4 +164,17 @@ class JbRedis
         $this->loadSentinelConfiguration($config_file);
         return $saved;
     }
+
+    /**
+     * Execute a redis command and return the output of it
+     * @param  string $command
+     * @param  string $port
+     * @param  string $ip
+     * @return array
+     */
+    public function runCommand($command)
+    {
+        exec('redis-cli -p ' . $this->port . ' -h ' . $this->ip . ' ' . $command, $output);
+        return $output;
+    }
 }
