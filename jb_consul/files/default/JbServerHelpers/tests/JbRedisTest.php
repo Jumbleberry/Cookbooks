@@ -99,4 +99,13 @@ class JbRedisTest extends PHPUnit_Framework_TestCase {
         $sentinel_config = preg_replace("/^#TEST_SAVE_CONFIGURATION.*/m", null, $sentinel_config);
         $this->redis->saveSentinelConfiguration($sentinel_config);
     }
+
+    /**
+     * Test for running consul commands
+     */
+    public function testRunCommand()
+    {
+        $result = $this->redis->runCommand('ping');
+        $this->assertContains('PONG', $result);
+    }
 }
