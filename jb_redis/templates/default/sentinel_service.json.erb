@@ -1,0 +1,10 @@
+{
+    "service": {
+        "id": "redis_sentinel_<%= @sentinel_name %>",
+        "name": "sentinel",
+        "port": <%= @port %>,
+        "tags": [
+            "sentinel"
+        ]
+    }
+}

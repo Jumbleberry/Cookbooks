@@ -59,6 +59,18 @@ class JbRedis
     }
 
     /**
+     * Kill the current process using the port
+     * @param  int $port Service port
+     */
+    private function releaseServicePort($port = null)
+    {
+        $port = $port ?: $this->port;
+        exec('fuser ' . $port . '/tcp', $output, $status);
+        if($status != 0)
+            exec('fuser -k ' . $port . '/tcp');
+    }
+
+    /**
      * Load the configuration from a config file
      * @param null $config_file
      */
@@ -104,14 +116,21 @@ class JbRedis
         //Remove any other master currently in the configuration
         $this->config = preg_replace("/^slaveof.*/m", null, $this->config);
         $this->config .= PHP_EOL . "slaveof " . $master_ip . " " . $master_port;
+
+        $this->config = preg_replace("/^#slaveof.*/m", null, $this->config);
+        $this->config .= PHP_EOL . "#slaveof " . $master_ip . " " . $master_port;
     }
 
     /**
      * Start the redis service
      * @param null $service_suffix
+     * @param boolean $force With force it will stop any process using the port of the service
      */
-    public function startService($service_suffix = null)
+    public function startService($service_suffix = null, $force = true)
     {
+
+        if($force)
+            $this->releaseServicePort();
         $service_suffix = $service_suffix ?: $this->port;
         exec('sudo service redis' . $service_suffix . ' stop');
         exec('sudo service redis' . $service_suffix . ' start');
@@ -172,9 +191,11 @@ class JbRedis
      * @param  string $ip
      * @return array
      */
-    public function runCommand($command)
+    public function runCommand($command, $ip = null, $port = null)
     {
-        exec('redis-cli -p ' . $this->port . ' -h ' . $this->ip . ' ' . $command, $output);
+        $ip = $ip ?: $this->ip;
+        $port = $port ?: $this->port;
+        exec('redis-cli -p ' . $port . ' -h ' . $ip . ' ' . $command, $output);
         return $output;
     }
 }

@@ -1,0 +1,43 @@
+<?php
+require_once "<%= node['consul']['config_dir'] %>/JbServerHelpers/src/Consul.php";
+require_once "<%= node['consul']['config_dir'] %>/JbServerHelpers/src/JbRedis.php";
+
+define('CURRENT_IP', @$argv[1] ?: false);
+define('CURRENT_PORT', @$argv[2] ?: false);
+define('CONSUL_BASE_URL', 'http://localhost:<%= node['consul']['ports']['http'] || 8500 %>/v1');
+define('CONSUL_CONFIG_PATH', '<%= node['consul']['config_dir'] %>');
+define('CONSUL_BIN', '<%= node['consul']['install_dir'] %>/consul');
+define('CONSUL_PORT', '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
+define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
+define('SENTINEL_NAME', '<%= node['redisio']['sentinels'][0]['name'] %>');
+define('SENTINEL_QUORUM', '<%= node['redisio']['sentinels'][0]['quorum_count'] %>');
+putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin');
+
+$consul = new Consul(CONSUL_BASE_URL, CONSUL_CONFIG_PATH, CONSUL_BIN, CONSUL_PORT);
+$redis = new JbRedis(CURRENT_IP, CURRENT_PORT, REDIS_CONFIG_PATH, SENTINEL_NAME, SENTINEL_QUORUM);
+
+//Exit if sentinel is already running on the server
+$ping = $redis->runCommand('ping');
+if(isset($ping[0]) && $ping[0] == 'PONG')
+    exit();
+
+//Beacuse we depend on consul to elect the redis master, we have to wait until there is a consul leader before we can continue
+$consul_leader = $consul->getLeader();
+if(empty($consul_leader))
+    exit();
+
+//We have to wait until there is one redis master on consul
+$redis_master = $consul->getService('redis', 'master');
+
+if(!empty($redis_master)){
+    //Get the first service from the services array
+    $redis_master = $redis_master[0];
+    //Load sentinel configurations
+    $redis->loadSentinelConfiguration();
+    //Set the master to monitor
+    $redis->setSentinelMonitor($redis_master['Address'], $redis_master['ServicePort']);
+    //Save the new configurations
+    $redis->saveSentinelConfiguration();
+    //Restart the service
+    $redis->startService('_sentinel_' . SENTINEL_NAME);
+}

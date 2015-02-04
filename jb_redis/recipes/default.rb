@@ -16,6 +16,10 @@ end
 servers = node['redisio']['servers'];
 sentinels = node['redisio']['sentinels'];
 
+# -------------------
+# Redis configuration
+# -------------------
+
 # Copy the cron scrip to the redis config path
 template "#{redis_path}/redis_cron.php" do
     source "redis_cron.php.erb"
@@ -72,23 +76,54 @@ else
     end
 end
 
-sentinels.each do |sentinel|
-    if(sentinel[:logfile])
-        #Create log file with the right permissions
-        file sentinel.logfile do
-            owner "redis"
-            group "redis"
-            mode  "0644"
-        end
-    end
+# -----------------------
+# Sentinels configuration
+# -----------------------
+
+# Copy the cron scrip to the redis config path
+template "#{redis_path}/sentinel_cron.php" do
+    source "sentinel_cron.php.erb"
+    owner "root"
+    group "root"
+    variables ({
+        "redis_path" => redis_path
+    })
 end
 
-if servers.empty? && !sentinels.empty?
-    #Run consul cron job
-    cron "Redis Sentinel cron" do
-        command "/usr/bin/php #{redis_path}/redis_cron.php"
-        user "root"
-        action :create
+if sentinels.kind_of?(Array) && !sentinels.empty?
+    sentinels.each do |sentinel|        
+        #Run consul cron job
+        cron "Redis cron #{sentinel.name}" do
+            command "/usr/bin/php #{redis_path}/sentinel_cron.php #{local_ip} #{sentinel.port}"
+            user "root"
+            action :create
+        end
+
+        #Creates the service configuration file
+        template "#{consul_path}/sentinel#{sentinel.name}.json" do
+            source "sentinel_service.json.erb"
+            owner "root"
+            group "cluster"
+            mode "0664"
+            variables ({
+                "sentinel_name" => sentinel.name,
+                "port" => sentinel.port
+            })
+        end
+
+        if(sentinel[:logfile])
+            #Create log file with the right permissions
+            file sentinel.logfile do
+                owner "redis"
+                group "redis"
+                mode  "0644"
+            end
+        end
+    end
+else
+    # Delete the sentinel consul service
+    execute "sudo rm -rf #{consul_path}/sentinel*.json" do
+        user 'root'
     end
 end
 

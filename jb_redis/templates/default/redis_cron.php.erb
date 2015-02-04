@@ -12,80 +12,73 @@ define('CONSUL_PORT', '<%= node['consul']['ports']['serf_lan'] || 8301 %>');
 define('REDIS_CONFIG_PATH', '<%= @redis_path %>');
 define('SENTINEL_NAME', '<%= node['redisio']['sentinels'][0]['name'] %>');
 define('SENTINEL_QUORUM', '<%= node['redisio']['sentinels'][0]['quorum_count'] %>');
+define('SENTINEL_PORT', '<%= node['redisio']['sentinels'][0]['port'] %>');
 putenv('PATH='.getenv('PATH').':/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin');
 
 $consul = new Consul(CONSUL_BASE_URL, CONSUL_CONFIG_PATH, CONSUL_BIN, CONSUL_PORT);
 $redis = new JbRedis(CURRENT_IP, CURRENT_PORT, REDIS_CONFIG_PATH, SENTINEL_NAME, SENTINEL_QUORUM);
+
+//If the service is already runing there is nothing else to configure
+$ping = $redis->runCommand('ping');
+if(isset($ping[0]) && $ping[0] == 'PONG'){
+    //Sometimes when the server with the master redis service is stoped when it comes back up it will become a slave of it self
+    $slaveof = $redis->runCommand('CONFIG GET slaveof');
+    if((isset($slaveof[0]) && isset($slaveof[1])) && $slaveof[0] == CURRENT_IP && $slaveof[1] == CURRENT_PORT){
+        $redis->runCommand('slaveof no one');
+    }
+    exit();
+}
 
 //Beacuse we depend on consul to elect the redis master, we have to wait until there is a consul leader before we can continue
 $consul_leader = $consul->getLeader();
 if(empty($consul_leader))
     exit();
 
-// Tag for the non-master instance
-// If server is not running redis, it's simply a sentinel service, otherwise it would be a slave
-$instance_type = (!CURRENT_IP && !CURRENT_PORT)? 'sentinel': 'slave';
-
 //Check if there is already a master runing
-$redis_master = $consul->getService('redis', 'master');
-if (!empty($redis_master)) {
-    //Get the first service from the services array
-    $redis_master = $redis_master[0];
-    // Only if the current master is not the current service
-    if (($redis_master['Address'] != CURRENT_IP || $redis_master['ServicePort'] != CURRENT_PORT)) {
-        //Get the current node from consul
-        $current_node = $consul->getCurrentNode();
-
-        //If the service already have the tag, it means that it was already started and added to consul
-        if(isset($current_node['Services']['redis'.CURRENT_PORT]) && in_array($instance_type, $current_node['Services']['redis'.CURRENT_PORT]['Tags']))
-            exit();
-
-        //Start redis server as a slave of the current master (if we're not a sentinel server)
-        if ($instance_type != 'sentinel'){
-            $redis->setMaster($redis_master['Address'], $redis_master['ServicePort']);
-            $redis->saveConfiguration();
-            $redis->startService();
-        }
-        
-        //Load sentinel configurations
-        $redis->loadSentinelConfiguration();
-        //Set the master to monitor
-        $redis->setSentinelMonitor($redis_master['Address'], $redis_master['ServicePort']);
-        //Save the new configurations
-        $redis->saveSentinelConfiguration();
-        //Restart the service
-        $redis->startService('_sentinel_' . SENTINEL_NAME);
-
-        //Load the configuration of the current instance
-        $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
-        $consul->addTagToService('redis' . CURRENT_PORT, $instance_type);
-        $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
-        $consul->reloadAgent();
+$redis_masters = $consul->getService('redis', 'master');
+if (!empty($redis_masters)) {
+    //Get the right redis master from consul, it could happen that the service is still marked as master on consul from a failover
+    $redis_master = array();
+    foreach ($redis_masters as $rm) {
+        if($rm['Address'] != CURRENT_IP || $rm['ServicePort'] != CURRENT_PORT)
+            $redis_master = $rm;
     }
+
+    if (empty($redis_master))
+        continue;
+
+    //Get the current node from consul
+    $current_node = $consul->getCurrentNode();
+
+    //Start redis server as a slave of the current master
+    $redis->setMaster($redis_master['Address'], $redis_master['ServicePort']);
+    $redis->saveConfiguration();
+    $redis->startService();
+
+    //Load the configuration of the current instance
+    $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
+    //Make sure it doesn't have a master tag, this could happen on a reboot
+    $consul->removeTagFromService('redis' . CURRENT_PORT, 'master');
+    $consul->addTagToService('redis' . CURRENT_PORT, 'slave');
+    $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
+    $consul->reloadAgent();
     exit();
 }
 
-// Never attempt to nominate self as a master if we're not running redis
-if ($instance_type == 'sentinel')
-    exit();
-
 //Get the lock to start the leader election
 $session_id = $consul->createSession();
-$redis_lock = $consul->getLock('redis_master', $session_id, CURRENT_IP . ':' . CURRENT_PORT, array(), '30s');
+$redis_lock = $consul->getLock('redis_master', $session_id, CURRENT_IP . ':' . CURRENT_PORT, '30s');
 if($redis_lock) {
+    //While trying to get the lock a new master might be elected, so we need to check again
     $redis_master = $consul->getService('redis', 'master');
     if(empty($redis_master)){
         //Start redis server as master
         $redis->startService();
 
-        //Start sentinel with the new master
-        $redis->loadSentinelConfiguration();
-        $redis->setSentinelMonitor(CURRENT_IP, CURRENT_PORT);
-        $redis->saveSentinelConfiguration();
-        $redis->startService('_sentinel_' . SENTINEL_NAME);
-
         //Update the consul service with the new master
         $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
+        //Make sure it doesn't have a slave tag
+        $consul->removeTagFromService('redis' . CURRENT_PORT, 'slave');
         $consul->addTagToService('redis' . CURRENT_PORT, 'master');
         $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
         $consul->reloadAgent();
