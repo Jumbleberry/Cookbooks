@@ -65,7 +65,8 @@ end
 
 
 # Run the deploy script
-execute "/bin/bash #{node['jbx']['core']['path']}/deploy.sh" do
+execute "/bin/bash deploy.sh" do
+    cwd "#{node['jbx']['core']['path']}"
     user "root"
 end
 

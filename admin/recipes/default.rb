@@ -24,7 +24,8 @@ git node['admin']['path'] do
 end
 
 # Run the deploy script
-execute "/bin/bash #{node['admin']['path']}/deploy.sh" do
+execute "/bin/bash deploy.sh" do
+    cwd "#{node['admin']['path']}"
     user "root"
 end
 
