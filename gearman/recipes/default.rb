@@ -21,7 +21,7 @@ package 'gearman' do
 end
 
 # install gearman pear extension
-execute "pear install Net_Gearman-alpha" do
+execute "pear install Net_Gearman-alpha || pear upgrade Net_Gearman-alpha" do
     user "root"
 end
 
