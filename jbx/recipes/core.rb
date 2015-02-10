@@ -65,10 +65,8 @@ end
 
 
 # Run the deploy script
-execute 'Deploy Script' do
-    cwd "#{node['jbx']['core']['path']}"
+execute "/bin/bash #{node['jbx']['core']['path']}/deploy.sh" do
     user "root"
-    command 'sh deploy.sh'
 end
 
 # Run database migrations

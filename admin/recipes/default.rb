@@ -24,10 +24,8 @@ git node['admin']['path'] do
 end
 
 # Run the deploy script
-execute 'Deploy Script' do
-    cwd "#{node['admin']['path']}"
+execute "/bin/bash #{node['admin']['path']}/deploy.sh" do
     user "root"
-    command 'sh deploy.sh'
 end
 
 execute "chown-data-www" do
