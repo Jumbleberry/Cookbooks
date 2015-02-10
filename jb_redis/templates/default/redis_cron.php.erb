@@ -46,25 +46,25 @@ if (!empty($redis_masters)) {
             $redis_master = $rm;
     }
 
-    if (empty($redis_master))
-        continue;
+    if (!empty($redis_master)){
+        //Get the current node from consul
+        $current_node = $consul->getCurrentNode();
 
-    //Get the current node from consul
-    $current_node = $consul->getCurrentNode();
+        //Start redis server as a slave of the current master
+        $redis->setMaster($redis_master['Address'], $redis_master['ServicePort']);
+        $redis->saveConfiguration();
+        $redis->startService();
 
-    //Start redis server as a slave of the current master
-    $redis->setMaster($redis_master['Address'], $redis_master['ServicePort']);
-    $redis->saveConfiguration();
-    $redis->startService();
+        //Load the configuration of the current instance
+        $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
+        //Make sure it doesn't have a master tag, this could happen on a reboot
+        $consul->removeTagFromService('redis' . CURRENT_PORT, 'master');
+        $consul->addTagToService('redis' . CURRENT_PORT, 'slave');
+        $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
+        $consul->reloadAgent();
+        exit();
+    }
 
-    //Load the configuration of the current instance
-    $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
-    //Make sure it doesn't have a master tag, this could happen on a reboot
-    $consul->removeTagFromService('redis' . CURRENT_PORT, 'master');
-    $consul->addTagToService('redis' . CURRENT_PORT, 'slave');
-    $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
-    $consul->reloadAgent();
-    exit();
 }
 
 //Get the lock to start the leader election
