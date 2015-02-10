@@ -35,17 +35,6 @@ local_ip = node["network"]["interfaces"][node['consul']['bind_interface']]["addr
 
 if servers.kind_of?(Array) && !servers.empty?
     servers.each do |server|
-        #Run consul cron job
-        cron "Redis cron #{server.port}" do
-            command "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port}"
-            user "root"
-            action :create
-        end
-        
-        # Run the cron
-        execute "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port} &" do
-            user "root"
-        end
         
         #Creates the service configuration file
         template "#{consul_path}/redis#{server.port}.json" do
@@ -58,6 +47,18 @@ if servers.kind_of?(Array) && !servers.empty?
                 "currentip" => local_ip,
                 "consul_path" => consul_path
             })
+        end
+        
+        #Run consul cron job
+        cron "Redis cron #{server.port}" do
+            command "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port}"
+            user "root"
+            action :create
+        end
+        
+        # Run the cron
+        execute "/usr/bin/php #{redis_path}/redis_cron.php #{local_ip} #{server.port} &" do
+            user "root"
         end
 
         #Create log file with the right permissions
