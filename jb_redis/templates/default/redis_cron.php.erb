@@ -23,8 +23,10 @@ $ping = $redis->runCommand('ping');
 if(isset($ping[0]) && $ping[0] == 'PONG'){
     //Sometimes when the server with the master redis service is stoped when it comes back up it will become a slave of it self
     $slaveof = $redis->runCommand('CONFIG GET slaveof');
-    if((isset($slaveof[0]) && isset($slaveof[1])) && $slaveof[0] == CURRENT_IP && $slaveof[1] == CURRENT_PORT){
-        $redis->runCommand('slaveof no one');
+    if(count($slaveof) == 2){
+        list($ip, $port) = explode(' ', end($slaveof));
+        if($ip == CURRENT_IP && $port == CURRENT_PORT)
+            $redis->runCommand('slaveof no one');
     }
     exit();
 }
