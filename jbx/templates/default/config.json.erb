@@ -8,18 +8,13 @@
     },
     "modules"  : {
         "mesh"  : {
-            "domain"        : "<%= node['jbx']['mesh']['hostname'] %>",
-            "controllers"   : [
-                "Redirect",
-                "Pixel",
-                "Index"
-            ]
+            "domain"        : "<%= node['jbx']['mesh']['hostname'] %>"
+        },
+        "mesh"  : {
+            "domain"        : "<%= node['jbx']['api']['hostname'] %>"
         },
         "processing"  : {
-            "domain"        : "<%= node['jbx']['processing']['hostname'] %>",
-            "controllers"   : [
-                "Job"
-            ]
+            "domain"        : "<%= node['jbx']['processing']['hostname'] %>"
         }
     },
     "namespaces" : {
