@@ -29,11 +29,6 @@ template virtualhost do
     "path"      => "#{node['jbx']['core']['path']}/public"
   })
 end
-
-template "#{node['jbx']['processing']['path']}/config/config.json" do
-    source "processing/config.json.erb"
-end
-
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :nothing

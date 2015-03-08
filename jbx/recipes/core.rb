@@ -4,6 +4,8 @@ include_recipe "github-auth"
 include_recipe "nginx"
 include_recipe "php"
 include_recipe "phalcon"
+include_recipe "jb_consul"
+include_recipe "jb_redis"
 
 # Set the branch to checkout
 branch = ENV['JBX_CORE_BRANCH'] || node['jbx']['core']['branch']
@@ -75,4 +77,25 @@ execute 'Database migrations' do
   cwd "#{node['jbx']['core']['path']}/application/cli"
   command "php cli.php migrations:migrate --no-interaction"
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
+end
+
+# Creates the nginx virtual host
+virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['api']['hostname']
+virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['api']['hostname']
+
+template virtualhost do
+  source    "nginx/api.erb"
+  variables ({
+    "hostname"  => node['jbx']['api']['hostname'],
+    "path"      => "#{node['jbx']['core']['path']}/public"
+  })
+end
+service 'nginx' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :nothing
+end
+
+link virtualhost_link do
+  to virtualhost
+  notifies :reload, "service[nginx]"
 end

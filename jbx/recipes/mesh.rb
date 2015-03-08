@@ -29,10 +29,6 @@ template virtualhost do
   })
 end
 
-template "#{node['jbx']['mesh']['path']}/config/config.json" do
-    source "mesh/config.json.erb"
-end
-
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :nothing
