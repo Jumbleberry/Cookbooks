@@ -61,8 +61,8 @@ template credentials_file do
     })
 end
 
-template "#{node['jbx']['core']['path']}/config/config.json" do
-    source "config.json.erb"
+template "#{node['jbx']['core']['path']}/config/modules.json" do
+    source "modules.json.erb"
 end
 
 
