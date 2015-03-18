@@ -47,7 +47,7 @@ link "/etc/gearman-manager/config.ini" do
 end
 
 # Install gearman manager
-execute "echo 2 | /bin/bash install.sh" do
+execute "echo 1 | /bin/bash install.sh" do
     cwd "#{node['jbx']['core']['path']}/application/vendor/brianlmoon/gearmanmanager/install"
     user "root"
 end
