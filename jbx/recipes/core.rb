@@ -52,9 +52,14 @@ template credentials_file do
       "hitpath_password"        => node['jbx']['credentials']['hitpath_read']['password'],
       "hitpath_database"        => node['jbx']['credentials']['hitpath_read']['dbname'],
 
-      "redis_host"              => node['jbx']['credentials']['redis']['host'],
-      "redis_port"              => node['jbx']['credentials']['redis']['port'],
-      "redis_index"             => node['jbx']['core']['redis_db'],
+      "redis_read_host"         => node['jbx']['credentials']['redis_read']['host'],
+      "redis_read_port"         => node['jbx']['credentials']['redis_read']['port'],
+      "redis_read_index"        => node['jbx']['core']['redis_db'],
+      "redis_write_host"        => node['jbx']['credentials']['redis_write']['host'],
+      "redis_write_port"        => node['jbx']['credentials']['redis_write']['port'],
+      "redis_write_index"       => node['jbx']['core']['redis_db'],
+      
+      "gearman_host"            => node['jbx']['credentials']['gearman']['host'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
       "raygun"                  => node['jbx']['credentials']['raygun']
