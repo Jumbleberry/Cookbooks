@@ -1,5 +1,6 @@
 include_recipe "jbx::core"
 include_recipe "gearman"
+include_recipe "gearman::ui"
 
 # Set the branch to checkout
 branch = ENV['JBX_PROCESSING_BRANCH'] || node['jbx']['processing']['branch']

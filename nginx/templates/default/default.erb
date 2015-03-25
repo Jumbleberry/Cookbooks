@@ -2,7 +2,7 @@ server {
     listen 80 default_server;
     server_name _ default;
     
-    location / {
+    location = / {
         return 204;
     }
     
@@ -23,5 +23,26 @@ server {
 
     location ^~ /v1/ {
         proxy_pass http://127.0.0.1:8500/v1/;
+    }
+    
+    root /var/www/gearman-ui/web;
+
+    location = /gearman/ {
+        try_files @site @site;
+    }
+
+    location / {
+        try_files $uri $uri/ @site;
+    }
+
+    if ($request_uri ~ ^/gearman(.*)$ ) {
+        set $request_url $1;
+    }
+
+    location @site {
+        fastcgi_pass   unix:/var/run/php5-fpm.sock;
+        include fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME /var/www/gearman-ui/web/index.php;
+        fastcgi_param  REQUEST_URI $request_url;
     }
 }
