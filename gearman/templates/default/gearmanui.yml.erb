@@ -1,7 +1,7 @@
 # The list of servers to monitor.
 gearmanui.servers:
     - name: "server1"
-      addr: "<%= node['services']['gearman']['host'] %>:<%= node['services']['gearman']['port'] %>"
+      addr: "externalhost:<%= node['services']['gearman']['port'] %>"
 
 # General settings.
 gearmanui.settings:
