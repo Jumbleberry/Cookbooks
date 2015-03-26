@@ -2,10 +2,10 @@ default['php']['composer_download_path'] = '/tmp/composer-install.php'
 
 default['php']['fpm']['display_errors'] = 'Off'
 default['php']['fpm']['listen'] = '/var/run/php5-fpm.sock'
-default['php']['fpm']['max_children'] = '5'
-default['php']['fpm']['start_servers'] = '2'
-default['php']['fpm']['min_spare_servers'] = '1'
-default['php']['fpm']['max_spare_servers'] = '3'
+default['php']['fpm']['max_children'] = '40'
+default['php']['fpm']['start_servers'] = '10'
+default['php']['fpm']['min_spare_servers'] = '10'
+default['php']['fpm']['max_spare_servers'] = '20'
 default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
 default['php']['packages'] = [
