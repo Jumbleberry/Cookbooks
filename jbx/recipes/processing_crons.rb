@@ -16,14 +16,14 @@ end
 
 cron "Processing - Get CRM Current Day Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_current_stats.php"
-  minute '5'
+  minute '0'
   user 'www-data'
   action :create
 end
 
 cron "Processing - Get CRM Historical Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_historical_stats.php"
-  hour '5'
+  hour '0'
   minute '30'
   user 'www-data'
   action :create
