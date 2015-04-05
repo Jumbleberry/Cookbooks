@@ -51,6 +51,9 @@ template credentials_file do
       "hitpath_username"        => node['jbx']['credentials']['hitpath_read']['username'],
       "hitpath_password"        => node['jbx']['credentials']['hitpath_read']['password'],
       "hitpath_database"        => node['jbx']['credentials']['hitpath_read']['dbname'],
+      
+      "hitpath_user"            => node['jbx']['hitpath']['username'],
+      "hitpath_pass"            => node['jbx']['hitpath']['password'],
 
       "redis_read_host"         => node['jbx']['credentials']['redis_read']['host'],
       "redis_read_port"         => node['jbx']['credentials']['redis_read']['port'],
