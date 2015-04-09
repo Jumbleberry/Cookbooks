@@ -27,7 +27,8 @@ end
 #   source    "nginx/processing.erb"
 #   variables ({
 #     "hostname"  => node['jbx']['processing']['hostname'],
-#     "path"      => "#{node['jbx']['core']['path']}/public"
+#     "path"      => "#{node['jbx']['core']['path']}/public",
+#     "resources_path" => "#{node['jbx']['core']['path']}/application/modules/processing/resources"
 #   })
 # end
 # service 'nginx' do
