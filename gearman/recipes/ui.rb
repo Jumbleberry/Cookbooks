@@ -26,3 +26,8 @@ end
 template "/var/www/gearman-ui/app/config/gearmanui.yml" do
     source "gearmanui.yml.erb"
 end
+
+#Override service resolution
+template "/var/www/gearman-ui/src/GearmanUI/ConfigurationProvider.php" do
+    source "ConfigurationProvider.php.erb"
+end
