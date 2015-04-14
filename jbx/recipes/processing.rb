@@ -25,7 +25,7 @@ end
 
 include_recipe "deploy::processing"
 
-Creates the nginx virtual host
+# Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['processing']['hostname']
 virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['processing']['hostname']
 
