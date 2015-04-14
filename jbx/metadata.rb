@@ -8,10 +8,10 @@ version          '0.1.0'
 
 depends "timezone-ii"
 depends "web-server"
-depends "github-auth"
 depends "nginx"
 depends "php"
 depends "phalcon"
 depends "gearman"
 depends "jb_consul"
 depends "jb_redis"
+depends "deploy"

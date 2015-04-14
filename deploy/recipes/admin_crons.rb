@@ -20,22 +20,6 @@ cron "Admin - Notifications" do
   action :create
 end
 
-# cron "Admin - CRM Data" do
-#   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/crm_stats.php"
-#   minute '0'
-#   user 'www-data'
-#   action :create
-# end
-# 
-# cron "Admin - CRM Data Report" do
-#   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/crm_data_report.php"
-#   minute '30'
-#   hour '8'
-#   weekday '5,0'
-#   user 'www-data'
-#   action :create
-# end
-
 cron "Admin - Advertiser Prepay" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/advertiser_limits.php"
   minute '0'

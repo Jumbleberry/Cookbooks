@@ -4,7 +4,6 @@ include_recipe "nginx"
 include_recipe "php"
 include_recipe "zend"
 include_recipe "s3fs-fuse"
-include_recipe "admin::deploy"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['admin']['hostname']
