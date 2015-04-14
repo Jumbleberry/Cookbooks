@@ -2,45 +2,6 @@ include_recipe "jbx::core"
 include_recipe "gearman"
 include_recipe "gearman::ui"
 
-# Set the branch to checkout
-branch = ENV['JBX_PROCESSING_BRANCH'] || node['jbx']['processing']['branch']
-
-git node['jbx']['processing']['path'] do
-  ssh_wrapper node['github-auth']['wrapper_path'] + "/processing_wrapper.sh"
-  repository node['jbx']['processing']['git-url']
-  revision branch
-  user 'root'
-  action :sync
-end
-
-execute "chown-data-www" do
-  command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['processing']['path']}"
-  user "root"
-  action :run
-end
-
-# Creates the nginx virtual host
-# virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['processing']['hostname']
-# virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['processing']['hostname']
-# 
-# template virtualhost do
-#   source    "nginx/processing.erb"
-#   variables ({
-#     "hostname"  => node['jbx']['processing']['hostname'],
-#     "path"      => "#{node['jbx']['core']['path']}/public",
-#     "resources_path" => "#{node['jbx']['core']['path']}/application/modules/processing/resources"
-#   })
-# end
-# service 'nginx' do
-#   supports :status => true, :restart => true, :reload => true, :stop => true
-#   action :nothing
-# end
-# 
-# link virtualhost_link do
-#   to virtualhost
-#   notifies :reload, "service[nginx]"
-# end
-
 # Un-symlink our config script to prevent install file from overwriting our good version
 link "/etc/gearman-manager/config.ini" do
     to "#{node['jbx']['processing']['path']}/config/config.ini"
@@ -62,22 +23,27 @@ file "/usr/local/bin/gearman-manager" do
     group "root"
 end
 
-# Delete the config script if it isnt a symlink to processing
-file "/etc/gearman-manager/config.ini" do
-    action :delete
-    not_if { File.symlink?("/etc/gearman-manager/config.ini") }
+include_recipe "jbx::processing_deploy"
+
+Creates the nginx virtual host
+virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['processing']['hostname']
+virtualhost_link    = '/etc/nginx/sites-enabled/' + node['jbx']['processing']['hostname']
+
+template virtualhost do
+  source    "nginx/processing.erb"
+  variables ({
+    "hostname"  => node['jbx']['processing']['hostname'],
+    "path"      => "#{node['jbx']['core']['path']}/public",
+    "resources_path" => "#{node['jbx']['core']['path']}/application/modules/processing/resources"
+  })
 end
 
-# Symlink our config script
-link "/etc/gearman-manager/config.ini" do
-    to "#{node['jbx']['processing']['path']}/config/config.ini"
-    action :create
-    owner "www-data"
-    group "www-data"
+service 'nginx' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :nothing
 end
 
-# Start the service
-service "gearman-manager" do
-    supports :status => true, :restart => true, :start => true, :stop => true
-    action :restart
+link virtualhost_link do
+  to virtualhost
+  notifies :reload, "service[nginx]"
 end
