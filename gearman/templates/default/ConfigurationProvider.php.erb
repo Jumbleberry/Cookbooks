@@ -30,7 +30,7 @@ class ConfigurationProvider implements ServiceProviderInterface {
         $config = Yaml::parse(__DIR__  . '/../../' . self::CONFIG_FILE);
         
         $config['gearmanui.servers'] = [];
-        $records = @dns_get_record('<%= node['gearman']['hostname'] %>', DNS_SRV) ?: [];
+        $records = @dns_get_record('<%= node['services']['gearman']['host'] %>', DNS_SRV) ?: [];
         foreach ($records as $record)
             $config['gearmanui.servers'][] = ['name' => substr($record['target'], 0, strpos($record['target'], '.')), 'addr' => $record['target'] . ':' . $record['port']];
         
