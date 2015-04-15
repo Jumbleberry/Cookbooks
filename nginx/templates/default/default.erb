@@ -1,11 +1,11 @@
 server {
     listen 80 default_server;
     server_name _ default;
-    
+
     location = / {
         return 204;
     }
-    
+
     location /nginx {
         stub_status on;
         access_log off;
@@ -16,7 +16,7 @@ server {
         fastcgi_pass unix:/var/run/php5-fpm.sock;
         include        fastcgi_params;
     }
-    
+
     location ^~ /consul/ {
         proxy_pass http://127.0.0.1:8500/ui/;
     }
@@ -24,14 +24,14 @@ server {
     location ^~ /v1/ {
         proxy_pass http://127.0.0.1:8500/v1/;
     }
-    
+
     root /var/www/gearman-ui/web;
 
-    location = /gearman/ {
-        try_files @site @site;
+    location = /gearman {
+        rewrite ^([^.]*[^/])$ $1/ permanent;
     }
-
-    location / {
+    
+    location ^~ /gearman/ {
         try_files $uri $uri/ @site;
     }
 
