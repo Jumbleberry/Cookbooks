@@ -1,7 +1,7 @@
 include_recipe "phalcon"
 include_recipe "nginx"
 include_recipe "jb_redis"
-include_recipe "deploy::core"
+include_recipe "jb_deploy::core"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['api']['hostname']

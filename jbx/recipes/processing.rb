@@ -23,7 +23,7 @@ file "/usr/local/bin/gearman-manager" do
     group "root"
 end
 
-include_recipe "deploy::processing"
+include_recipe "jb_deploy::processing"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['processing']['hostname']

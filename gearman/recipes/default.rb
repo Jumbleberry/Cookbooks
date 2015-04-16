@@ -33,7 +33,7 @@ execute "sudo killall gearmand || true" do
     ignore_failure true
 end
 
-include_recipe "gearman::deploy"
+include_recipe "jb_deploy::gearman"
 
 # Consul Integration
 consul_path = node["consul"]["config_dir"]

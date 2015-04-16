@@ -9,3 +9,4 @@ version          '0.1.0'
 depends "apt"
 depends "jb_consul"
 depends "nginx"
+depends "jb_deploy"

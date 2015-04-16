@@ -1,5 +1,5 @@
 include_recipe "jbx::core"
-include_recipe "deploy::mesh"
+include_recipe "jb_deploy::mesh"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['mesh']['hostname']

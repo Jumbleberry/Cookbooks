@@ -1,6 +1,6 @@
 include_recipe "nginx"
 include_recipe "jb_consul"
-include_recipe "deploy::route"
+include_recipe "jb_deploy::route"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['route']['hostname']

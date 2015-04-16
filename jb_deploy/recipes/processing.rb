@@ -31,6 +31,14 @@ link "/etc/gearman-manager/config.ini" do
     group "www-data"
 end
 
+# Force Kill old gearman processes
+execute "kill gearman-manager" do
+    command "pkill -9 -u `id -u gearman`"
+    user "root"
+    action :run
+end
+
+
 # Start the service
 service "gearman-manager" do
     supports :status => true, :restart => true, :start => true, :stop => true

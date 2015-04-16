@@ -1,4 +1,4 @@
-name             'deploy'
+name             'jb_deploy'
 maintainer       'Ian Elliott'
 maintainer_email 'ian@jumbleberry.com'
 license          'All rights reserved'
