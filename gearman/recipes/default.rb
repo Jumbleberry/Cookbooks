@@ -20,22 +20,9 @@ package 'gearman' do
     version node["gearman"]["version"]
 end
 
-# install gearman pear extension
-execute "pear install Net_Gearman-alpha || pear upgrade Net_Gearman-alpha" do
-    user "root"
-end
-
 #Update configuration file
 template '/etc/init/gearman-job-server.conf' do
     source 'gearman-job-server.conf.erb'
-    owner 'root'
-    group 'root'
-    mode '0644'
-end
-
-#Update configuration file
-template '/etc/default/gearman-job-server' do
-    source 'gearman-job-server.erb'
     owner 'root'
     group 'root'
     mode '0644'
@@ -46,9 +33,7 @@ execute "sudo killall gearmand || true" do
     ignore_failure true
 end
 
-execute "sudo service gearman-job-server restart" do
-    user "root"
-end
+include_recipe "jb_deploy::gearman"
 
 # Consul Integration
 consul_path = node["consul"]["config_dir"]

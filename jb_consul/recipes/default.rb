@@ -1,7 +1,7 @@
 include_recipe "aws"
 include_recipe "awscli"
 include_recipe "tags"
-include_recipe "php"
+include_recipe "web-server"
 
 # Install consul ui if we're supposed to serve it
 if (node['consul'].attribute?('serve_ui') && node['consul']['serve_ui'])

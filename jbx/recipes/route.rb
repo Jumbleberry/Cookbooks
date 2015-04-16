@@ -1,25 +1,6 @@
-include_recipe "timezone-ii"
-include_recipe "web-server"
-include_recipe "github-auth"
 include_recipe "nginx"
-include_recipe "php"
-
-# Set the branch to checkout
-branch = ENV['JBX_ROUTE_BRANCH'] || node['jbx']['route']['branch']
-
-git node['jbx']['route']['path'] do
-  ssh_wrapper node['github-auth']['wrapper_path'] + "/" + "route_wrapper.sh"
-  repository node['jbx']['route']['git-url']
-  revision branch
-  action :sync
-  user 'root'
-end
-
-execute "chown-data-www" do
-  command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['route']['path']}"
-  user "root"
-  action :run
-end
+include_recipe "jb_consul"
+include_recipe "jb_deploy::route"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/' + node['jbx']['route']['hostname']
@@ -33,23 +14,6 @@ template virtualhost do
   })
 end
 
-#Update application credentials
-credentials_file = "#{node['jbx']['route']['path']}/settings/databases.ini"
-credentials_file_template = "databases.ini.erb"
-
-template credentials_file do
-  source credentials_file_template
-  variables ({
-      "mysql_read_host"         => node['jbx']['credentials']['mysql_read']['host'],
-      "mysql_read_username"     => node['jbx']['credentials']['mysql_read']['username'],
-      "mysql_read_password"     => node['jbx']['credentials']['mysql_read']['password'],
-      "mysql_read_database"     => node['jbx']['credentials']['mysql_read']['dbname'],
-      "redis_host"              => node['jbx']['credentials']['redis']['host'],
-      "redis_port"              => node['jbx']['credentials']['redis']['port'],
-      "redis_index"             => node['jbx']['route']['redis_db']
-    })
-end
-
 service 'nginx' do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :nothing
@@ -58,19 +22,4 @@ end
 link virtualhost_link do
   to virtualhost
   notifies :reload, "service[nginx]"
-end
-
-# Sync All Hitpath Data
-cron "Route - Sync Sales to Redis" do
-  command "/usr/bin/php #{node['jbx']['route']['path']}/crons/sales.php"
-  minute '*'
-  user 'www-data'
-  action :create
-end
-
-cron "Route - Sync Redirects to Redis" do
-  command "/usr/bin/php #{node['jbx']['route']['path']}/crons/sync.php"
-  minute '*/5'
-  user 'www-data'
-  action :create
 end

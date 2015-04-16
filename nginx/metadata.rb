@@ -7,5 +7,4 @@ long_description 'Installs/Configures nginx for JB applications'
 version          '0.1.0'
 
 depends "apt"
-depends "apt-repo"
 depends "aws_deploy"

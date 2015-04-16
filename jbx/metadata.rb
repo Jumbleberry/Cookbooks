@@ -6,12 +6,9 @@ description      'Deploy JBX Application'
 long_description 'Deploy JBX Application'
 version          '0.1.0'
 
-depends "timezone-ii"
-depends "web-server"
-depends "github-auth"
-depends "nginx"
-depends "php"
 depends "phalcon"
-depends "gearman"
+depends "nginx"
 depends "jb_consul"
+depends "gearman"
 depends "jb_redis"
+depends "jb_deploy"

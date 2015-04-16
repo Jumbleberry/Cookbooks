@@ -1,5 +1,5 @@
 # Phalcon installation
-include_recipe "php"
+include_recipe "web-server"
 
 # Based on https://github.com/k-kinzal/chef-php-phalcon
 path  = node['phalcon']['download_path']
