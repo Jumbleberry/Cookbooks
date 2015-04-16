@@ -7,7 +7,10 @@ if ( !node.attribute?('ec2') || !node[:ec2].attribute?('instance_id') || !/(i|sn
       source "vagrant_hosts.erb"
       mode "0644"
     end
+else
     
+    include_recipe "opsworks_stack_state_sync"
+
 end
 
 #System configurations
