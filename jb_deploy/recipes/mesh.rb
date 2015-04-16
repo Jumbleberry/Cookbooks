@@ -1,3 +1,4 @@
+include_recipe "jb_deploy::core"
 include_recipe "github-auth"
 
 # Set the branch to checkout
