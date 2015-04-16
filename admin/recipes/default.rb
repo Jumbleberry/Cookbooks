@@ -1,7 +1,5 @@
-include_recipe "timezone-ii"
 include_recipe "web-server"
 include_recipe "nginx"
-include_recipe "php"
 include_recipe "zend"
 include_recipe "s3fs-fuse"
 include_recipe "deploy::admin"

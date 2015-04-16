@@ -6,7 +6,6 @@ description      'Installs/Configures web-server'
 long_description 'Installs/Configures web-server'
 version          '0.1.0'
 
-depends "apt"
-depends "build-essential"
-depends "git"
+depends "timezone-ii"
 depends "ssh_known_hosts"
+depends "php"

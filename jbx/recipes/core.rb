@@ -1,10 +1,5 @@
-include_recipe "timezone-ii"
-include_recipe "web-server"
-include_recipe "github-auth"
-include_recipe "nginx"
-include_recipe "php"
 include_recipe "phalcon"
-include_recipe "jb_consul"
+include_recipe "nginx"
 include_recipe "jb_redis"
 include_recipe "deploy::core"
 

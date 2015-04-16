@@ -1,3 +1,5 @@
+include_recipe "timezone-ii"
+
 #System configurations
 #Shared memory limits
 execute "sysctl-config" do
@@ -64,3 +66,4 @@ else
 end
 
 ssh_known_hosts_entry 'github.com'
+include_recipe "php"

@@ -69,9 +69,6 @@ template '/etc/php5/cli/php.ini' do
   })
 end
 
-# Add webserver recipes
-include_recipe "web-server"
-
 #Install composer
 composer_download_path = node['php']['composer_download_path']
 if composer_download_path

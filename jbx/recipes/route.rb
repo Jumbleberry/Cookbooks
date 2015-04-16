@@ -1,8 +1,5 @@
-include_recipe "timezone-ii"
-include_recipe "web-server"
-include_recipe "github-auth"
 include_recipe "nginx"
-include_recipe "php"
+include_recipe "jb_consul"
 include_recipe "deploy::route"
 
 # Creates the nginx virtual host
