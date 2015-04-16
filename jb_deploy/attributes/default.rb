@@ -11,3 +11,12 @@ default['admin']['storage']['user_images']  = '/s3/images/user/'
 
 default['admin']['jbxroute']                = 'http://jbxroute.com'
 default['admin']['jbxtrack']                = 'https://jbxtrack.com'
+
+default["gearman"]["retries"]           = "3"
+default["gearman"]["ip"]                = node[:network][:interfaces][node[:network_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
+default['gearman']['mysql']['host']     = ""
+default['gearman']['mysql']['user']     = ""
+default['gearman']['mysql']['password'] = ""
+default['gearman']['mysql']['db']       = ""
+default['gearman']['mysql']['table']    = ""
+default['gearman']['mysql']['port']     = "3306"
