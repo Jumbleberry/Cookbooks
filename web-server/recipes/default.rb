@@ -1,5 +1,15 @@
 include_recipe "timezone-ii"
 
+# IF not amazon - update hosts file
+if ( !node.attribute?('ec2') || !node[:ec2].attribute?('instance_id') || !/(i|snap|vol)-[a-zA-Z0-9]+/.match(node[:ec2][:instance_id]))
+
+    template '/etc/hosts' do
+      source "vagrant_hosts.erb"
+      mode "0644"
+    end
+    
+end
+
 #System configurations
 #Shared memory limits
 execute "sysctl-config" do
