@@ -27,6 +27,22 @@ if(isset($ping[0]) && $ping[0] == 'PONG'){
         @list($ip, $port) = @explode(' ', end($slaveof));
         if($ip == CURRENT_IP && $port == CURRENT_PORT)
             $redis->runCommand('slaveof no one');
+        
+        // Fix tags on redis
+        $consul->loadServiceConfiguration('redis' . CURRENT_PORT);
+        $tags = @$consul->getServiceConfiguration('redis' . CURRENT_PORT)['service']['tags'] ?: [];
+        
+        $currentTag = empty($ip)? 'master': 'slave';
+        $oldTag     = $currentTag === 'master'? 'slave': 'master';
+        
+        // If tags are wrong, fix them
+        if (!in_array($currentTag, $tags) || in_array($oldTag, $tags)) {
+        
+            $consul->removeTagFromService('redis' . CURRENT_PORT, $oldTag);
+            $consul->addTagToService('redis' . CURRENT_PORT, $currentTag);
+            $consul->saveServiceConfiguration('redis' . CURRENT_PORT);
+            $consul->reloadAgent();
+        }
     }
     exit();
 }
