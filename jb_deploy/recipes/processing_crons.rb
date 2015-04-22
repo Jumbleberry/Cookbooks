@@ -25,7 +25,7 @@ end
 cron "Processing - Get CRM Historical Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_historical_stats.php"
   hour '3,5,7'
-  minute '30'
+  minute '0'
   user 'www-data'
   action :create
 end
