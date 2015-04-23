@@ -29,3 +29,10 @@ cron "Processing - Get CRM Historical Stats" do
   user 'www-data'
   action :create
 end
+
+cron "Processing - Datadog Stats Reporting" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/datadog_reporting.php"
+  minute '*'
+  user 'www-data'
+  action :create
+end
