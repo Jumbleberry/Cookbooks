@@ -35,7 +35,7 @@ execute "sudo apt-get update" do
 end
 
 #System packages
-syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl', 'unzip']
+syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl', 'unzip', 'uuid']
 syspackages.each do |pkg|
   package "#{pkg}" do
     action :install
