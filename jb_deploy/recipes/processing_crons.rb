@@ -19,7 +19,7 @@ cron "Processing - Get CRM Current Day Stats" do
   hour '0-2,4,6,8-23'
   minute '15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Get CRM Historical Stats" do
