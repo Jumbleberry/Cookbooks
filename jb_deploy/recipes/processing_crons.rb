@@ -9,7 +9,7 @@ end
 cron "Processing - Get CRM Campaigns" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_campaigns.php"
   hour '2-23/4'
-  minute '45'
+  minute '50'
   user 'www-data'
   action :create
 end
@@ -17,7 +17,7 @@ end
 cron "Processing - Get CRM Current Day Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_current_stats.php"
   hour '0-2,6,8-23'
-  minute '15'
+  minute '20'
   user 'www-data'
   action :create
 end
@@ -25,7 +25,7 @@ end
 cron "Processing - Get CRM Historical Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_historical_stats.php"
   hour '3,5'
-  minute '15'
+  minute '20'
   user 'www-data'
   action :create
 end
