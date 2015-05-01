@@ -3,8 +3,8 @@ include_recipe "jb_deploy::core"
 # Set the branch to checkout
 branch = ENV['JBX_MAIL_BRANCH'] || node['jbx']['mail']['branch']
 
-git node['jbx']['processing']['path'] do
-  ssh_wrapper node['github-auth']['wrapper_path'] + "/processing_wrapper.sh"
+git node['jbx']['mail']['path'] do
+  ssh_wrapper node['github-auth']['wrapper_path'] + "/mail_wrapper.sh"
   repository node['jbx']['mail']['git-url']
   revision branch
   user 'root'
