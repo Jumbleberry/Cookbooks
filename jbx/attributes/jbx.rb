@@ -18,6 +18,11 @@ default['jbx']['processing']['git-url'] = 'git@github.com:Jumbleberry/JBX-Proces
 default['jbx']['processing']['branch'] = 'master'
 default['jbx']['processing']['github_key'] = ''
 
+default['jbx']['mail']['path'] = '/vagrant/www/application/modules/mail'
+default['jbx']['mail']['git-url'] = 'git@github.com:Jumbleberry/JBX-Mail.git'
+default['jbx']['mail']['branch'] = 'master'
+default['jbx']['mail']['github_key'] = ''
+
 default['jbx']['route']['path'] = '/vagrant/www/route'
 default['jbx']['route']['git-url'] = 'git@github.com:Jumbleberry/jbx-router.git'
 default['jbx']['route']['branch'] = 'master'
