@@ -35,7 +35,7 @@ default['php']['packages'] = [
   },
   {
     "name" => "php5-redis",
-    "version" => "2.2.5*"
+    "version" => "2.2.*"
   },
   {
     "name" => "php5-xcache",
