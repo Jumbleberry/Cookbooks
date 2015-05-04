@@ -56,6 +56,8 @@ template credentials_file do
       "redis_write_port"        => node['jbx']['credentials']['redis_write']['port'],
       "redis_write_index"       => node['jbx']['core']['redis_db'],
       
+      "domains"                 => node['jbx']['credentials']['domains'].to_json,
+      
       "gearman_host"            => node['jbx']['credentials']['gearman']['host'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
