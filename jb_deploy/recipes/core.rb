@@ -57,6 +57,7 @@ template credentials_file do
       "redis_write_index"       => node['jbx']['core']['redis_db'],
       
       "domains"                 => node['jbx']['credentials']['domains'].to_json,
+      "mail"                    => node['jbx']['credentials']['mail'].to_json,
       
       "gearman_host"            => node['jbx']['credentials']['gearman']['host'],
 
