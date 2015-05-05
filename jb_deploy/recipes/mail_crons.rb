@@ -4,7 +4,7 @@ cron "Mail - Credential Status Notice" do
   minute '0'
   weekday 2
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Mail - Credential Campaigns Notice" do
@@ -13,5 +13,5 @@ cron "Mail - Credential Campaigns Notice" do
   minute '0'
   weekday 2
   user 'www-data'
-  action :create
+  action :delete
 end
