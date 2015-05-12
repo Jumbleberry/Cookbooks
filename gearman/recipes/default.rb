@@ -20,6 +20,29 @@ package 'gearman' do
     version node["gearman"]["version"]
 end
 
+
+package 'gperf' do
+  action :install
+end
+
+# Get all gearman build dependencies
+execute "build gearman" do
+    command "DEBIAN_FRONTEND=noninteractive &&
+                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' build-dep gearman-job-server -y &&
+                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade gearman-job-server -y  &&
+                apt-get install gperf &&
+                cd /tmp &&
+                wget https://launchpad.net/gearmand/1.2/#{node['gearman']['source']['version']}/+download/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
+                tar -xvzf gearmand-#{node['gearman']['source']['version']}.tar.gz &&
+                cd gearmand-#{node['gearman']['source']['version']} && 
+                ./configure && make && make install;
+                pkill -9 -u `id -u gearman`;
+                cp gearmand/gearmand /usr/sbin/ && cp gearmand/gearmand /usr/local/sbin/
+                ";
+    user "root"
+    not_if "/usr/sbin/gearmand -V | grep #{node['gearman']['source']['version']}"
+end
+
 #Update configuration file
 template '/etc/init/gearman-job-server.conf' do
     source 'gearman-job-server.conf.erb'
@@ -28,7 +51,7 @@ template '/etc/init/gearman-job-server.conf' do
     mode '0644'
 end
 
-execute "sudo killall gearmand || true" do
+execute "pkill -9 -u `id -u gearman`" do
     user "root"
     ignore_failure true
 end
