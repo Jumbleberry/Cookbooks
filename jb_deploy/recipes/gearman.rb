@@ -1,6 +1,6 @@
 # Force Kill old gearman-manager processes and restart the job server
 execute "gearman-restart" do
-    command "pkill -9 -u `id -u gearman` || sudo service gearman-job-server restart"
+    command "pkill -9 -u `id -u gearman`; sudo service gearman-job-server restart"
     user "root"
     action :nothing
 end

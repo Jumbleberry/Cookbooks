@@ -57,6 +57,6 @@ include_recipe "nginx::certs"
 
 #Force the restart of the nginx service
 execute "reload nginx service" do
-  command "service nginx restart"
+  command "service nginx reload || service nginx restart"
   user 'root'
 end
