@@ -36,6 +36,7 @@ execute "build gearman" do
                 tar -xvzf gearmand-#{node['gearman']['source']['version']}.tar.gz &&
                 cd gearmand-#{node['gearman']['source']['version']} && 
                 ./configure && make && make install;
+                service gearman-job-server stop;
                 pkill -9 -u `id -u gearman`;
                 cp gearmand/gearmand /usr/sbin/ && cp gearmand/gearmand /usr/local/sbin/
                 ";
