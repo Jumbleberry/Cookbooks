@@ -33,3 +33,10 @@ cron "Admin - Pull Phone Data" do
   user 'www-data'
   action :create
 end
+
+cron "Admin - Hitpath Raw Logs" do
+  command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/raw_log_alerts.php"
+  minute '5'
+  user 'www-data'
+  action :create
+end
