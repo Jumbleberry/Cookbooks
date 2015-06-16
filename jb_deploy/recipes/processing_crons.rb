@@ -46,6 +46,13 @@ cron "Processing - Get CRM Historical Orders" do
   action :create
 end
 
+cron "Processing - Get Unmapped Campaigns" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_unmapped_campaigns.php"
+  minute '*/5'
+  user 'www-data'
+  action :create
+end
+
 cron "Processing - Datadog Stats Reporting" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/datadog_reporting.php"
   minute '*'
