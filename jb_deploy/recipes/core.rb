@@ -82,3 +82,11 @@ execute 'Database migrations' do
   command "php cli.php migrations:migrate --no-interaction"
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
 end
+
+# Add at allow file
+cookbook_file "/etc/at.allow" do
+    source "at/at.allow"
+    owner "root"
+    group "root"
+    mode "0644"
+end
