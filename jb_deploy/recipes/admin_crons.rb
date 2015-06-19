@@ -2,6 +2,7 @@
 cron "Admin - Sync Hitpath" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/sync_hitpath.php"
   minute '*/3'
+  hour '6-23'
   user 'www-data'
   action :create
 end
@@ -9,6 +10,7 @@ end
 cron "Admin - Sale Projections" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/generate_projections.php"
   minute '2-59/3'
+  hour '6-23'
   user 'www-data'
   action :create
 end
@@ -37,6 +39,7 @@ end
 cron "Admin - Hitpath Raw Logs" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/raw_log_alerts.php"
   minute '5'
+  hour '6-23'
   user 'www-data'
   action :create
 end
