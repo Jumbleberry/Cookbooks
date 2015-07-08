@@ -50,9 +50,16 @@ if File.directory?('/home/vagrant')
       action :delete
       not_if { File.symlink?('/var/www') }
     end
+
+    # Makes sure that the www directory exists
+    directory '/vagrant/www' do
+        owner node['user']
+        group node['user']
+        action :create
+    end
     
     link '/var/www' do
-      to '/home/vagrant/www/'
+      to '/vagrant/www/'
       owner node['user']
       group node['user']
       action :create
@@ -63,7 +70,7 @@ if File.directory?('/home/vagrant')
 else 
     
     link '/var/www' do
-      to '/home/vagrant/www/'
+      to '/vagrant/www/'
       action :delete
       only_if { File.symlink?('/var/www') }
     end

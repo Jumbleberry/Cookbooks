@@ -19,3 +19,4 @@ cookbook 'hosts_file', '~> 0.0.0'
 cookbook "ulimit", ">= 0.1.2"
 cookbook 'apt-repo', '~> 0.1.1'
 cookbook 'hostnames', '= 0.3.1'
+cookbook 'nodejs', '~> 2.4.0'
