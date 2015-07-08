@@ -3,7 +3,7 @@ server {
     server_name <%= @hostname %> www.<%= @hostname %>;
     root <%= @path %>;
 
-    index index.php;
+    index index.php index.html;
     try_files $uri $uri/ /index.php?_url=$uri&$args;
     
     access_log  /var/log/nginx/<%= @hostname %>.access.log  main;
