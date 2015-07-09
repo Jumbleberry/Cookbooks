@@ -25,7 +25,7 @@ end
 
 # Execute build tools
 execute "gulp-build" do
-  command "node node_modules/gulp/bin/gulp.js build"
+  command "node node_modules/gulp/bin/gulp.js"
   user "root"
   cwd node['titan']['path']
   action :run
