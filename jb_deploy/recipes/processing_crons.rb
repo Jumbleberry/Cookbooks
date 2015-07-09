@@ -38,6 +38,13 @@ cron "Processing - Get CRM Current Orders" do
   action :create
 end
 
+cron "Processing - Get CRM Rebill Orders" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_rebill_orders.php"
+  hour '1'
+  user 'www-data'
+  action :create
+end
+
 cron "Processing - Get CRM Historical Orders" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_historical_orders.php"
   hour '4'
@@ -60,6 +67,12 @@ cron "Processing - Datadog Stats Reporting" do
   action :create
 end
 
+cron "Processing - Calculate Retentions" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/calculate_retentions.php"
+  hour '4'
+  user 'www-data'
+  action :create
+end
 cron "Processing - Cap Summary Current Week" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php current_week"
   minute '*/3'
