@@ -59,3 +59,19 @@ cron "Processing - Datadog Stats Reporting" do
   user 'www-data'
   action :create
 end
+
+cron "Processing - Cap Summary Current Week" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php current_week"
+  minute '*/3'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Summary Previous Week" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php"
+  minute '0'
+  day '1'
+  hour '2'
+  user 'www-data'
+  action :create
+end
