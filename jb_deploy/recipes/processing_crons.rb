@@ -31,7 +31,7 @@ cron "Processing - Get CRM Historical Stats" do
 end
 
 cron "Processing - Get CRM Current Orders" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_current_orders.php"
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php only_initial"
   hour '0-2,7-23'
   minute '5-59/10'
   user 'www-data'
@@ -39,16 +39,8 @@ cron "Processing - Get CRM Current Orders" do
 end
 
 cron "Processing - Get CRM Rebill Orders" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_rebill_orders.php"
-  hour '1'
-  user 'www-data'
-  action :create
-end
-
-cron "Processing - Get CRM Historical Orders" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_historical_orders.php"
-  hour '4'
-  minute '20'
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php"
+  hour '3,5,13'
   user 'www-data'
   action :create
 end
@@ -69,11 +61,10 @@ end
 
 cron "Processing - Calculate Retentions" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/calculate_retentions.php"
-  hour '4'
+  hour '*'
   user 'www-data'
   action :create
-end
-cron "Processing - Cap Summary Current Week" do
+endcron "Processing - Cap Summary Current Week" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php current_week"
   minute '*/3'
   user 'www-data'
