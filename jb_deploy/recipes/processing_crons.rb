@@ -64,7 +64,9 @@ cron "Processing - Calculate Retentions" do
   hour '*'
   user 'www-data'
   action :create
-endcron "Processing - Cap Summary Current Week" do
+end
+
+cron "Processing - Cap Summary Current Week" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php current_week"
   minute '*/3'
   user 'www-data'
