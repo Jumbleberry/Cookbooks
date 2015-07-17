@@ -17,3 +17,21 @@ execute "chown-data-www" do
   user "root"
   action :run
 end
+
+#Update application credentials
+credentials_file = "#{node['jbx']['titan']['path']}/config/credentials.json"
+credentials_file_template = "titan_credentials.json.erb"
+
+template credentials_file do
+  source credentials_file_template
+  variables ({
+      "mysql_write_host"        => node['jbx']['credentials']['titan']['host'],
+      "mysql_write_username"    => node['jbx']['credentials']['titan']['username'],
+      "mysql_write_password"    => node['jbx']['credentials']['titan']['password'],
+      "mysql_write_database"    => node['jbx']['credentials']['titan']['dbname']
+    })
+end
+
+template "#{node['jbx']['core']['path']}/config/modules.json" do
+    source "modules.json.erb"
+end
