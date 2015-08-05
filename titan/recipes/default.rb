@@ -1,5 +1,6 @@
 include_recipe "nginx"
 include_recipe "web-server"
+include_recipe "s3fs-fuse"
 include_recipe "titan::deploy"
 
 # Creates the nginx virtual host
