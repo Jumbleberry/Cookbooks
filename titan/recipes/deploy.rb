@@ -1,9 +1,12 @@
 include_recipe "github-auth"
 include_recipe "nodejs"
 
-git node['titan']['path'] do
+# Set the branch to checkout
+branch = ENV['JBX_TITAN_BRANCH'] || node['jbx']['titan-app']['branch']
+
+git node['jbx']['titan-app']['path'] do
   ssh_wrapper node['github-auth']['wrapper_path'] + "/titan-app_wrapper.sh"
-  repository node['titan']['git-url']
+  repository node['jbx']['titan-app']['git-url']
   revision branch
   user 'root'
   action :sync
@@ -23,9 +26,25 @@ execute "npm-dependencies" do
   action :run
 end
 
-# Execute build tools
-execute "gulp-build" do
-  command "node node_modules/gulp/bin/gulp.js"
+# Install gulp
+execute "npm-gulp-install" do
+  command "npm install -g gulp"
+  user "root"
+  cwd node['titan']['path']
+  action :run
+end
+
+# Clean gulp
+execute "npm-gulp-clean" do
+  command "gulp clean"
+  user "root"
+  cwd node['titan']['path']
+  action :run
+end
+
+# Build gulp
+execute "npm-gulp-build" do
+  command "gulp"
   user "root"
   cwd node['titan']['path']
   action :run
