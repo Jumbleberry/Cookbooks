@@ -46,7 +46,7 @@ prereqs.each do |prereq_name|
 end
 
 s3fs_version = node[:s3fs_fuse][:version]
-source_url = "https://github.com/s3fs-fuse/s3fs-fuse/archive/v#{s3fs_version}.tar.gz"
+source_url = "https://s3.amazonaws.com/jb-vagrant/s3fs-#{s3fs_version}.tar.gz"
 
 remote_file "/tmp/s3fs-#{s3fs_version}.tar.gz" do
   source source_url
