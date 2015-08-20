@@ -1,6 +1,6 @@
 default['titan']['user'] = 'vagrant'
 default['titan']['hostname'] = 'titan.jumbleberry.com'
-default['titan']['path'] = '/vagrant/www/titan'
+default['titan']['path'] = '/var/www/titan'
 default['titan']['git-url'] = 'git@github.com:Jumbleberry/Titan.git'
 default['titan']['branch'] = 'master'
 default['titan']['github_key'] = ''
