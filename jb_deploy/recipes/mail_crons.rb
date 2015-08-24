@@ -22,5 +22,5 @@ cron "Mail - CAP Approvals Notices" do
   minute '10'
   weekday 1
   user 'www-data'
-  action :create
+  action :delete
 end
