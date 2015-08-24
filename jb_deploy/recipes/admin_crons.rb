@@ -40,3 +40,10 @@ cron "Admin - Hitpath Raw Logs" do
   user 'www-data'
   action :create
 end
+
+cron "Admin - Upload Sales Reports" do
+  command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/upload_sales_report.php"
+  hour '*/4'
+  user 'www-data'
+  action :create
+end
