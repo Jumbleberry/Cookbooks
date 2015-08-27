@@ -40,9 +40,10 @@ end
 
 cron "Processing - Get CRM Rebill Orders" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php"
-  hour '3,5,13'
+  hour '*'
+  minute '0-15,30-59'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get Unmapped Campaigns" do
