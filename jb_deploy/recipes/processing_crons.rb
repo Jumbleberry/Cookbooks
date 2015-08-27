@@ -98,5 +98,5 @@ cron "Processing - Effective CAP Monday Rollback" do
   day '1'
   hour '16'
   user 'www-data'
-  action :delete
+  action :create
 end
