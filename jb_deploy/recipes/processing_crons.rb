@@ -77,7 +77,7 @@ end
 cron "Processing - Cap Summary Previous Week" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php"
   minute '0'
-  day '1'
+  weekday '1'
   hour '2'
   user 'www-data'
   action :create
@@ -86,7 +86,7 @@ end
 cron "Processing - Effective CAP Sunday Snapshot" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
   minute '5'
-  day '1'
+  weekday '1'
   hour '0'
   user 'www-data'
   action :create
@@ -95,7 +95,7 @@ end
 cron "Processing - Effective CAP Monday Rollback" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
   minute '0'
-  day '1'
+  weekday '1'
   hour '16'
   user 'www-data'
   action :create
