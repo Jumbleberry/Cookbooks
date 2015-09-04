@@ -33,9 +33,9 @@ end
 cron "Processing - Get CRM Current Orders" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php only_initial"
   hour '0-2,7-23'
-  minute '5-59/10'
+  minute '20'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Rebill Orders" do
