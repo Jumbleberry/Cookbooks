@@ -92,6 +92,15 @@ cron "Processing - Effective CAP Sunday Snapshot" do
   action :create
 end
 
+cron "Processing - Effective CAP Sunday Snapshot - Incremental" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
+  minute '*'
+  weekday '1'
+  hour '7-15'
+  user 'www-data'
+  action :create
+end
+
 cron "Processing - Effective CAP Monday Rollback" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
   minute '0'
