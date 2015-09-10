@@ -64,7 +64,7 @@ cron "Processing - Calculate Retentions" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/calculate_retentions.php"
   hour '*'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Summary Current Week" do
