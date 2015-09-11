@@ -31,7 +31,3 @@ template credentials_file do
       "mysql_write_database"    => node['jbx']['credentials']['titan']['dbname']
     })
 end
-
-template "#{node['jbx']['core']['path']}/config/modules.json" do
-    source "modules.json.erb"
-end
