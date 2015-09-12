@@ -35,7 +35,7 @@ cron "Processing - Get CRM Current Orders" do
   hour '0-2,7-23'
   minute '20'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Rebill Orders" do
