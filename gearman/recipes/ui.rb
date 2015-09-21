@@ -3,7 +3,7 @@ include_recipe "nginx"
 # Checkout the gearman-ui repo
 git "/var/www/gearman-ui" do
     repository "git://github.com/gaspaio/gearmanui.git"
-    checkout_branch "gearman-ui"
+    checkout_branch "master"
     action :sync
 end
 
@@ -23,7 +23,7 @@ execute "composer install" do
 end
 
 # And add the configuration file
-template "/var/www/gearman-ui/app/config/gearmanui.yml" do
+template "/var/www/gearman-ui/gearmanui.yml" do
     source "gearmanui.yml.erb"
 end
 
