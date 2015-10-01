@@ -35,7 +35,7 @@ cron "Processing - Get CRM Current Orders" do
   hour '0-2,7-23'
   minute '20'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Rebill Orders" do
@@ -43,7 +43,7 @@ cron "Processing - Get CRM Rebill Orders" do
   hour '*'
   minute '0-15,30-59'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get Unmapped Campaigns" do
@@ -62,8 +62,8 @@ end
 
 cron "Processing - Calculate Retentions" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/calculate_retentions.php"
-  hour '*'
-  minute '*/5'
+  hour '6'
+  minute '15'
   user 'www-data'
   action :create
 end
