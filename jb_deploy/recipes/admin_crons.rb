@@ -48,3 +48,11 @@ cron "Admin - Upload Sales Reports" do
   user 'www-data'
   action :create
 end
+
+cron "Admin - Effective Cap Notification" do
+  command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/effective_cap_notifications.php"
+  minute '5'
+  hour '1'
+  user 'www-data'
+  action :create
+end
