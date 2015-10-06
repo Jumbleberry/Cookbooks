@@ -62,7 +62,7 @@ end
 
 cron "Processing - Calculate Retentions" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/calculate_retentions.php"
-  hour '23'
+  hour '*'
   minute '15'
   user 'www-data'
   action :create
