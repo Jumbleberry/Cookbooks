@@ -56,3 +56,11 @@ cron "Admin - Effective Cap Notification" do
   user 'www-data'
   action :create
 end
+
+cron "Admin - Advertiser Terms" do
+  command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/advertiser_terms.php"
+  hour '*'
+  minute '0'
+  user 'www-data'
+  action :create
+end
