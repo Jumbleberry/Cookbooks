@@ -4,7 +4,7 @@ include_recipe "nginx"
 git "/var/www/gearman-ui" do
     repository "git@github.com:Jumbleberry/gearmanui.git"
     revision "master"
-    user 'www-data'
+    user 'root'
     action :sync
 end
 
