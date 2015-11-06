@@ -3,7 +3,8 @@ include_recipe "nginx"
 # Checkout the gearman-ui repo
 git "/var/www/gearman-ui" do
     repository "git@github.com:Jumbleberry/gearmanui.git"
-    checkout_branch "master"
+    revision "master"
+    user 'www-data'
     action :sync
 end
 
