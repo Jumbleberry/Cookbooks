@@ -2,7 +2,7 @@ include_recipe "nginx"
 
 # Checkout the gearman-ui repo
 git "/var/www/gearman-ui" do
-    repository "git@github.com:Jumbleberry/gearmanui.git"
+    repository "https://github.com/Jumbleberry/gearmanui.git"
     revision "master"
     user 'root'
     action :sync
