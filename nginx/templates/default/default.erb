@@ -35,6 +35,11 @@ server {
         try_files $uri $uri/ @site;
     }
 
+    location ~* /vendor.*/([^/]+)$ {
+        root /var/www/gearman-ui/public;
+        try_files /$1 =404;
+    }
+
     if ($request_uri ~ ^/gearman(.*)$ ) {
         set $request_url $1;
     }
