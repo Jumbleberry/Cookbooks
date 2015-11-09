@@ -1,14 +1,14 @@
 cron "Processing - Detect CRM Features" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/detect_features.php"
-  hour '4'
-  minute '20'
+  hour '*/6'
+  minute '10'
   user 'www-data'
   action :create
 end
 
 cron "Processing - Get CRM Campaigns" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_campaigns.php"
-  hour '2-23/4'
+  hour '*'
   minute '50'
   user 'www-data'
   action :create
@@ -107,6 +107,14 @@ cron "Processing - Effective CAP Monday Rollback" do
   minute '0'
   weekday '1'
   hour '16'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Bridge Page Detection & Scraping" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/scrape_bridge_pages.php"
+  minute '0'
+  hour '4-23/12'
   user 'www-data'
   action :create
 end
