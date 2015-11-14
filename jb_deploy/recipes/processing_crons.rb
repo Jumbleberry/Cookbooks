@@ -116,5 +116,5 @@ cron "Processing - Bridge Page Detection & Scraping" do
   minute '0'
   hour '4-23/12'
   user 'www-data'
-  action :create
+  action :delete
 end
