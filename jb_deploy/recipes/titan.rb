@@ -1,5 +1,6 @@
 include_recipe "jb_deploy::core"
 include_recipe "github-auth"
+include_recipe "nginx::certs"
 
 # Set the branch to checkout
 branch = ENV['JBX_TITAN_BRANCH'] || node['jbx']['titan']['branch']
