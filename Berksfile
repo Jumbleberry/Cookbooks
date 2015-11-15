@@ -20,3 +20,4 @@ cookbook "ulimit", ">= 0.1.2"
 cookbook 'apt-repo', '~> 0.1.1'
 cookbook 'hostnames', '= 0.3.1'
 cookbook 'nodejs', '~> 2.4.0'
+cookbook 'ulimit2', '~> 0.2.0'
