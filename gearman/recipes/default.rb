@@ -57,8 +57,6 @@ execute "pkill -9 -u `id -u gearman`" do
     ignore_failure true
 end
 
-
-include_recipe "ulimit2"
 include_recipe "jb_deploy::gearman"
 
 # Consul Integration
