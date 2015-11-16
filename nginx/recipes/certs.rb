@@ -25,7 +25,7 @@ node['nginx']['certs'].each do | cert |
             execute "unencrypt key: #{cert}.#{ext}" do
                 cwd '/etc/nginx/ssl/'
                 command "gpg --output #{cert}.#{ext} --decrypt --batch --yes #{cert}.#{ext}.gpg && chmod 0600 #{cert}.#{ext}"
-                only_if { File.exists?("/etc/nginx/ssl/#{cert}.#{ext}#{gpg}") }
+                not_if { File.size?("/etc/nginx/ssl/#{cert}.#{ext}#{gpg}").nil? || File.size?("/etc/nginx/ssl/#{cert}.#{ext}#{gpg}") == 0 }
                 user "root"
             end
         end
