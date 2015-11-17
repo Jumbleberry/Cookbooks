@@ -14,9 +14,9 @@ server {
     listen 443 ssl;
     
     # Redirect non ELB traffic to https
-    if ($real_scheme != "https") {
-        return 301 https://$server_name$request_uri;
-    }
+    # if ($real_scheme != "https") {
+    #     return 301 https://$server_name$request_uri;
+    # }
     
     ssl_protocols               TLSv1 TLSv1.1 TLSv1.2;
     ssl_ciphers                 EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:EECDH+RC4:RSA+RC4:!MD5;
