@@ -1,5 +1,4 @@
 include_recipe "jbx::core"
-
 include_recipe "jb_deploy::titan"
 
 # Creates the nginx virtual host

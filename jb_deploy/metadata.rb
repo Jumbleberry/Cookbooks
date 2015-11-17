@@ -7,4 +7,3 @@ long_description 'Deploy Code Updates'
 version          '0.1.0'
 
 depends "github-auth"
-depends "nginx"

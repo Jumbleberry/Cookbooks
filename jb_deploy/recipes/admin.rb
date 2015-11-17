@@ -1,5 +1,4 @@
 include_recipe "github-auth"
-include_recipe "nginx::certs"
 
 # Make sure directory exists
 # Use the same user defined for the admin application
