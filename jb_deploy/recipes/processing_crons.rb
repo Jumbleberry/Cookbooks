@@ -118,3 +118,12 @@ cron "Processing - Bridge Page Detection & Scraping" do
   user 'www-data'
   action :delete
 end
+
+cron "Processing - Cap Deltas" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_deltas.php"
+  minute '10'
+  weekday '1'
+  hour '0'
+  user 'www-data'
+  action :create
+end
