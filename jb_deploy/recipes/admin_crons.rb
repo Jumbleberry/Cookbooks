@@ -45,7 +45,7 @@ end
 cron "Admin - Upload Sales Reports" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/upload_sales_report.php"
   minute '0,2'
-  hour '*/4'
+  hour '*'
   user 'www-data'
   action :create
 end
