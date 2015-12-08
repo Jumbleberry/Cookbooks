@@ -25,7 +25,7 @@ else
     end
     
     # Force unmount - don't care if it works
-    execute "umount #{dir_info[:path]} || true"
+    execute "umount -l #{dir_info[:path]} || umount -f #{dir_info[:path]} || true"
     
     dir = dir_info[:tmp_store] || '/tmp/s3_cache' 
     
