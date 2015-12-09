@@ -14,7 +14,7 @@ cookbook 'yum-epel', '~> 0.6.2'
 cookbook 'timezone-ii', '~> 0.2.0'
 cookbook 'aws', '~> 2.5.0'
 cookbook 'rc_mon', '~> 0.2.0'
-cookbook 'consul', '~> 0.6.0'
+cookbook 'consul', '= 0.11.1'
 cookbook 'hosts_file', '~> 0.0.0'
 cookbook "ulimit", ">= 0.1.2"
 cookbook 'apt-repo', '~> 0.1.1'
