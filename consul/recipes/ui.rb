@@ -22,10 +22,13 @@ else
     checksum Chef::ConsulUI.remote_checksum(node)
   end
 
-  
+  directory Chef::ConsulUI.install_path(node) do
+    recursive true
+    action :create
+  end
+
   execute "unzip consul_ui.zip" do
-    command "unzip " + archive.path + " -d " + Chef::ConsulUI.install_path(node)
-    not_if { File.exist?(Chef::ConsulUI.install_path(node)) }
+    command "unzip -o " + archive.path + " -d " + Chef::ConsulUI.install_path(node)
   end
 
   # JW TODO: Remove after next major release.
@@ -33,5 +36,9 @@ else
     action :delete
     recursive true
     not_if "test -L #{Chef::ConsulUI.active_path(node)}"
+  end
+  
+  link Chef::ConsulUI.active_path(node) do
+    to Chef::ConsulUI.latest_dist(node)
   end
 end

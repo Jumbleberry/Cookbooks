@@ -27,7 +27,7 @@ end
 
 execute "unzip consul.zip" do
   command "unzip " + archive.path + " -d " + Chef::Consul.install_path(node)
-  not_if { File.exist?(Chef::Consul.install_path(node)) }
+  not_if { File.exist?(Chef::Consul.install_path(node) + "/consul") }
 end
 
 directory File.basename(Chef::Consul.active_binary(node)) do
