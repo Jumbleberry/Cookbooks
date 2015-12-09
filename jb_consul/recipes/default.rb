@@ -3,14 +3,6 @@ include_recipe "awscli"
 include_recipe "tags"
 include_recipe "web-server"
 
-# Create lib directory for consul
-directory node['consul']['lib_dir'] do
-  recursive true
-  owner 'root'
-  group 'root'
-  action :create
-end
-
 # Install consul ui if we're supposed to serve it
 if (node['consul'].attribute?('serve_ui') && node['consul']['serve_ui'])
     include_recipe "consul::ui"
