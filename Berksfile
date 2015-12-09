@@ -19,3 +19,6 @@ cookbook "ulimit", ">= 0.1.2"
 cookbook 'apt-repo', '~> 0.1.1'
 cookbook 'hostnames', '= 0.3.1'
 cookbook 'nodejs', '~> 2.4.0'
+cookbook 'golang',  '~> 1.4'
+cookbook 'yum-repoforge'
+cookbook 'packagecloud'
