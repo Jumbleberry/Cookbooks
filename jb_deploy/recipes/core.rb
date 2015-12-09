@@ -62,7 +62,11 @@ template credentials_file do
       "gearman_host"            => node['jbx']['credentials']['gearman']['host'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
-      "raygun"                  => node['jbx']['credentials']['raygun']
+      "raygun"                  => node['jbx']['credentials']['raygun'],
+      
+      "webdriver_user"          => node['web_driver']['user'],
+      "webdriver_password"      => node['web_driver']['password'],
+      "webdriver_url"           => node['web_driver']['url']
     })
 end
 
