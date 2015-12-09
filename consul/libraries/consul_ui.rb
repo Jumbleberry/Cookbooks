@@ -19,7 +19,7 @@ class Chef
   module ConsulUI
     class << self
       def active_path(node)
-        File.join(node['consul']['data_dir'], 'ui')
+        node['consul']['ui_dir']
       end
 
       def cached_archive(node)

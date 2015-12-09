@@ -34,8 +34,4 @@ else
     recursive true
     not_if "test -L #{Chef::ConsulUI.active_path(node)}"
   end
-
-  link Chef::ConsulUI.active_path(node) do
-    to Chef::ConsulUI.latest_dist(node)
-  end
 end
