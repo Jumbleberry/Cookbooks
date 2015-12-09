@@ -20,6 +20,11 @@ archive = remote_file Chef::Consul.cached_archive(node) do
   checksum Chef::Consul.remote_checksum(node)
 end
 
+directory Chef::Consul.install_path(node) do
+  recursive true
+  action :create
+end
+
 execute "unzip consul.zip" do
   command "unzip " + archive.path + " -d " + Chef::Consul.install_path(node)
   not_if { File.exist?(Chef::Consul.install_path(node)) }
