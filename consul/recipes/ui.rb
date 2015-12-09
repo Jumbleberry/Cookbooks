@@ -16,19 +16,16 @@
 if node['platform'] == 'windows'
   Chef::Log.error "UI Installation not supported for Windows"
 else
-  include_recipe 'libarchive::default'
-
+  
   archive = remote_file Chef::ConsulUI.cached_archive(node) do
     source Chef::ConsulUI.remote_url(node)
     checksum Chef::ConsulUI.remote_checksum(node)
   end
 
-  libarchive_file 'consul_ui.zip' do
-    path archive.path
-    extract_to Chef::ConsulUI.install_path(node)
-    extract_options :no_overwrite
-
-    action :extract
+  
+  execute "unzip consul_ui.zip" do
+    command "unzip " + archive.path + " -d " + Chef::ConsulUI.install_path(node)
+    not_if { File.exist?(Chef::ConsulUI.install_path(node)) }
   end
 
   # JW TODO: Remove after next major release.
