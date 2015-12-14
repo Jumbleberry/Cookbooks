@@ -48,6 +48,7 @@ template credentials_file do
       "hitpath_user"            => node['jbx']['credentials']['hitpath']['username'],
       "hitpath_pass"            => node['jbx']['credentials']['hitpath']['password'],
       "hitpath_id"              => node['jbx']['credentials']['hitpath']['hitpath_id'],
+      "hitpath_aws_bucket"      => node['jbx']['credentials']['hitpath']['aws_bucket'],
 
       "redis_read_host"         => node['jbx']['credentials']['redis_read']['host'],
       "redis_read_port"         => node['jbx']['credentials']['redis_read']['port'],
@@ -63,6 +64,9 @@ template credentials_file do
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
       "raygun"                  => node['jbx']['credentials']['raygun'],
+      
+      "aws_access_key"          => node['jbx']['credentials']['aws']['access_key'],
+      "aws_secret_key"          => node['jbx']['credentials']['aws']['secret_key'],
       
       "webdriver_user"          => node['web_driver']['user'],
       "webdriver_password"      => node['web_driver']['password'],
