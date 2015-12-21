@@ -24,3 +24,10 @@ cron "Mail - CAP Approvals Notices" do
   user 'www-data'
   action :create
 end
+
+cron "Mail - Affiliate Cap Notices" do
+  command "/usr/bin/php #{node[:jbx][:mail][:path]}/crons/cap_notices.php"
+  minute '*/1'
+  user 'www-data'
+  action :delete
+end

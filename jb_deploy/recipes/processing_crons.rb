@@ -127,3 +127,10 @@ cron "Processing - Cap Deltas" do
   user 'www-data'
   action :create
 end
+
+cron "Processing - Caps Reached" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_caps_reached.php"
+  minute '*/1'
+  user 'www-data'
+  action :delete
+end
