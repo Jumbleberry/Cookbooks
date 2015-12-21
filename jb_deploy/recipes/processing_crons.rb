@@ -1,15 +1,15 @@
 cron "Processing - Detect CRM Features" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/detect_features.php"
-  hour '*/6'
-  minute '10'
+  hour '2-23/6'
+  minute '2-59/10'
   user 'www-data'
   action :create
 end
 
 cron "Processing - Get CRM Campaigns" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_campaigns.php"
-  hour '*'
-  minute '50'
+  hour '0-2,6,8-23'
+  minute '4-59/10'
   user 'www-data'
   action :create
 end
@@ -17,7 +17,7 @@ end
 cron "Processing - Get CRM Current Day Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_current_stats.php"
   hour '0-2,6,8-23'
-  minute '20'
+  minute '6-59/10'
   user 'www-data'
   action :create
 end
@@ -25,15 +25,7 @@ end
 cron "Processing - Get CRM Historical Stats" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_historical_stats.php"
   hour '3,5'
-  minute '20'
-  user 'www-data'
-  action :create
-end
-
-cron "Processing - Get CRM Current Orders" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php only_initial"
-  hour '0-2,7-23'
-  minute '20'
+  minute '8-59/10'
   user 'www-data'
   action :create
 end
@@ -41,7 +33,15 @@ end
 cron "Processing - Get CRM Rebill Orders" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php"
   hour '*'
-  minute '0-15,30-59'
+  minute '1-59/2'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Get CRM Current Orders" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_orders.php only_initial"
+  hour '0-2,7-23'
+  minute '30'
   user 'www-data'
   action :create
 end
@@ -116,7 +116,7 @@ cron "Processing - Bridge Page Detection & Scraping" do
   minute '0'
   hour '4-23/12'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Deltas" do
@@ -132,5 +132,5 @@ cron "Processing - Caps Reached" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_caps_reached.php"
   minute '*/1'
   user 'www-data'
-  action :delete
+  action :create
 end
