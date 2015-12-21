@@ -51,7 +51,7 @@ default['php']['packages'] = [
   },
   {
       "name" => "php5-gd",
-      "version" => "2.1.*"
+      "version" => "*"
    }
 ]
 
