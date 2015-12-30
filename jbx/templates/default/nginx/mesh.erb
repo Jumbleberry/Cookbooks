@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name <%= @hostname %> www.<%= @hostname %>;
+    server_name <%= @hostname %> www.<%= @hostname %> ~^(.*)\.<%= @hostname %>$;
     root <%= @path %>;
     
     keepalive_timeout 0;
