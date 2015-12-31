@@ -35,8 +35,8 @@ http {
                       '"$http_user_agent" "$http_x_forwarded_for" '
                       '$request_time $upstream_response_time $pipe';
     
-    access_log /var/log/nginx/access.log main;
-    error_log /var/log/nginx/error.log warn;
+    access_log /var/log/nginx/access.log main buffer=4k flush=1m;
+    error_log /var/log/nginx/error.log warn buffer=4k flush=1m;
     
     ##
     # Gzip Settings
