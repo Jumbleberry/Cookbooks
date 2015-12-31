@@ -52,6 +52,7 @@ template '/etc/php5/fpm/pool.d/www.conf' do
   source 'fpm/www.conf.erb'
   variables({
     'listen' => node['php']['fpm']['listen'],
+    'pm' => node['php']['fpm']['pm'],
     'max_children' => node['php']['fpm']['max_children'],
     'start_servers' => node['php']['fpm']['start_servers'],
     'min_spare_servers' => node['php']['fpm']['min_spare_servers'],

@@ -59,7 +59,7 @@ listen.group = www-data
 ;       - The pool processes will inherit the master process priority
 ;         unless it specified otherwise
 ; Default Value: no set
-; process.priority = -19
+process.priority = -19
 
 ; Choose how the process manager will control the number of child processes.
 ; Possible Values:
@@ -85,7 +85,7 @@ listen.group = www-data
 ;             pm.process_idle_timeout   - The number of seconds after which
 ;                                         an idle process will be killed.
 ; Note: This value is mandatory.
-pm = dynamic
+pm = <%= @pm %>
 
 ; The number of child processes to be created when pm is set to 'static' and the
 ; maximum number of child processes when pm is set to 'dynamic' or 'ondemand'.

@@ -2,6 +2,7 @@ default['php']['composer_download_path'] = '/tmp/composer-install.php'
 
 default['php']['fpm']['display_errors'] = 'Off'
 default['php']['fpm']['listen'] = '/var/run/php5-fpm.sock'
+default['php']['fpm']['pm'] = 'dynamic'
 default['php']['fpm']['max_children'] = '100'
 default['php']['fpm']['start_servers'] = '40'
 default['php']['fpm']['min_spare_servers'] = '20'
