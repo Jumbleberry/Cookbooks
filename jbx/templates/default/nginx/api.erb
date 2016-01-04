@@ -40,7 +40,7 @@ server {
     location = /favicon.ico { access_log off; log_not_found off; try_files $uri =404; }	
     
     access_log  /var/log/nginx/<%= @hostname %>.access.log  main buffer=4k flush=1m;
-    error_log  /var/log/nginx/<%= @hostname %>.error.log  warn buffer=4k flush=1m;
+    error_log  /var/log/nginx/<%= @hostname %>.error.log  warn;
 
     location ~ \.php$ {
         try_files $uri index.php =404;

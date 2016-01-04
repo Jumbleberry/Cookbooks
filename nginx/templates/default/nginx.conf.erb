@@ -36,7 +36,7 @@ http {
                       '$request_time $upstream_response_time $pipe';
     
     access_log /var/log/nginx/access.log main buffer=4k flush=1m;
-    error_log /var/log/nginx/error.log warn buffer=4k flush=1m;
+    error_log /var/log/nginx/error.log warn;
     
     ##
     # Gzip Settings
