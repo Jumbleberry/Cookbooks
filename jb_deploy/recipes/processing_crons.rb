@@ -134,3 +134,10 @@ cron "Processing - Caps Reached" do
   user 'www-data'
   action :create
 end
+
+cron "Processing - Future Caps" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/future_caps.php"
+  minute '*/1'
+  user 'www-data'
+  action :create
+end
