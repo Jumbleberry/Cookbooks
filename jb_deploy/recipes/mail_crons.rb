@@ -34,7 +34,7 @@ end
 
 cron "Mail - Cap Exception Report" do
   command "/usr/bin/php #{node[:jbx][:mail][:path]}/crons/cap_exception_report.php"
-  minute '1'
+  minute '20'
   hour '0'
   weekday '1'
   user 'www-data'
