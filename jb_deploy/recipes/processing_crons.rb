@@ -134,3 +134,36 @@ cron "Processing - Caps Reached" do
   user 'www-data'
   action :create
 end
+
+cron "Processing - Future Caps" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/future_caps.php"
+  minute '*/1'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Sunday Snapshot" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
+  minute '*/1'
+  weekday '0,5,6'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Monday Snapshot" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
+  minute '*/1'
+  weekday '1'
+  hour '0-16'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Approval" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
+  minute '0'
+  hour '0,16'
+  weekday '1'
+  user 'www-data'
+  action :create
+end
