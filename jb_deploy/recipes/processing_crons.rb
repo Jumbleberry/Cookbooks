@@ -90,7 +90,7 @@ cron "Processing - Effective CAP Sunday Snapshot" do
   weekday '1'
   hour '0'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Effective CAP Sunday Snapshot - Incremental" do
@@ -99,7 +99,7 @@ cron "Processing - Effective CAP Sunday Snapshot - Incremental" do
   weekday '1'
   hour '7-15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Effective CAP Monday Rollback" do
@@ -108,7 +108,7 @@ cron "Processing - Effective CAP Monday Rollback" do
   weekday '1'
   hour '16'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Bridge Page Detection & Scraping" do
@@ -131,6 +131,39 @@ end
 cron "Processing - Caps Reached" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_caps_reached.php"
   minute '*/1'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Future Caps" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/future_caps.php"
+  minute '*'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Sunday Snapshot" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
+  minute '*'
+  weekday '0,5,6'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Monday Snapshot" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
+  minute '*'
+  weekday '1'
+  hour '0-16'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Approval" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
+  minute '15'
+  hour '0,16'
+  weekday '1'
   user 'www-data'
   action :create
 end
