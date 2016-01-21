@@ -137,14 +137,14 @@ end
 
 cron "Processing - Future Caps" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/future_caps.php"
-  minute '*/1'
+  minute '*'
   user 'www-data'
   action :create
 end
 
 cron "Processing - Cap Sunday Snapshot" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
-  minute '*/1'
+  minute '*'
   weekday '0,5,6'
   user 'www-data'
   action :create
@@ -152,7 +152,7 @@ end
 
 cron "Processing - Cap Monday Snapshot" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
-  minute '*/1'
+  minute '*'
   weekday '1'
   hour '0-16'
   user 'www-data'
