@@ -145,6 +145,7 @@ end
 cron "Processing - Cap Sunday Snapshot" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
   minute '*'
+  hour '0-23'
   weekday '0,5,6'
   user 'www-data'
   action :create
@@ -154,7 +155,7 @@ cron "Processing - Cap Monday Snapshot" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
   minute '*'
   weekday '1'
-  hour '0-16'
+  hour '1-16'
   user 'www-data'
   action :create
 end
