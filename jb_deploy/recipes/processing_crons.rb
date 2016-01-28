@@ -160,10 +160,19 @@ cron "Processing - Cap Monday Snapshot" do
   action :create
 end
 
-cron "Processing - Cap Approval" do
+cron "Processing - Cap Approval Monday Midnight" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
   minute '15'
-  hour '0,16'
+  hour '0'
+  weekday '1'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Approval Monday 4pm" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
+  minute '0'
+  hour '16'
   weekday '1'
   user 'www-data'
   action :create
