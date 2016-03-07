@@ -73,7 +73,9 @@ template credentials_file do
       "webdriver_url"           => node['web_driver']['url'],
 
       "alchemy_free"            => node['jbx']['credentials']['alchemy']['free'],
-      "alchemy_paid"            => node['jbx']['credentials']['alchemy']['paid']
+      "alchemy_paid"            => node['jbx']['credentials']['alchemy']['paid'],
+      
+      "trackrevenue"            => node['jbx']['credentials']['trackrevenue']
     })
 end
 
