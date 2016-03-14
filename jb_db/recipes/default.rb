@@ -8,6 +8,17 @@ include_recipe "nginx"
 include_recipe "php"
 include_recipe "mysql::server"
 
+# Create jbx user
+query = "CREATE USER \'jbx\'@\'localhost\' IDENTIFIED BY \'#{node['jbx']['credentials']['mysql_read']['password']}\'"
+execute 'createJbxUser' do
+    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+end
+
+query = "GRANT ALL ON *.* TO \'jbx\'@\'localhost\'"
+execute 'grantPermissions' do
+    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+end
+
 # Install phpmyadmin
 apt_package 'phpmyadmin' do
     action :install
