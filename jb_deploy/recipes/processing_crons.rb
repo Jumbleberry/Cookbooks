@@ -190,7 +190,7 @@ end
 cron "Processing - Cap Unapprovals Weekends" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_unapproved.php"
   minute '*'
-  hour '0-23'
+  hour '0-22'
   weekday '5,6'
   user 'www-data'
   action :create
