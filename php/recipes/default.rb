@@ -1,6 +1,6 @@
 # Custom repositories
-apt_repository 'php5.5-ppa' do
-  uri           'ppa:ondrej/php5'
+apt_repository 'php-ppa' do
+  uri           'ppa:ondrej/php'
   distribution  'precise'
   components    ['main', 'stable']
 end
@@ -19,8 +19,27 @@ phpmodules.each do |pkg|
   end
 end
 
+#install modules
+
+# php-redis
+git "/tmp/php-redis" do
+  repository "https://github.com/phpredis/phpredis.git"
+  branch "php7"
+  action :sync
+end
+bash 'install php-redis' do 
+    cwd '/tmp/php-redis'
+    code <<-EOL
+        phpize
+        ./configure
+        make && make install
+        cd ..
+        rm -rf php-redis
+    EOL
+end
+
 #Register Php service
-service 'php5-fpm' do
+service 'php7.0-fpm' do
   action :nothing
 end
 
@@ -39,16 +58,16 @@ file '/var/log/php/error.log' do
 end
 
 #Fpm configurations
-template '/etc/php5/fpm/php.ini' do
+template '/etc/php/7.0/fpm/php.ini' do
   source 'fpm/php.ini.erb'
   variables({
     'display_errors' => node['php']['fpm']['display_errors'],
     'include_path' => include_path
   })
-  notifies :restart, "service[php5-fpm]", :delayed
+  notifies :restart, "service[php7.0-fpm]", :delayed
 end
 
-template '/etc/php5/fpm/pool.d/www.conf' do
+template '/etc/php/7.0/fpm/pool.d/www.conf' do
   source 'fpm/www.conf.erb'
   variables({
     'listen' => node['php']['fpm']['listen'],
@@ -58,11 +77,11 @@ template '/etc/php5/fpm/pool.d/www.conf' do
     'min_spare_servers' => node['php']['fpm']['min_spare_servers'],
     'max_spare_servers' => node['php']['fpm']['max_spare_servers']
   })
-  notifies :restart, "service[php5-fpm]", :delayed
+  notifies :restart, "service[php7.0-fpm]", :delayed
 end
 
 #Cli Configurations
-template '/etc/php5/cli/php.ini' do
+template '/etc/php/7.0/cli/php.ini' do
   source 'cli/php.ini.erb'
   variables({
     'display_errors' => node['php']['fpm']['display_errors'],
@@ -73,7 +92,7 @@ end
 #Install composer
 composer_download_path = node['php']['composer_download_path']
 if composer_download_path
-  remote_file '/tmp/composer-install.php' do
+  remote_file composer_download_path do
     source 'https://getcomposer.org/installer'
     not_if { ::File.exists?("/usr/local/bin/composer")}
   end
