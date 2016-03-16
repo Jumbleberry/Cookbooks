@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-default['consul']['base_url']       = "https://dl.bintray.com/mitchellh/consul/%{version}.zip"
+default['consul']['base_url']       = "https://s3.amazonaws.com/miscfile-staging/consul/0.5.2/%{version}.zip"
 default['consul']['version']        = '0.5.2'
 if node['platform_family'] == 'windows'
   default['consul']['version']      = '0.5.0'

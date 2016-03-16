@@ -6,3 +6,6 @@ default['phalcon']['conf_dirs'] = ['/etc/php5/mods-available']
 default['phalcon']['conf_dirs_alias'] = ['/etc/php/7.0/cli/conf.d', '/etc/php/7.0/fpm/conf.d']
 default['phalcon']['conf_file'] = '20-phalcon.ini'
 default['phalcon']['devtools'] = false
+
+default['zephir']['git_url'] = 'git@github.com:phalcon/zephir.git'
+default['zephir']['revision'] = '0.8.0'
