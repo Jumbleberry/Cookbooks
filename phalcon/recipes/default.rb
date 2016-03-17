@@ -1,27 +1,43 @@
 # Phalcon installation
 include_recipe "web-server"
+include_recipe "apt"
 
-# Based on https://github.com/k-kinzal/chef-php-phalcon
-path  = node['phalcon']['download_path']
-build_path = path + "/" + node['phalcon']['build_path']
+# Installs php package and modules
+phpmodules = node['phalcon']['packages']
+phpmodules.each do |pkg|
+  package "#{pkg['name']}" do
+    action :install
+    version pkg["version"]
+    # Ignore configuration changes - necessary because of nginx updates
+    options '--force-yes'
+    options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+  end
+end
 
-git path do
+# Install zephir
+git node['zephir']['download_path'] do
+  repository node['zephir']['git_url']
+  reference node['zephir']['git_ref']
+  action :sync
+end
+
+execute "zephir-install" do 
+    user "root"
+    cwd node['zephir']['download_path']
+    command "./install -c"
+end
+
+# Install phalcon
+git node['phalcon']['download_path'] do
   repository node['phalcon']['git_url']
   reference node['phalcon']['git_ref']
   action :sync
 end
 
-# Modify install file
-cookbook_file build_path + '/install' do
-    source "install"
-    mode "0755"
-    action :create
-end
-
 execute  "phalcon-build" do
-  cwd build_path
+  cwd node['phalcon']['download_path']
   user "root"
-  command %{./install}
+  command "zephir build -backend=ZendEngine3"
 
   node['phalcon']['conf_dirs'].each do |conf_dir|
       not_if do
