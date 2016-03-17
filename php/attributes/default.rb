@@ -37,7 +37,11 @@ default['php']['packages'] = [
   {
       "name" => "php7.0-gd",
       "version" => "*"
-   }
+  },
+  {
+      "name" => "php7.0-json",
+      "version" => "*"
+  }
 ]
 
 
