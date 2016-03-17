@@ -10,6 +10,10 @@ default['php']['fpm']['max_spare_servers'] = '40'
 default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
 default['php']['packages'] = [
+  { 
+      "name" => "language-pack-en-base",
+      "version" => "*"
+  },
   {
     "name" => "php7.0-fpm",
     "version" => "7.*"
