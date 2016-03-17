@@ -56,7 +56,7 @@ node['phalcon']['conf_dirs'].each do |conf_dir|
     end
 
     node['phalcon']['conf_dirs_alias'].each do |conf_dirs_alias|
-        link "#{conf_dirs_alias}/#{node['phalcon']['conf_file']}" do
+        link "#{conf_dirs_alias}/30-#{node['phalcon']['conf_file']}" do
           to "#{conf_dir}/#{node['phalcon']['conf_file']}"
           notifies :restart, "service[php7.0-fpm]", :immediately
         end

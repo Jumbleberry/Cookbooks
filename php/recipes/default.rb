@@ -22,20 +22,35 @@ end
 #install modules
 
 # php-redis
-git "/tmp/php-redis" do
+git "/etc/phpredis" do
   repository "https://github.com/phpredis/phpredis.git"
   branch "php7"
   action :sync
 end
-bash 'install php-redis' do 
-    cwd '/tmp/php-redis'
-    code <<-EOL
-        phpize
-        ./configure
-        make && make install
-        cd ..
-        rm -rf php-redis
+execute 'install phpredis' do 
+    cwd '/etc/phpredis'
+    command <<-EOL
+phpize
+./configure
+make && make install
     EOL
+end
+
+# Creates symlinks for the configurations files
+node['php']['fpm']['conf_dirs'].each do |conf_dir|
+    cookbook_file "#{conf_dir}/#{node['php']['fpm']['conf_file']}" do
+        source "redis.ini"
+        owner "root"
+        group "root"
+        mode 0644
+    end
+
+    node['php']['fpm']['conf_dirs_alias'].each do |conf_dirs_alias|
+        link "#{conf_dirs_alias}/20-#{node['php']['fpm']['conf_file']}" do
+          to "#{conf_dir}/#{node['php']['fpm']['conf_file']}"
+          notifies :restart, "service[php7.0-fpm]", :delayed
+        end
+    end
 end
 
 #Register Php service

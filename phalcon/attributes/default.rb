@@ -19,7 +19,7 @@ default['phalcon']['download_path'] = "/tmp/cphalcon"
 default['phalcon']['build_path'] = "build"
 default['phalcon']['conf_dirs'] = ['/etc/php/7.0/mods-available']
 default['phalcon']['conf_dirs_alias'] = ['/etc/php/7.0/cli/conf.d', '/etc/php/7.0/fpm/conf.d']
-default['phalcon']['conf_file'] = '30-phalcon.ini'
+default['phalcon']['conf_file'] = 'phalcon.ini'
 default['phalcon']['devtools'] = false
 
 default['zephir']['download_path'] = "/tmp/zephir"
