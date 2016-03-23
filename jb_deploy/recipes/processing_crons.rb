@@ -128,7 +128,7 @@ cron "Processing - Cap Monday Snapshot" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
   minute '*'
   weekday '1'
-  hour '1-16'
+  hour '1-15'
   user 'www-data'
   action :create
 end
