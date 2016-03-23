@@ -84,33 +84,6 @@ cron "Processing - Cap Summary Previous Week" do
   action :create
 end
 
-cron "Processing - Effective CAP Sunday Snapshot" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
-  minute '5'
-  weekday '1'
-  hour '0'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Effective CAP Sunday Snapshot - Incremental" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
-  minute '*'
-  weekday '1'
-  hour '7-15'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Effective CAP Monday Rollback" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
-  minute '0'
-  weekday '1'
-  hour '16'
-  user 'www-data'
-  action :delete
-end
-
 cron "Processing - Bridge Page Detection & Scraping" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/scrape_bridge_pages.php"
   minute '0'
