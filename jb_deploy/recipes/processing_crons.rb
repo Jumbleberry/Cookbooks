@@ -153,7 +153,7 @@ end
 
 cron "Processing - Cap Unapprovals Friday" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_unapproved.php"
-  minute '1-59/*'
+  minute '1-59'
   hour '16-23'
   weekday '5'
   user 'www-data'
