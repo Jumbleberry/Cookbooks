@@ -103,3 +103,10 @@ cookbook_file "/etc/at.allow" do
     group "root"
     mode "0644"
 end
+
+cron "Core - Bin Number Scraper" do
+  command "/usr/bin/php #{node['jbx']['core']['path']}/application/modules/api/crons/bin_numbers.php"
+  minute '*'
+  user 'www-data'
+  action :create
+end
