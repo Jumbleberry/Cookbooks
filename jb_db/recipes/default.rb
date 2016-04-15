@@ -20,6 +20,20 @@ apt_package 'mysql-server-5.6' do
     action :install
 end
 
+# Copy config file
+cookbook_file "/etc/mysql/my.cnf" do
+    source "mysql/my.cnf"
+    owner "root"
+    group "root"
+    mode "0644"
+end
+
+# Restart mysql
+execute "mysql-restart" do
+    command "service mysql restart"
+    user 'root'
+end
+
 # Create jbx user
 query = "CREATE USER \'jbx\'@\'%\' IDENTIFIED BY \'#{node['jbx']['credentials']['mysql_read']['password']}\'"
 execute 'createJbxUser' do
