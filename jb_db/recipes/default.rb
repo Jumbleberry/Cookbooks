@@ -4,9 +4,21 @@ execute "apt-get-update-periodic" do
     user 'root'
 end
 
-include_recipe "nginx"
-include_recipe "php"
-include_recipe "mysql::server"
+# Set mysql server default password
+root_password = "#{node['jbx']['credentials']['mysql_read']['password']}"
+execute "mysql-default-password" do
+    command "echo \"mysql-server-5.6 mysql-server/root_password password #{root_password}\" | debconf-set-selections"
+    user 'root'
+end
+execute "mysql-default-password-again" do
+    command "echo \"mysql-server-5.6 mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
+    user 'root'
+end
+
+# Install mysql server 5.6
+apt_package 'mysql-server-5.6' do
+    action :install
+end
 
 # Create jbx user
 query = "CREATE USER \'jbx\'@\'%\' IDENTIFIED BY \'#{node['jbx']['credentials']['mysql_read']['password']}\'"
@@ -18,6 +30,19 @@ query = "GRANT ALL ON *.* TO \'jbx\'@\'%\'"
 execute 'grantPermissions' do
     command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
 end
+
+# Create 'root'@'%'
+query = "CREATE USER \'root\'@\'%\' IDENTIFIED BY \'#{node['jbx']['credentials']['mysql_read']['password']}\'"
+execute 'createJbxUser' do
+    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+end
+query = "GRANT ALL ON *.* TO \'root\'@\'%\'"
+execute 'grantPermissions' do
+    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+end
+
+include_recipe "nginx"
+include_recipe "php"
 
 # Install phpmyadmin
 apt_package 'phpmyadmin' do
