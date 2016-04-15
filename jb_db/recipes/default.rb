@@ -63,6 +63,27 @@ apt_package 'phpmyadmin' do
     action :install
 end
 
+# Copy phpmyadmin config file
+cookbook_file "/etc/phpmyadmin/config.inc.php" do
+    source "phpmyadmin/config.inc.php"
+    owner "root"
+    group "root"
+    mode "0644"
+end
+
+# Copy phpmyadmin table dump
+cookbook_file "/tmp/create_tables.sql" do
+    source "phpmyadmin/create_tables.sql"
+    owner "root"
+    group "root"
+    mode "0644"
+end
+
+# Restore phpmyadmin tables
+execute "phpmyadmin" do
+    command "mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']} < /tmp/create_tables.sql"
+end
+
 # Symlink myadmin to somewhere sensible
 link "/var/www/phpmyadmin" do
     to "/usr/share/phpmyadmin"
