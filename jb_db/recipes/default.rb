@@ -114,7 +114,7 @@ end
 # Install awscli
 include_recipe "awscli"
 template "/home/vagrant/.aws/config" do
-    source "aws/config"
+    source "aws/config.erb"
     variables ({
         "access_id"   => node['aws']['aws_access_key_id'],
         "provate_key" => node['aws']['aws_secret_access_key']
@@ -122,20 +122,20 @@ template "/home/vagrant/.aws/config" do
 end
 
 # Install JB DB Importer
-directory "#{default['jbdb_importer']['source_directory']}" do
+directory node['jbdb_importer']['source_directory'] do
     action :create
 end
 
-template "#{default['jbdb_importer']['source_directory']}/jbdb_import" do
-    source "jbdb_import"
+template "#{node['jbdb_importer']['source_directory']}/jbdb_import" do
+    source "jbdb_import.erb"
     variables ({
-        "username"  => default['mysql']['server_root_user'],
-        "password"  => default['mysql']['server_root_password'],
-        "s3_bucket" => default['aws']['db_bucket']
+        "username"  => node['mysql']['server_root_user'],
+        "password"  => node['mysql']['server_root_password'],
+        "s3_bucket" => node['aws']['db_bucket']
     })
+    mode "0755"
 end
 
-link "#{default['jbdb_importer']['source_directory']}/jbdb_import" do
-    to "#{default['jbdb_importer']['bin_directory']}/jbdb_import"
-    action :create
+link "#{node['jbdb_importer']['bin_directory']}/jbdb_import" do
+    to "#{node['jbdb_importer']['source_directory']}/jbdb_import"
 end
