@@ -35,24 +35,24 @@ execute "mysql-restart" do
 end
 
 # Create jbx user
-query = "CREATE USER \'jbx\'@\'%\' IDENTIFIED BY \'#{node['jbx']['credentials']['mysql_read']['password']}\'"
+query = "CREATE USER \'jbx\'@\'%\' IDENTIFIED BY \'#{root_password}\'"
 execute 'createJbxUser' do
-    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
 end
 
 query = "GRANT ALL ON *.* TO \'jbx\'@\'%\'"
 execute 'grantPermissions' do
-    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
 end
 
 # Create 'root'@'%'
-query = "CREATE USER \'root\'@\'%\' IDENTIFIED BY \'#{node['jbx']['credentials']['mysql_read']['password']}\'"
+query = "CREATE USER \'root\'@\'%\' IDENTIFIED BY \'#{root_password}\'"
 execute 'createJbxUser' do
-    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
 end
 query = "GRANT ALL ON *.* TO \'root\'@\'%\'"
 execute 'grantPermissions' do
-    command "echo \"#{query}\" | mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']}"
+    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
 end
 
 include_recipe "nginx"
@@ -81,7 +81,7 @@ end
 
 # Restore phpmyadmin tables
 execute "phpmyadmin" do
-    command "mysql -u root -p#{node['jbx']['credentials']['mysql_read']['password']} < /tmp/create_tables.sql"
+    command "mysql -u root -p#{root_password} < /tmp/create_tables.sql"
 end
 
 # Symlink myadmin to somewhere sensible
@@ -113,7 +113,7 @@ end
 
 # Install awscli
 include_recipe "awscli"
-template "/home/vagrant/.aws/config" do
+template "/home/#{node['user']}/.aws/config" do
     source "aws/config.erb"
     variables ({
         "access_id"   => node['aws']['aws_access_key_id'],
@@ -138,4 +138,9 @@ end
 
 link "#{node['jbdb_importer']['bin_directory']}/jbdb_import" do
     to "#{node['jbdb_importer']['source_directory']}/jbdb_import"
+end
+
+# Create JBX
+execute "restore-DB" do
+    command "jbdb_import jbx --create"
 end
