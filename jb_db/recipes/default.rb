@@ -117,7 +117,7 @@ template "/home/vagrant/.aws/config" do
     source "aws/config.erb"
     variables ({
         "access_id"   => node['aws']['aws_access_key_id'],
-        "provate_key" => node['aws']['aws_secret_access_key']
+        "private_key" => node['aws']['aws_secret_access_key']
     })
 end
 
