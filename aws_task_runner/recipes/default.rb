@@ -50,8 +50,8 @@ template "#{node['task_runner']['home_directory']}/credentials.json" do
 end
 
 # Copy daemon
-cookbook_file "/etc/init.d/taskrunner" do
-    source "taskrunner"
+cookbook_file "/etc/init.d/TaskRunner" do
+    source "TaskRunner"
     owner "root"
     group "root"
     mode "0755"
@@ -59,11 +59,11 @@ end
 
 # Create daemon
 execute "create-taskrunner-daemon" do
-    command "update-rc.d taskrunner defaults"
+    command "update-rc.d TaskRunner defaults"
     user 'root'
 end
 
 # Start daemon
-service 'taskrunner' do
-    action :start
+service 'TaskRunner' do
+    action :restart
 end

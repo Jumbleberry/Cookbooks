@@ -7,9 +7,9 @@
 DAEMON_PATH="/etc/taskrunner"
 
 DAEMON="java -jar TaskRunner-1.0.jar"
-DAEMONOPTS="--config credentials.json --workerGroup=myWorkerGroup"
+DAEMONOPTS="--config credentials.json --workerGroup=myWorkerGroup --make-pidfile"
 
-NAME="taskrunner"
+NAME="TaskRunner"
 DESC="AWS Task Runner"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
