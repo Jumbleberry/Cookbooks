@@ -4,6 +4,11 @@ execute "apt-get-update-periodic" do
     user 'root'
 end
 
+# Install mysql client
+apt package 'mysql-client-5.6' do
+    action :install
+end
+
 # Install default jre
 apt_package 'default-jre' do
     action :install
