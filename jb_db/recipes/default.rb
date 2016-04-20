@@ -142,5 +142,5 @@ end
 
 # Create JBX
 execute "restore-DB" do
-    command "jbdb_import jbx --create"
+    command "jbdb_import #{node['mysql']['database']} --create"
 end
