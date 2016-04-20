@@ -5,7 +5,7 @@ execute "apt-get-update-periodic" do
 end
 
 # Install mysql client
-apt package 'mysql-client-5.6' do
+apt_package 'mysql-client-5.6' do
     action :install
 end
 
