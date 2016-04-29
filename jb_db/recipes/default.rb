@@ -121,6 +121,22 @@ template "/home/#{node['user']}/.aws/config" do
     })
 end
 
+# Create credentials for root user
+directory "/root/.aws" do
+    owner "root"
+    group "root"
+    mode "0755"
+    action :create
+    recursive true
+end
+template "/root/.aws/config" do
+    source "aws/config.erb"
+    variables ({
+        "access_id"   => node['aws']['aws_access_key_id'],
+        "private_key" => node['aws']['aws_secret_access_key']
+    })
+end
+
 # Install JB DB Importer
 directory node['jbdb_importer']['source_directory'] do
     action :create

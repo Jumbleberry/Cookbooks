@@ -48,13 +48,14 @@ esac
 
 # Copy the file from S3
 file_name="${type}_${day}.sql.gz";
-aws s3 cp "${base_url}/${file_name}" "${file_name}";
+home_dir="/home/vagrant"
+aws s3 cp "${base_url}/${file_name}" "${home_dir}/${file_name}";
 
 # Check if the copy was successful
 if [ $? -eq 0 ]
 then
     # Import contents of the file to the DB
-    gunzip -c $file_name | mysql -u${user} -p${password} $database;
+    gunzip -c "${home_dir}/$file_name" | mysql -u${user} -p${password} $database;
 
     if [ $? != 0 ]
     then
