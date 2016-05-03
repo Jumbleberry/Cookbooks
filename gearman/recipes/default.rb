@@ -9,6 +9,12 @@ end
 
 include_recipe "apt"
 
+# Update apt
+execute "apt-get-update-periodic" do
+    command "apt-get update --fix-missing"
+    user 'root'
+end
+
 #Add mysql library used by gearmam to handle persistent queues
 package 'libmysqld-dev' do
   action :install
@@ -29,7 +35,7 @@ end
 execute "build gearman" do
     command "DEBIAN_FRONTEND=noninteractive &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' build-dep gearman-job-server -y &&
-                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade gearman-job-server -y  &&
+                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --only-upgrade gearman-job-server -y  &&
                 apt-get install gperf &&
                 cd /tmp &&
                 wget https://launchpad.net/gearmand/1.2/#{node['gearman']['source']['version']}/+download/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
