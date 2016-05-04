@@ -65,9 +65,17 @@ end
 
 # Copy phpmyadmin config file
 cookbook_file "/etc/phpmyadmin/config.inc.php" do
-    source "phpmyadmin/config.inc.php"
+    source "phpmyadmin/etc-config.inc.php"
     owner "root"
     group "root"
+    mode "0644"
+end
+
+# I don't know why phpmyadmin has so many different configs in so many different directories
+cookbook_file "/var/lib/phpmyadmin/config.inc.php" do
+    source "phpmyadmin/var-config.inc.php"
+    owner "www-data"
+    group "www-data"
     mode "0644"
 end
 
