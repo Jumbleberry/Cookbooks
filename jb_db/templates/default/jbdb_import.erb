@@ -4,7 +4,7 @@ user="<%= @username %>";
 password="<%= @password %>";
 base_url="<%= @s3_bucket %>";
 day=$(date +%-u);
-usage="\nUSAGE: jbdb_import [database] [flags]\nFlags: --create --data-only --schema-only\n";
+usage="\nUSAGE: jbdb_import [database] [flags]\nFlags: --create --data-only --schema-only --gearman\n";
 
 if [ "$1" == "" ]
 then
@@ -38,6 +38,16 @@ case "$2" in
 
   --schema-only)
     type="schema";
+    ;;
+
+  --gearman)
+    if [ "$database" != "gearman" ]
+        echo "Cannot import gearman to a non-gearman database";
+        exit 1;
+    fi
+    type="gearman";
+    day=1;
+    database="";
     ;;
 
   *)
