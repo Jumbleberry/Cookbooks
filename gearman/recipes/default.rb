@@ -34,6 +34,7 @@ end
 # Get all gearman build dependencies
 execute "build gearman" do
     command "DEBIAN_FRONTEND=noninteractive &&
+                apt-get update --fix-missing &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' build-dep gearman-job-server -y &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --only-upgrade gearman-job-server -y  &&
                 apt-get install gperf &&
