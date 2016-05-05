@@ -165,6 +165,11 @@ link "#{node['jbdb_importer']['bin_directory']}/jbdb_import" do
 end
 
 # Create JBX
-execute "restore-DB" do
+execute "restore-JBX-DB" do
     command "jbdb_import #{node['mysql']['database']} --create"
+end
+
+# Create Gearman
+execute "restore-gearman-DB" do
+    command "jbdb_import gearman --gearman"
 end
