@@ -42,6 +42,7 @@ case "$2" in
 
   --gearman)
     if [ "$database" != "gearman" ]
+    then
         echo "Cannot import gearman to a non-gearman database";
         exit 1;
     fi
