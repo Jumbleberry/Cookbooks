@@ -28,3 +28,8 @@ execute "create-db-host-entry" do
     command "echo \"\n#{node['vagrant']['jb-db']} #{node['admin']['mysql_write']['host']}\n\" >> /etc/hosts"
     user "root"
 end
+
+execute "create-api-host-entry" do
+    command "echo \"\n#{node['vagrant']['jbx']} #{node['admin']['api']}\n\" >> /etc/hosts"
+    user "root"
+end
