@@ -24,8 +24,10 @@ link virtualhost_link do
   notifies :reload, "service[nginx]"
 end
 
-# Create host entry for database
-execute "create-db-host-entry" do
-    command "echo \"\n#{node['vagrant']['jb-db']} #{node['jbx']['credentials']['mysql_write']['host']}\n\" >> /etc/hosts"
-    user "root"
+if node['admin']['environment'] == 'development'
+    # Create host entry for database
+    execute "create-db-host-entry" do
+        command "echo \"\n#{node['vagrant']['jb-db']} #{node['jbx']['credentials']['mysql_write']['host']}\n\" >> /etc/hosts"
+        user "root"
+    end
 end
