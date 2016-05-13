@@ -30,6 +30,6 @@ execute "create-db-host-entry" do
 end
 
 execute "create-api-host-entry" do
-    command "echo \"\n#{node['vagrant']['jbx']} #{node['admin']['api']}\n\" >> /etc/hosts"
+    command "echo \"\n#{node['vagrant']['jbx']} #{node['admin']['api']} http://#{node['admin']['api']} https://#{node['admin']['api']}\n\" >> /etc/hosts"
     user "root"
 end
