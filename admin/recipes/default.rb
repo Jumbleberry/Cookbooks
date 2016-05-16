@@ -23,7 +23,7 @@ link virtualhost_link do
   notifies :reload, "service[nginx]"
 end
 
-if node['admin']['environment'] == 'development'
+if node['environment'] == 'development'
     # Create host entry for database
     execute "create-db-host-entry" do
         command "echo \"\n#{node['vagrant']['jb-db']} #{node['admin']['mysql_write']['host']}\n\" >> /etc/hosts"
