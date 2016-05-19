@@ -121,30 +121,30 @@ if sentinels.kind_of?(Array) && !sentinels.empty?
             end
         end
     end
+
+    #Creates the service configuration file
+    template "#{consul_path}/sentinel_reconf_script.php" do
+        source "sentinel_reconf_script.php.erb"
+        owner "root"
+        group "root"
+        mode "0755"
+        variables ({
+            "currentip" => local_ip
+        })
+    end
+
+    #Creates the service configuration file
+    template "#{consul_path}/redis_check.php" do
+        source "redis_check.php.erb"
+        owner "root"
+        group "root"
+        mode "0755"
+    end
 else
     # Delete the sentinel consul service
     execute "sudo rm -rf #{consul_path}/sentinel*.json" do
         user 'root'
     end
-end
-
-#Creates the service configuration file
-template "#{consul_path}/sentinel_reconf_script.php" do
-    source "sentinel_reconf_script.php.erb"
-    owner "root"
-    group "root"
-    mode "0755"
-    variables ({
-        "currentip" => local_ip
-    })
-end
-
-#Creates the service configuration file
-template "#{consul_path}/redis_check.php" do
-    source "redis_check.php.erb"
-    owner "root"
-    group "root"
-    mode "0755"
 end
 
 execute "reload consul configuration" do
