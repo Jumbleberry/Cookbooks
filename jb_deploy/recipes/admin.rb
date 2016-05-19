@@ -29,9 +29,18 @@ execute "chown-data-www" do
   action :run
 end
 
+if node['environment'] == 'development'
+    jbx_api = node['admin']['api'].sub "https://", ""
+else
+    jbx_api = node['admin']['api']
+end
+
 #Add application configurations
 template "#{node['admin']['path']}/application/configs/application.ini" do
   source  "admin/application.ini.erb"
+  variables ({
+      "jbx_api"   => jbx_api
+  })
 end
 
 #Add cron configurations
