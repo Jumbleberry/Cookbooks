@@ -30,7 +30,7 @@ execute "chown-data-www" do
 end
 
 if node['environment'] == 'development'
-    jbx_api = node['admin']['api'].sub "https://", ""
+    jbx_api = node['admin']['api'].sub "https://", "http://"
 else
     jbx_api = node['admin']['api']
 end
