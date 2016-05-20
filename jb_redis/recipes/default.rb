@@ -45,7 +45,8 @@ if servers.kind_of?(Array) && !servers.empty?
             variables ({
                 "port" => server.port,
                 "currentip" => local_ip,
-                "consul_path" => consul_path
+                "consul_path" => consul_path,
+                "tag" => :slave
             })
         end
         

@@ -3,7 +3,7 @@
 //Current instance configurations
 define('CURRENT_IP', $argv[1]);
 define('CURRENT_PORT', $argv[2]);
-define('SENTINEL_PORT', '<%= node['redisio']['sentinels'][0]['port'] %>');
+define('SENTINEL_PORT', '<%= node['redisio']['sentinels'].count > 0? node['redisio']['sentinels'][0]['port']: nil %>');
 
 $ping = runRedisCommand('ping');
 //Check if the client is responding
@@ -11,14 +11,21 @@ if(!isset($ping[0]) || $ping[0] != 'PONG')
     exit(2);
 
 //Get the current redis master from sentinel
-$masters = runRedisCommand("sentinel masters | grep -A1 'ip$\\|port$'", SENTINEL_PORT);
-
-if(!count($masters))
-    exit(2);
-
-$f_masters = array_flip($masters);
-$master_ip = $masters[$f_masters['ip'] + 1];
-$master_port = $masters[$f_masters['port'] + 1];
+if (!empty(SENTINEL_PORT)) {
+    $masters = runRedisCommand("sentinel masters | grep -A1 'ip$\\|port$'", SENTINEL_PORT);
+    
+    if(!count($masters))
+        exit(2);
+    
+    $f_masters = array_flip($masters);
+    $master_ip = $masters[$f_masters['ip'] + 1];
+    $master_port = $masters[$f_masters['port'] + 1];
+    
+} else {
+    
+    $master_ip = CURRENT_IP;
+    $master_port = CURRENT_PORT;
+}
 
 //Check if we can write a value on the current master
 if($master_ip == CURRENT_IP && $master_port == CURRENT_PORT){
