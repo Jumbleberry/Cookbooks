@@ -8,6 +8,5 @@ version          '0.1.0'
 
 depends "phalcon"
 depends "nginx"
-depends "jb_consul"
 depends "gearman"
 depends "jb_deploy"

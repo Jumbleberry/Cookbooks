@@ -1,5 +1,3 @@
-include_recipe "jb_consul"
-
 # Add ppa repository
 apt_repository 'gearman-developers' do
   uri           'ppa:gearman-developers/ppa'
