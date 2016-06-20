@@ -77,6 +77,13 @@ remote_directory "#{cron_path}/GearmanAdmin" do
     mode "0775"
 end
 
+# Create cluster group
+group "cluster" do
+  action :create
+  members ["root"]
+  append true
+end
+
 # Move the health check file
 cookbook_file "gearman_check.php" do
     path "#{cron_path}/gearman_check.php"
