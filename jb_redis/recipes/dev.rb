@@ -63,6 +63,11 @@ if servers.kind_of?(Array) && !servers.empty?
         service "redis#{server.port}" do
             action :start
         end
+
+        # Create startup process
+        execute "update-rc.d redis#{server.port} defaults" do
+            user "root"
+        end
     end
 end
 
