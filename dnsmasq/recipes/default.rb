@@ -1,3 +1,8 @@
+execute "update apt" do
+  command "apt-get update --fix-missing"
+  user "root"
+end
+
 package 'dnsmasq'
 
 service 'dnsmasq' do
