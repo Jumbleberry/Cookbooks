@@ -31,8 +31,6 @@ template '/etc/sysctl.conf' do
   notifies :run, "execute[sysctl-config]", :immediately
 end
 
-execute "sudo apt-get update" do
-end
 
 #System packages
 syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl', 'unzip', 'uuid']
