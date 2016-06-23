@@ -1,6 +1,6 @@
 source "https://supermarket.getchef.com"
 
-cookbook 'apt'
+cookbook 'apt', '= 3.0.0'
 cookbook 'build-essential', '~> 2.1.3'
 cookbook 'chef_handler', '~> 1.1.6'
 cookbook 'datadog', '~> 2.0.0'
