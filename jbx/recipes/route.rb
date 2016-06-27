@@ -1,5 +1,4 @@
 include_recipe "nginx"
-include_recipe "jb_consul"
 include_recipe "jb_deploy::route"
 
 # Creates the nginx virtual host

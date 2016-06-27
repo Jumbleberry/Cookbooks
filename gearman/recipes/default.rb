@@ -1,5 +1,3 @@
-include_recipe "jb_consul"
-
 # Add ppa repository
 apt_repository 'gearman-developers' do
   uri           'ppa:gearman-developers/ppa'
@@ -8,6 +6,12 @@ apt_repository 'gearman-developers' do
 end
 
 include_recipe "apt"
+
+# Update apt
+execute "apt-get-update-periodic" do
+    command "apt-get update --fix-missing"
+    user 'root'
+end
 
 #Add mysql library used by gearmam to handle persistent queues
 package 'libmysqld-dev' do
@@ -28,8 +32,9 @@ end
 # Get all gearman build dependencies
 execute "build gearman" do
     command "DEBIAN_FRONTEND=noninteractive &&
+                apt-get update --fix-missing &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' build-dep gearman-job-server -y &&
-                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade gearman-job-server -y  &&
+                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --only-upgrade gearman-job-server -y  &&
                 apt-get install gperf &&
                 cd /tmp &&
                 wget https://launchpad.net/gearmand/1.2/#{node['gearman']['source']['version']}/+download/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
@@ -70,6 +75,13 @@ remote_directory "#{cron_path}/GearmanAdmin" do
     owner "root"
     group "root"
     mode "0775"
+end
+
+# Create cluster group
+group "cluster" do
+  action :create
+  members ["root"]
+  append true
 end
 
 # Move the health check file

@@ -1,0 +1,81 @@
+#!/bin/bash
+
+user="<%= @username %>";
+password="<%= @password %>";
+base_url="<%= @s3_bucket %>";
+day=$(date +%-u);
+usage="\nUSAGE: jbdb_import [database] [flags]\nFlags: --create --data-only --schema-only --gearman\n";
+
+if [ "$1" == "" ]
+then
+  echo -e $usage;
+  exit 1;
+else
+  database=$1;
+fi
+
+# If we're importing any schema we need to create the db
+if [ "$2" == "--create" ] || [ "$2" == "--schema-only" ]
+then
+  echo "CREATE DATABASE IF NOT EXISTS $database" | mysql -u${user} -p${password};
+
+  if [ $? != 0 ]
+  then
+    echo "Failed to create database $database";
+    exit 1;
+  fi
+fi
+
+# Determine which file to get from S3
+case "$2" in
+  --create)
+    type="dump";
+    ;;
+
+  --data-only)
+    type="data";
+    ;;
+
+  --schema-only)
+    type="schema";
+    ;;
+
+  --gearman)
+    if [ "$database" != "gearman" ]
+    then
+        echo "Cannot import gearman to a non-gearman database";
+        exit 1;
+    fi
+    type="gearman";
+    day=1;
+    database="";
+    ;;
+
+  *)
+    echo -e $usage;
+    exit 1;
+    ;;
+esac
+
+# Copy the file from S3
+file_name="${type}_${day}.sql.gz";
+home_dir="/home/vagrant"
+aws s3 cp "${base_url}/${file_name}" "${home_dir}/${file_name}";
+
+# Check if the copy was successful
+if [ $? -eq 0 ]
+then
+    # Import contents of the file to the DB
+    gunzip -c "${home_dir}/$file_name" | mysql -u${user} -p${password} $database;
+
+    if [ $? != 0 ]
+    then
+      echo "Failed to import $file_name";
+      exit 1;
+    fi
+else
+    echo "Failed to copy ${file_name} from S3";
+    exit 1;
+fi
+
+exit 0;

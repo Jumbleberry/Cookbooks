@@ -4,7 +4,8 @@
         "name": "redis",
         "port": <%= @port %>,
         "tags": [
-            "redis"
+            "redis",
+            "<%= @tag %>"
         ],
         "check": {
             "script": "<%= @consul_path %>/redis_check.php <%= @currentip %> <%= @port %>",

@@ -60,7 +60,7 @@ template credentials_file do
       "domains"                 => node['jbx']['credentials']['domains'].to_json,
       "mail"                    => node['jbx']['credentials']['mail'].to_json,
       
-      "gearman_host"            => node['jbx']['credentials']['gearman']['host'],
+      "gearman_host"            => node['jbx']['credentials']['gearman']['external_host'],
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
       "raygun"                  => node['jbx']['credentials']['raygun'],

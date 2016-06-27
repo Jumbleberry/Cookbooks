@@ -34,7 +34,7 @@ service "consul" do
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :stop
 end
-
+   
 # Remove consul files
 directory node['consul']['data_dir'] do
   recursive true
