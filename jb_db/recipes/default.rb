@@ -4,20 +4,10 @@ execute "apt-get-update-periodic" do
     user 'root'
 end
 
-# Set mysql server default password
-root_password = "#{node['jbx']['credentials']['mysql_read']['password']}"
-execute "mysql-default-password" do
-    command "echo \"mysql-server-5.6 mysql-server/root_password password #{root_password}\" | debconf-set-selections"
-    user 'root'
-end
-execute "mysql-default-password-again" do
-    command "echo \"mysql-server-5.6 mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
-    user 'root'
-end
-
 # Install mysql server 5.6
-apt_package 'mysql-server-5.6' do
-    action :install
+execute "mysql-install" do
+    command "(export DEBIAN_FRONTEND=\"noninteractive\"; sudo -E apt-get install -y -q mysql-server-5.6)"
+    user "root"
 end
 
 # Copy config file
@@ -35,24 +25,15 @@ execute "mysql-restart" do
 end
 
 # Create jbx user
-query = "CREATE USER \'jbx\'@\'%\' IDENTIFIED BY \'#{root_password}\'"
+query = "GRANT ALL ON *.* TO \'jbx\'@\'%\' IDENTIFIED BY \'\'"
 execute 'createJbxUser' do
-    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
-end
-
-query = "GRANT ALL ON *.* TO \'jbx\'@\'%\'"
-execute 'grantPermissions' do
-    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
+    command "echo \"#{query}\" | mysql -u root"
 end
 
 # Create 'root'@'%'
-query = "CREATE USER \'root\'@\'%\' IDENTIFIED BY \'#{root_password}\'"
+query = "GRANT ALL ON *.* TO \'root\'@\'%\' IDENTIFIED BY \'\'"
 execute 'createJbxUser' do
-    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
-end
-query = "GRANT ALL ON *.* TO \'root\'@\'%\'"
-execute 'grantPermissions' do
-    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
+    command "echo \"#{query}\" | mysql -u root"
 end
 
 include_recipe "nginx"
@@ -89,7 +70,7 @@ end
 
 # Restore phpmyadmin tables
 execute "phpmyadmin" do
-    command "mysql -u root -p#{root_password} < /tmp/create_tables.sql"
+    command "mysql -u root < /tmp/create_tables.sql"
 end
 
 # Symlink myadmin to somewhere sensible
@@ -153,8 +134,8 @@ end
 template "#{node['jbdb_importer']['source_directory']}/jbdb_import" do
     source "jbdb_import.erb"
     variables ({
-        "username"  => node['mysql']['server_root_user'],
-        "password"  => node['mysql']['server_root_password'],
+        "username"  => 'root',
+        "password"  => '',
         "s3_bucket" => node['aws']['db_bucket']
     })
     mode "0755"
@@ -166,7 +147,7 @@ end
 
 # Create JBX
 execute "restore-JBX-DB" do
-    command "jbdb_import #{node['mysql']['database']} --create"
+    command "jbdb_import jbx --create"
 end
 
 # Create Gearman

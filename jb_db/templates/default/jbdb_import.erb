@@ -17,7 +17,7 @@ fi
 # If we're importing any schema we need to create the db
 if [ "$2" == "--create" ] || [ "$2" == "--schema-only" ]
 then
-  echo "CREATE DATABASE IF NOT EXISTS $database" | mysql -u${user} -p${password};
+  echo "CREATE DATABASE IF NOT EXISTS $database" | mysql -u${user};
 
   if [ $? != 0 ]
   then
@@ -66,7 +66,7 @@ aws s3 cp "${base_url}/${file_name}" "${home_dir}/${file_name}";
 if [ $? -eq 0 ]
 then
     # Import contents of the file to the DB
-    gunzip -c "${home_dir}/$file_name" | mysql -u${user} -p${password} $database;
+    gunzip -c "${home_dir}/$file_name" | mysql -u${user} $database;
 
     if [ $? != 0 ]
     then
