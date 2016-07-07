@@ -4,6 +4,17 @@ execute "apt-get-update-periodic" do
     user 'root'
 end
 
+# Set mysql server default password
+root_password = "root"
+execute "mysql-default-password" do
+    command "echo \"mysql-server-5.6 mysql-server/root_password password #{root_password}\" | debconf-set-selections"
+    user 'root'
+end
+execute "mysql-default-password-again" do
+    command "echo \"mysql-server-5.6 mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
+    user 'root'
+end
+
 # Install mysql server 5.6
 execute "mysql-install" do
     command "(export DEBIAN_FRONTEND=\"noninteractive\"; sudo -E apt-get install -y -q mysql-server-5.6)"
@@ -25,15 +36,15 @@ execute "mysql-restart" do
 end
 
 # Create jbx user
-query = "GRANT ALL ON *.* TO \'jbx\'@\'%\' IDENTIFIED BY \'\'"
+query = "GRANT ALL ON *.* TO \'jbx\'@\'%\' IDENTIFIED BY \'#{root_password}\'"
 execute 'createJbxUser' do
-    command "echo \"#{query}\" | mysql -u root"
+    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
 end
 
 # Create 'root'@'%'
-query = "GRANT ALL ON *.* TO \'root\'@\'%\' IDENTIFIED BY \'\'"
+query = "GRANT ALL ON *.* TO \'root\'@\'%\' IDENTIFIED BY \'#{root_password}\'"
 execute 'createJbxUser' do
-    command "echo \"#{query}\" | mysql -u root"
+    command "echo \"#{query}\" | mysql -u root -p#{root_password}"
 end
 
 include_recipe "nginx"
@@ -70,7 +81,7 @@ end
 
 # Restore phpmyadmin tables
 execute "phpmyadmin" do
-    command "mysql -u root < /tmp/create_tables.sql"
+    command "mysql -u root -p#{root_password} < /tmp/create_tables.sql"
 end
 
 # Symlink myadmin to somewhere sensible
@@ -134,8 +145,8 @@ end
 template "#{node['jbdb_importer']['source_directory']}/jbdb_import" do
     source "jbdb_import.erb"
     variables ({
-        "username"  => 'root',
-        "password"  => '',
+        "username"  => "root",
+        "password"  => root_password,
         "s3_bucket" => node['aws']['db_bucket']
     })
     mode "0755"
