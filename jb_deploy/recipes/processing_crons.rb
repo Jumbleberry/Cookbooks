@@ -108,6 +108,13 @@ cron "Processing - Caps Reached" do
   action :create
 end
 
+cron "Processing - Overage" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_overage.php"
+  minute '*'
+  user 'www-data'
+  action :create
+end
+
 cron "Processing - Future Caps" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/future_caps.php"
   minute '*'

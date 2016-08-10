@@ -49,6 +49,7 @@ template credentials_file do
       "hitpath_pass"            => node['jbx']['credentials']['hitpath']['password'],
       "hitpath_id"              => node['jbx']['credentials']['hitpath']['hitpath_id'],
       "hitpath_aws_bucket"      => node['jbx']['credentials']['hitpath']['aws_bucket'],
+      "hitpath_api_key"         => node['jbx']['credentials']['hitpath']['api_key'],
 
       "redis_read_host"         => node['jbx']['credentials']['redis_read']['host'],
       "redis_read_port"         => node['jbx']['credentials']['redis_read']['port'],
