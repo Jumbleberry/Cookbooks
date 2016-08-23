@@ -116,6 +116,10 @@ remote_file '/tmp/nginx-1.9.7.tar.gz' do
     notifies :create, 'cookbook_file[nginx_dynamic_tls.patch]', :immediate
     notifies :create, 'cookbook_file[nginx_http2_spdy.patch]', :immediate
     notifies :run, 'execute[nginx]', :immediate
+    notifies :enable, 'service[nginx]', :immediate
+    notifies :start, 'service[nginx]', :immediate
+    notifies :reload, 'service[nginx]', :immediate
+
 end
 cookbook_file 'nginx_http2_spdy.patch' do
   source 'nginx_http2_spdy.patch'
@@ -158,11 +162,41 @@ execute 'nginx' do
 --add-module=/tmp/ngx_pagespeed-release-1.11.33.3-beta
     make
     sudo make install
+    ln -fs /etc/nginx/nginx /usr/bin/nginx
     EOH
   cwd '/tmp'
   action :nothing
 end
-
+cookbook_file 'upstart.conf' do
+  source 'upstart.conf'
+  path '/etc/init/nginx.conf'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create
+  notifies :run, 'execute[upstart]', :immediate
+end
+execute 'upstart' do
+    command <<-EOH
+        initctl reload-configuration
+    EOH
+    action :nothing
+end
+template 'nginx.conf' do
+  path '/etc/nginx/nginx.conf'
+  source 'nginx.conf.erb'
+  owner 'www-data'
+  group 'www-data'
+  mode '0644'
+  action :create
+  notifies :enable, 'service[nginx]', :immediate
+  notifies :start, 'service[nginx]', :immediate
+  notifies :reload, 'service[nginx]', :immediate
+end
+service "nginx" do 
+    provider Chef::Provider::Service::Upstart
+    action :nothing
+end
 #Force the restart of the nginx service
 # execute "reload nginx service" do
 #   command "service nginx reload || service nginx restart"

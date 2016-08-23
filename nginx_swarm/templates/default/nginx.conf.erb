@@ -1,57 +1,72 @@
 user www-data;
-worker_processes auto;
 pid /var/run/nginx.pid;
+worker_processes 1;
+worker_rlimit_nofile 131072;
 
 events {
-    worker_connections <%= @worker_connections %>;
+    worker_connections 65536;
     use epoll;
     multi_accept on;
 }
 
 http {
-
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 70;
-    types_hash_max_size 2048;
-    fastcgi_read_timeout 600;
-    fastcgi_buffers 128 16k;
-    fastcgi_buffer_size 16k;
+    include /home/vagrant/nginx/sites-enabled/*.conf;
     
     server_tokens off;
+
+    # config to don't allow the browser to render the page inside an frame or iframe
+    add_header X-Frame-Options SAMEORIGIN;
     
-    # Show server host name as header
-    add_header X-Backend-Server $hostname;
+    # when serving user-supplied content, include a X-Content-Type-Options: nosniff header along with the Content-Type: header,
+    add_header X-Content-Type-Options nosniff;
     
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
+    # This header enables the Cross-site scripting (XSS) filter built into most recent web browsers.
+    add_header X-XSS-Protection "1; mode=block";
     
-    ##
-    # Logging Settings
-    ##
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for" '
-                      '$request_time $upstream_response_time $pipe';
-    
-    access_log /var/log/nginx/access.log main buffer=4k flush=1m;
-    error_log /var/log/nginx/error.log warn;
-    
-    ##
-    # Gzip Settings
-    ##
-    
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private auth;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml;
+    keepalive_timeout 120;
+    keepalive_requests 524288;
+    sendfile         on;
+    tcp_nopush       on;
+    tcp_nodelay      on;
+    reset_timedout_connection on;
+
+    client_body_buffer_size 16k;
+    client_max_body_size 64k;
+    client_header_buffer_size 1k;
+    large_client_header_buffers 4 1k;
+    output_buffers 2 32k;
+    postpone_output 1460;
+		
+    client_header_timeout  3m;
+    client_body_timeout    3m;
+    send_timeout           3m;
+		
+    open_file_cache max=16384 inactive=5m;
+    open_file_cache_valid 5m;
+    open_file_cache_min_uses 1;
+    open_file_cache_errors on;
+		
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length  1000;
+    gzip_buffers     32 4k;
+    gzip_types       text/html application/x-javascript text/css application/javascript text/javascript text/plain text/xml application/json application/vnd.ms-fontobject application/x-font-opentype application/x-font-truetype application/x-font-ttf application/xml font/eot font/opentype font/otf image/svg+xml image/vnd.microsoft.icon;
     gzip_disable "MSIE [1-6]\.";
-    
-    ##
-    # Virtual Host Configs
-    ##
-    
-    include /etc/nginx/conf.d/*.conf;
-    include /etc/nginx/sites-enabled/*;
+
+    error_log  /var/log/nginx.error_log  warn;
+		
+    log_format main      '$remote_addr - $remote_user [$time_local]  '
+      '"$request" $status $bytes_sent '
+      '"$http_referer" "$http_user_agent" '
+  		'"$gzip_ratio"';
+
+    log_format download  '$remote_addr - $remote_user [$time_local]  '
+      '"$request" $status $bytes_sent '
+      '"$http_referer" "$http_user_agent" '
+  		'"$http_range" "$sent_http_content_range"';
+		
+    map $status $loggable {
+        ~^[23]  0;
+        default 1;
+    }
 }
