@@ -1,12 +1,11 @@
+include_recipe "apt"
+
 # Custom repositories
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
   distribution  'trusty'
   components    ['main', 'stable']
 end
-
-include_recipe "web-server"
-include_recipe "apt"
 
 # Installs php package and modules
 phpmodules = node['php']['packages']
@@ -17,6 +16,14 @@ phpmodules.each do |pkg|
     # Ignore configuration changes - necessary because of nginx updates
     options '--force-yes'
     options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+  end
+end
+
+#System packages
+syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl', 'unzip', 'uuid']
+syspackages.each do |pkg|
+  package "#{pkg}" do
+    action :install
   end
 end
 
