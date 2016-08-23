@@ -3,3 +3,4 @@
 /nginx/files/default/ssl/*.key
 /nginx/files/default/ssl/*.pem
 Berksfile.lock
+.DS_Store
