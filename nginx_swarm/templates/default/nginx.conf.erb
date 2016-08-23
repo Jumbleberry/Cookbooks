@@ -1,0 +1,57 @@
+user www-data;
+worker_processes auto;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections <%= @worker_connections %>;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 70;
+    types_hash_max_size 2048;
+    fastcgi_read_timeout 600;
+    fastcgi_buffers 128 16k;
+    fastcgi_buffer_size 16k;
+    
+    server_tokens off;
+    
+    # Show server host name as header
+    add_header X-Backend-Server $hostname;
+    
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    ##
+    # Logging Settings
+    ##
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for" '
+                      '$request_time $upstream_response_time $pipe';
+    
+    access_log /var/log/nginx/access.log main buffer=4k flush=1m;
+    error_log /var/log/nginx/error.log warn;
+    
+    ##
+    # Gzip Settings
+    ##
+    
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private auth;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml;
+    gzip_disable "MSIE [1-6]\.";
+    
+    ##
+    # Virtual Host Configs
+    ##
+    
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
