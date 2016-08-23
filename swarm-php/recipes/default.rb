@@ -7,6 +7,12 @@ apt_repository 'php-ppa' do
   components    ['main', 'stable']
 end
 
+# Update apt
+execute "apt-get-update-periodic-php" do
+    command "apt-get update"
+    user 'root'
+end
+
 # Installs php package and modules
 phpmodules = node['php']['packages']
 phpmodules.each do |pkg|
