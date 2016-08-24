@@ -99,6 +99,7 @@ remote_file 'psol' do
     path '/tmp/ngx_pagespeed-release-1.11.33.3-beta/1.11.33.3.tar.gz'
     source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/1.11.33.3.tar.gz?raw=true'
     action :create
+    only_if { ::File.directory?('/tmp/ngx_pagespeed-release-1.11.33.3-beta/') }
     notifies :run, 'execute[psol]', :immediate
 end
 execute 'psol' do
