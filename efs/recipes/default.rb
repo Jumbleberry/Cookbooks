@@ -1,3 +1,5 @@
+include_recipe "awscli"
+
 # Install NFS client
 package "nfs-common" do
     action :install
