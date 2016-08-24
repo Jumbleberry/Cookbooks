@@ -1,5 +1,5 @@
 # Install NFS client
-package "#nfs-common" do
+package "nfs-common" do
     action :install
 end
 
