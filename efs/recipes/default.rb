@@ -17,7 +17,7 @@ end
 # Mount EFS
 execute "get-aws-region" do
     environment ({
-      'efsNameRegex' => '\"Name\":\s\"Campaigns\"',
+      'efsNameRegex' => %Q{\"Name\":\s\"Campaigns\"},
       'efsMountPoint' => efsMountPoint
     })
     command <<-EOF
