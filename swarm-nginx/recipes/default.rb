@@ -168,6 +168,14 @@ execute 'nginx' do
   cwd '/tmp'
   action :nothing
 end
+cookbook_file 'dhparam.pem' do
+  source 'dhparam.pem'
+  path '/etc/nginx/dhparam.pem'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create
+end
 cookbook_file 'upstart.conf' do
   source 'upstart.conf'
   path '/etc/init/nginx.conf'
