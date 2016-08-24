@@ -197,8 +197,3 @@ service "nginx" do
     provider Chef::Provider::Service::Upstart
     action :nothing
 end
-#Force the restart of the nginx service
-# execute "reload nginx service" do
-#   command "service nginx reload || service nginx restart"
-#   user 'root'
-# end
