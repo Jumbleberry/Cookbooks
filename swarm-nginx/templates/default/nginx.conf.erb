@@ -89,6 +89,10 @@ http {
     pagespeed                   MemcachedServers              "127.0.0.1:11211";
     pagespeed                   MemcachedTimeoutUs            250000;
     pagespeed                   ImageMaxRewritesAtOnce        32;
+    pagespeed                   CombineAcrossPaths            on;
+    
+    pagespeed                   MaxCombinedJsBytes 512000;
+    pagespeed                   MaxCombinedCssBytes 512000;
                                 
     pagespeed                   FileCachePath /var/cache/pagespeed/file;
     pagespeed                   MessageBufferSize 32000;
@@ -184,7 +188,12 @@ http {
         server_name pagespeed;
         root /html;
         
-        pagespeed   on;
+        pagespeed on;
+        
+        pagespeed Domain $host;
+        pagespeed Domain *.$host;
+        pagespeed MapOriginDomain localhost *.$host $host;
+        pagespeed LoadFromFileMatch "^https?://$host/(.*)" "/html/\\1";
         
         pagespeed EnableFilters add_instrumentation;
         pagespeed EnableFilters collapse_whitespace;
