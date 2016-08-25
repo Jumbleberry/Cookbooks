@@ -3,7 +3,7 @@ default['instance_identity_url'] = 'http://169.254.169.254/latest/dynamic/instan
 default['availability_zone_url'] = 'http://169.254.169.254/latest/meta-data/placement/availability-zone'
 
 # Packages
-default['packages'] = [
+default['efs']['packages'] = [
   { 
       "name" => "nfs-common",
       "version" => "*"

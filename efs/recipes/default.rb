@@ -1,7 +1,7 @@
 include_recipe "awscli"
 
 # Install packages
-packages = node['packages']
+packages = node['efs']['packages']
 packages.each do |pkg|
   package "#{pkg['name']}" do
     action :install
@@ -10,7 +10,8 @@ packages.each do |pkg|
 end
 
 # Create the EFS mount point
-directory node['efs_mount_point'] do
+efsMountPoint = node['efs_mount_point']
+directory efsMountPoint do
     user 'www-data'
     group 'www-data'
     mode '0444'
