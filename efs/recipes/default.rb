@@ -21,7 +21,7 @@ execute "get-aws-region" do
       'efsMountPoint' => efsMountPoint
     })
     command <<-EOF
-        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
+        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -ioP "(?<=region\"\s:\s\")[^\"]*")
         EOF
     user 'root'
 end
