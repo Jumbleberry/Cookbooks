@@ -1,0 +1,1 @@
+default['region_regex'] = "(?<=region\" : \")[^\"]*"

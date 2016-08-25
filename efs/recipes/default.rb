@@ -15,14 +15,9 @@ directory efsMountPoint do
 end
 
 # Mount EFS
-execute "get-aws-region" do
-    environment ({
-      'regionRegex' => %Q{(?<=region\"\s:\s\")[^\"]*},
-      'efsNameRegex' => %Q{\"Name\":\s\"Campaigns\"},
-      'efsMountPoint' => efsMountPoint
-    })
+execute "mount-efs" do
     command <<-EOF
-        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -ioP ${regionRegex})
+        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -ioP #{node['region_regex']})
         EOF
     user 'root'
 end
