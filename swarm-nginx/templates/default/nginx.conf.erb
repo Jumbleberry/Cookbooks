@@ -46,7 +46,9 @@ http {
     open_file_cache_valid       5m;
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
-		
+    
+    resolver                    8.8.8.8;
+    
     gzip                        off;
     gzip_vary                   off;
     gzip_proxied                any;
@@ -59,10 +61,10 @@ http {
         application/xml font/eot font/opentype font/otf image/svg+xml image/vnd.microsoft.icon;
     gzip_disable "MSIE [1-6]\.";
     
-    proxy_cache_path /mnt/disk1 levels=1:2 keys_zone=pool_1:32m inactive=60m max_size=1G use_temp_path=off;
-    proxy_cache_path /mnt/disk2 levels=1:2 keys_zone=pool_2:32m inactive=60m max_size=1G use_temp_path=off;
-    proxy_cache_path /mnt/disk3 levels=1:2 keys_zone=pool_3:32m inactive=60m max_size=1G use_temp_path=off;
-    proxy_cache_path /mnt/disk4 levels=1:2 keys_zone=pool_4:32m inactive=60m max_size=1G use_temp_path=off;
+    proxy_cache_path /cache/1 levels=1:2 keys_zone=pool_1:64m inactive=180m max_size=20G use_temp_path=off;
+    proxy_cache_path /cache/2 levels=1:2 keys_zone=pool_2:64m inactive=180m max_size=20G use_temp_path=off;
+    proxy_cache_path /cache/3 levels=1:2 keys_zone=pool_3:64m inactive=180m max_size=20G use_temp_path=off;
+    proxy_cache_path /cache/4 levels=1:2 keys_zone=pool_4:64m inactive=180m max_size=20G use_temp_path=off;
     
     split_clients $request_uri $pool {
         25%     "pool_1";
@@ -79,7 +81,6 @@ http {
     pagespeed                   LowercaseHtmlNames on;
     pagespeed                   FetchHttps enable;
     pagespeed                   UseNativeFetcher on;
-    resolver                    8.8.8.8;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
                                 
     pagespeed                   LRUCacheKbPerProcess          131072;
@@ -94,9 +95,9 @@ http {
     pagespeed                   MaxCombinedJsBytes 512000;
     pagespeed                   MaxCombinedCssBytes 512000;
                                 
-    pagespeed                   FileCachePath /var/cache/pagespeed/file;
+    pagespeed                   FileCachePath /cache/ps/file;
     pagespeed                   MessageBufferSize 32000;
-    pagespeed                   CreateSharedMemoryMetadataCache /var/cache/pagespeed/memory 131072;
+    pagespeed                   CreateSharedMemoryMetadataCache /cache/ps/memory 131072;
                                 
     pagespeed                   StatisticsPath /ngx_pagespeed_statistics;
     pagespeed                   GlobalStatisticsPath /ngx_pagespeed_global_statistics;
@@ -133,8 +134,8 @@ http {
         gzip_vary                   on;
         gzip_proxied                any;
         
-        access_log                  /var/log/nginx/access_log main buffer=4k flush=1m;
-        error_log                   /var/log/nginx/error_log warn;
+        #access_log                  /var/log/nginx/access_log main buffer=4k flush=1m;
+        #error_log                   /var/log/nginx/error_log warn;
     
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";

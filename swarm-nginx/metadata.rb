@@ -7,3 +7,4 @@ long_description 'Installs/Configures nginx for JB Swarm'
 version          '0.1.0'
 
 depends "apt"
+depends "ulimit"

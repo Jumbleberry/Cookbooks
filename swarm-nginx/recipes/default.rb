@@ -1,5 +1,5 @@
 include_recipe "apt"
-
+include_recipe "ulimit"
 # Update apt
 execute "apt-get-update-periodic" do
     command "apt-get update"
@@ -11,6 +11,20 @@ node['nginx_swarm']['deps'].each do |dep|
     apt_package dep do
         action :install
     end
+end
+
+# Configure memcached
+service "memcached" do
+    action :nothing
+end
+cookbook_file 'memcached.conf' do
+  source 'memcached.conf'
+  path '/etc/memcached.conf'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create
+  notifies :restart, 'service[memcached]', :immediate
 end
 
 # Install PCRE
@@ -111,6 +125,14 @@ execute 'psol' do
 end
 
 # Install nginx
+["file", "memory"].each do |type|
+    directory '/cache/ps/' + type do
+        owner 'www-data'
+        group 'www-data'
+        mode 0644
+        action :create
+    end
+end
 remote_file '/tmp/nginx-1.9.7.tar.gz' do
     source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/nginx-1.9.7.tar.gz?raw=true'
     action :create
