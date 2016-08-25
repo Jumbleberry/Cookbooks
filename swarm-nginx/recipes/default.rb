@@ -245,6 +245,6 @@ template 'nginx.conf' do
 end
 service "nginx" do 
     provider Chef::Provider::Service::Upstart
-    ignore_failure :true
+    ignore_failure true
     action :nothing
 end
