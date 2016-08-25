@@ -230,16 +230,18 @@ execute 'upstart' do
     notifies :start, 'service[nginx]', :delayed
     notifies :reload, 'service[nginx]', :delayed
 end
-cookbook_file 'dhparam.pem' do
-  source 'dhparam.pem'
-  path '/etc/nginx/dhparam.pem'
-  owner 'root'
-  group 'root'
-  mode '0644'
-  action :create
-  notifies :enable, 'service[nginx]', :delayed
-  notifies :start, 'service[nginx]', :delayed
-  notifies :reload, 'service[nginx]', :delayed
+["dhparam.pem", "ticket.key"].each do | file |
+    cookbook_file file do
+      source file
+      path '/etc/nginx/' + file
+      owner 'root'
+      group 'root'
+      mode '0644'
+      action :create
+      notifies :enable, 'service[nginx]', :delayed
+      notifies :start, 'service[nginx]', :delayed
+      notifies :reload, 'service[nginx]', :delayed
+    end
 end
 template 'nginx.conf' do
   path '/etc/nginx/nginx.conf'
