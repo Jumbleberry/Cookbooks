@@ -150,11 +150,11 @@ http {
         
         ssl_stapling                on;
         ssl_stapling_verify         on;
-        ssl_trusted_certificate     /home/vagrant/nginx/jbxroute.pem;
+        ssl_trusted_certificate     /html/cert/ssl.pem;
         resolver                    8.8.8.8 8.8.4.4;
 
-        ssl_certificate             /home/vagrant/nginx/jbxroute.pem;
-        ssl_certificate_key         /home/vagrant/nginx/jbxroute.key;
+        ssl_certificate             /html/cert/ssl.pem;
+        ssl_certificate_key         /html/cert/ssl.key;
         
         location / {
             aio threads=$pool;

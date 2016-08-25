@@ -172,6 +172,13 @@ cookbook_file 'nginx_dynamic_tls.patch' do
   mode '0644'
   action :nothing
 end
+directory '/var/log/nginx' do
+    owner 'www-data'
+    group 'www-data'
+    mode 0644
+    action :create
+    recursive true
+end
 execute 'nginx' do
   command <<-EOH
     rm -rf nginx-1.9.7
@@ -220,6 +227,8 @@ execute 'upstart' do
     EOH
     action :nothing
     notifies :enable, 'service[nginx]', :immediate
+    notifies :start, 'service[nginx]', :delayed
+    notifies :reload, 'service[nginx]', :delayed
 end
 cookbook_file 'dhparam.pem' do
   source 'dhparam.pem'
