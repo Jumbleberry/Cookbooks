@@ -154,9 +154,6 @@ remote_file '/tmp/nginx-1.9.7.tar.gz' do
     notifies :create, 'cookbook_file[nginx_dynamic_tls.patch]', :immediate
     notifies :create, 'cookbook_file[nginx_http2_spdy.patch]', :immediate
     notifies :run, 'execute[nginx]', :immediate
-    notifies :enable, 'service[nginx]', :immediate
-    notifies :start, 'service[nginx]', :immediate
-    notifies :reload, 'service[nginx]', :immediate
 
 end
 cookbook_file 'nginx_http2_spdy.patch' do
@@ -204,14 +201,9 @@ execute 'nginx' do
     EOH
   cwd '/tmp'
   action :nothing
-end
-cookbook_file 'dhparam.pem' do
-  source 'dhparam.pem'
-  path '/etc/nginx/dhparam.pem'
-  owner 'root'
-  group 'root'
-  mode '0644'
-  action :create
+  notifies :enable, 'service[nginx]', :delayed
+  notifies :start, 'service[nginx]', :delayed
+  notifies :reload, 'service[nginx]', :delayed
 end
 cookbook_file 'upstart.conf' do
   source 'upstart.conf'
@@ -229,6 +221,17 @@ execute 'upstart' do
     action :nothing
     notifies :enable, 'service[nginx]', :immediate
 end
+cookbook_file 'dhparam.pem' do
+  source 'dhparam.pem'
+  path '/etc/nginx/dhparam.pem'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create
+  notifies :enable, 'service[nginx]', :delayed
+  notifies :start, 'service[nginx]', :delayed
+  notifies :reload, 'service[nginx]', :delayed
+end
 template 'nginx.conf' do
   path '/etc/nginx/nginx.conf'
   source 'nginx.conf.erb'
@@ -236,9 +239,9 @@ template 'nginx.conf' do
   group 'www-data'
   mode '0644'
   action :create
-  notifies :enable, 'service[nginx]', :immediate
-  notifies :start, 'service[nginx]', :immediate
-  notifies :reload, 'service[nginx]', :immediate
+  notifies :enable, 'service[nginx]', :delayed
+  notifies :start, 'service[nginx]', :delayed
+  notifies :reload, 'service[nginx]', :delayed
 end
 service "nginx" do 
     provider Chef::Provider::Service::Upstart
