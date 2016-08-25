@@ -1,13 +1,16 @@
 include_recipe "awscli"
 
-# Install NFS client
-package "nfs-common" do
+# Install packages
+packages = node['packages']
+packages.each do |pkg|
+  package "#{pkg['name']}" do
     action :install
+    version pkg["version"]
+  end
 end
 
 # Create the EFS mount point
-efsMountPoint = '/html'
-directory efsMountPoint do
+directory node['efs_mount_point'] do
     user 'www-data'
     group 'www-data'
     mode '0444'
@@ -17,7 +20,9 @@ end
 # Mount EFS
 execute "mount-efs" do
     command <<-EOF
-        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -ioP "#{node['region_regex']}")
+        awsRegion=$(curl -s #{node['instance_identity_url']} | grep -ioP '#{node['region_reg']}')
+        fileSystemId=$(aws efs --region $awsRegion describe-file-systems | grep -iC 5 '#{node['efs_name_reg']}' | grep -ioP '#{node['file_system_id_reg']}')
+        mount -t nfs4 -o vers=4.1 $(curl -s #{node['availability_zone_url']}).$fileSystemId.efs.$awsRegion.amazonaws.com:/ #{node['efs_mount_point']}
         EOF
     user 'root'
 end
