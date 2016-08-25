@@ -1,5 +1,20 @@
 include_recipe "apt"
 include_recipe "ulimit"
+
+user 'www-data' do
+  comment 'web user'
+  home '/html'
+  shell '/bin/bash'
+  action :create
+  ignore_failure true
+end
+group 'www-data' do
+  action :create
+  members 'www-data'
+  append true
+  ignore_failure true
+end
+
 # Update apt
 execute "apt-get-update-periodic" do
     command "apt-get update"
