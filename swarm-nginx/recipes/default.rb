@@ -172,6 +172,14 @@ cookbook_file 'nginx_dynamic_tls.patch' do
   mode '0644'
   action :nothing
 end
+cookbook_file '30-tcp_fastopen.conf' do
+  source '30-tcp_fastopen.conf'
+  path '/etc/sysctl.d/30-tcp_fastopen.conf'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create
+end
 directory '/var/log/nginx' do
     owner 'www-data'
     group 'www-data'
@@ -186,6 +194,7 @@ execute 'nginx' do
     cd nginx-1.9.7/
     patch -d . -p 1 < /tmp/nginx_http2_spdy.patch
     patch -d . -p 1 < /tmp/nginx_dynamic_tls.patch
+    echo "3" > /proc/sys/net/ipv4/tcp_fastopen
     ./configure \
 --sbin-path=/etc/nginx/nginx \
 --conf-path=/etc/nginx/nginx.conf \
@@ -201,7 +210,7 @@ execute 'nginx' do
 --with-openssl=/tmp/openssl-1.0.2h \
 --user=www-data \
 --group=www-data \
---add-module=/tmp/ngx_pagespeed-release-1.11.33.3-beta
+--add-module=/tmp/ngx_pagespeed-release-1.11.33.3-beta -DTCP_FASTOPEN=23
     make
     sudo make install
     ln -fs /etc/nginx/nginx /usr/bin/nginx

@@ -47,7 +47,7 @@ http {
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
     
-    resolver                    8.8.8.8;
+    resolver                    156.154.70.1 8.8.8.8 8.8.4.4;
     
     gzip                        off;
     gzip_vary                   off;
@@ -122,12 +122,12 @@ http {
     
     # Main Server Entry - rewrite all http to https
     server {
-       listen         80;
+       listen         80 reuseport deferred fastopen=16384 backlog=4096;
        server_name    default_server;
        return         301 https://$host$request_uri;
     }
     server {
-        listen 443 ssl spdy http2;
+        listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=4096;
         server_name default_server;
         
         gzip                        on;
@@ -150,7 +150,6 @@ http {
         ssl_stapling                on;
         ssl_stapling_verify         on;
         ssl_trusted_certificate     /html/certs/ssl.pem;
-        resolver                    8.8.8.8 8.8.4.4;
 
         ssl_certificate             /html/certs/ssl.pem;
         ssl_certificate_key         /html/certs/ssl.key;
@@ -164,6 +163,7 @@ http {
             proxy_cache_min_uses    3;
             proxy_cache_lock        off;
             proxy_cache_valid       all 10m;
+            proxy_buffering         off;
             
             proxy_read_timeout      10;
             proxy_set_header        Host $http_host;
@@ -177,22 +177,25 @@ http {
             proxy_pass              http://127.0.0.1:8080;
         }
         
+        set $upstream_endpoint php-elb-531321207.us-east-1.elb.amazonaws.com;
+        
         location ~ \.php$ {
-            try_files $uri index.php =404;
-            fastcgi_pass unix:/var/run/php5-fpm.sock;
+            include /etc/nginx/fastcgi.conf;
+            
             fastcgi_index index.php;
             fastcgi_split_path_info       ^(.+\.php)(/.+)$;
             fastcgi_param PATH_INFO       $fastcgi_path_info;
-            fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
-            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-            include fastcgi_params;
+            fastcgi_param PATH_TRANSLATED /html/$fastcgi_path_info;
+            fastcgi_param SCRIPT_FILENAME /html/$fastcgi_script_name;
             fastcgi_read_timeout 600;
+            
+            fastcgi_pass $upstream_endpoint:9000;
         }
     }
     
     # Pagespeed Proxy Configuration
     server {
-        listen 8080;
+        listen 8080 reuseport deferred fastopen=16384 backlog=4096;
         server_name pagespeed;
         root /html;
         
