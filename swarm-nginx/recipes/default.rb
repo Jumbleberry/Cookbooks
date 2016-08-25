@@ -227,6 +227,7 @@ execute 'upstart' do
         initctl reload-configuration
     EOH
     action :nothing
+    notifies :enable, 'service[nginx]', :immediate
 end
 template 'nginx.conf' do
   path '/etc/nginx/nginx.conf'
@@ -241,5 +242,6 @@ template 'nginx.conf' do
 end
 service "nginx" do 
     provider Chef::Provider::Service::Upstart
+    ignore_failure :true
     action :nothing
 end
