@@ -17,7 +17,7 @@ end
 # Mount EFS
 execute "mount-efs" do
     command <<-EOF
-        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -ioP #{node['region_regex']})
+        awsRegion=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -ioP "#{node['region_regex']}")
         EOF
     user 'root'
 end
