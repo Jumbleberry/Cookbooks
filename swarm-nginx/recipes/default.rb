@@ -59,6 +59,7 @@ execute 'pcre' do
   EOH
   cwd '/tmp'
   action :nothing
+  notifies :touch, 'remote_file[nginx]', :delayed
 end
 
 # Install zlib
@@ -78,6 +79,7 @@ execute 'zlib' do
     EOH
   cwd '/tmp'
   action :nothing
+  notifies :touch, 'remote_file[nginx]', :delayed
 end
 
 # Install openssl
@@ -107,6 +109,7 @@ execute 'openssl' do
     EOH
   cwd '/tmp'
   action :nothing
+  notifies :touch, 'remote_file[nginx]', :delayed
 end
 
 # Install pagespeed
@@ -137,6 +140,23 @@ execute 'psol' do
     EOH
   cwd '/tmp/ngx_pagespeed-release-1.11.33.3-beta'
   action :nothing
+  notifies :touch, 'remote_file[nginx]', :delayed
+end
+
+# Install dynamic upstream
+remote_file '/tmp/nginx-upstream-dynamic-servers-master.zip' do
+    source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/nginx-upstream-dynamic-servers-master.zip?raw=true'
+    action :create
+    notifies :run, 'execute[upstream]', :immediate
+end
+execute 'upstream' do
+  command <<-EOH
+    rm -rf nginx-upstream-dynamic-servers-master
+    unzip nginx-upstream-dynamic-servers-master.zip
+    EOH
+  cwd '/tmp'
+  action :nothing
+  notifies :touch, 'remote_file[nginx]', :delayed
 end
 
 # Install nginx
@@ -148,13 +168,13 @@ end
         action :create
     end
 end
-remote_file '/tmp/nginx-1.9.7.tar.gz' do
+remote_file 'nginx' do
+    path '/tmp/nginx-1.9.7.tar.gz'
     source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/nginx-1.9.7.tar.gz?raw=true'
     action :create
     notifies :create, 'cookbook_file[nginx_dynamic_tls.patch]', :immediate
     notifies :create, 'cookbook_file[nginx_http2_spdy.patch]', :immediate
     notifies :run, 'execute[nginx]', :immediate
-
 end
 cookbook_file 'nginx_http2_spdy.patch' do
   source 'nginx_http2_spdy.patch'
@@ -207,10 +227,15 @@ execute 'nginx' do
 --with-http_v2_module \
 --with-threads \
 --with-file-aio \
+--with-http_stub_status_module \
+--with-pcre-jit \
+--with-http_gzip_static_module \
 --with-openssl=/tmp/openssl-1.0.2h \
 --user=www-data \
 --group=www-data \
---add-module=/tmp/ngx_pagespeed-release-1.11.33.3-beta -DTCP_FASTOPEN=23
+--add-module=/tmp/ngx_pagespeed-release-1.11.33.3-beta \
+--add-module=/tmp/nginx-upstream-dynamic-servers-master \
+--with-cc-opt='-O2  -DTCP_FASTOPEN=23 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
     make
     sudo make install
     ln -fs /etc/nginx/nginx /usr/bin/nginx
