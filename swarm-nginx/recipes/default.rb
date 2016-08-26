@@ -161,11 +161,12 @@ end
 
 # Install nginx
 ["file", "memory"].each do |type|
-    directory '/cache/ps/' + type do
+    directory '/dev/shm/ps/' + type do
         owner 'www-data'
         group 'www-data'
         mode 0644
         action :create
+        recursive true
     end
 end
 remote_file 'nginx' do
