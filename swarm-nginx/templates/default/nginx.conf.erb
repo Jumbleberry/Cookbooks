@@ -91,21 +91,26 @@ http {
     pagespeed                   UseNativeFetcher on;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
                                 
-    pagespeed                   LRUCacheKbPerProcess          131072;
+    pagespeed                   LRUCacheKbPerProcess          524288;
     pagespeed                   LRUCacheByteLimit             65536;
-    pagespeed                   GoogleFontCssInlineMaxBytes   65536;
-    pagespeed                   CssInlineMaxBytes             65536;
+    pagespeed                   GoogleFontCssInlineMaxBytes   131072;
+    pagespeed                   CssInlineMaxBytes             131072;
     pagespeed                   MemcachedServers              "127.0.0.1:11211";
-    pagespeed                   MemcachedTimeoutUs            250000;
+    pagespeed                   MemcachedTimeoutUs            500000;
+    
     pagespeed                   ImageMaxRewritesAtOnce        32;
     pagespeed                   CombineAcrossPaths            on;
     
     pagespeed                   MaxCombinedJsBytes 512000;
     pagespeed                   MaxCombinedCssBytes 512000;
                                 
-    pagespeed                   FileCachePath /cache/ps/file;
+    pagespeed                   FileCachePath /dev/shm/ps/file;
+    pagespeed                   FileCacheSizeKb 1048576;
+    pagespeed                   FileCacheCleanIntervalMs 900000;
+    pagespeed                   FileCacheInodeLimit 1000000;
     pagespeed                   MessageBufferSize 32000;
-    pagespeed                   CreateSharedMemoryMetadataCache /cache/ps/memory 131072;
+    pagespeed                   CreateSharedMemoryMetadataCache /dev/shm/ps/memory 1048576;
+    pagespeed                   DefaultSharedMemoryCacheKB 1048576;
                                 
     pagespeed                   StatisticsPath /ngx_pagespeed_statistics;
     pagespeed                   GlobalStatisticsPath /ngx_pagespeed_global_statistics;
