@@ -4,10 +4,10 @@ pid                     /var/run/nginx.pid;
 worker_processes        auto;
 worker_rlimit_nofile    124000;
 
-thread_pool             pool_1 threads=16;
-thread_pool             pool_2 threads=16;
-thread_pool             pool_3 threads=16;
-thread_pool             pool_4 threads=16;
+thread_pool             pool_1 threads=32;
+thread_pool             pool_2 threads=32;
+thread_pool             pool_3 threads=32;
+thread_pool             pool_4 threads=32;
 
 events {
     worker_connections  16384;
@@ -66,6 +66,9 @@ http {
     proxy_cache_path /cache/2 levels=1:2 keys_zone=pool_2:64m inactive=180m max_size=20G use_temp_path=off;
     proxy_cache_path /cache/3 levels=1:2 keys_zone=pool_3:64m inactive=180m max_size=20G use_temp_path=off;
     proxy_cache_path /cache/4 levels=1:2 keys_zone=pool_4:64m inactive=180m max_size=20G use_temp_path=off;
+    
+    proxy_buffering             off;
+    proxy_request_buffering     off;
     
     split_clients $request_uri $pool {
         25%     "pool_1";
@@ -168,7 +171,6 @@ http {
             proxy_cache_min_uses    3;
             proxy_cache_lock        off;
             proxy_cache_valid       all 10m;
-            proxy_buffering         off;
             
             proxy_read_timeout      10;
             proxy_set_header        Host $http_host;
@@ -178,14 +180,15 @@ http {
             add_header              X-XSS-Protection "1; mode=block;";
             add_header              Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
             
-            
             proxy_pass              http://127.0.0.1:8080;
         }
         
         location ~ \.php$ {
-            root                    /html;
+            aio threads=$pool;
             
-            try_files               $fastcgi_script_name =404;
+            root                    /html;
+            try_files               $fastcgi_script_name =403;
+            
             include                 /etc/nginx/fastcgi.conf;
             
             fastcgi_split_path_info ^(.+\.php)(/.+)$;
