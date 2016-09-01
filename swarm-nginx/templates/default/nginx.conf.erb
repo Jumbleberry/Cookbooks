@@ -211,6 +211,7 @@ http {
             
             aio                     threads=pool_php;
             fastcgi_cache           cache_php;
+            fastcgi_cache_key       $request_method$remote_addr$scheme$host$request_uri
             
             fastcgi_split_path_info ^(.+\.php)(/.+)$;
             set                     $path_info $fastcgi_path_info;
