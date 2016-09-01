@@ -1,16 +1,15 @@
 user                    www-data;
 pid                     /var/run/nginx.pid;
 
-worker_processes        auto;
+worker_processes        4;
 worker_rlimit_nofile    124000;
 
-thread_pool             pool_1 threads=32;
-thread_pool             pool_2 threads=32;
-thread_pool             pool_3 threads=32;
-thread_pool             pool_4 threads=32;
+thread_pool             default  threads=32 max_queue=65536;
+thread_pool             pool_ps  threads=32 max_queue=65536;
+thread_pool             pool_php threads=32 max_queue=65536;
 
 events {
-    worker_connections  16384;
+    worker_connections  65536;
     use                 epoll;
     multi_accept        on;
 }
@@ -38,6 +37,7 @@ http {
     fastcgi_buffer_size         4k;
     fastcgi_keep_conn           on;
     
+    fastcgi_cache_path          /cache/php levels=1:2 keys_zone=cache_php:64m inactive=180m max_size=20G use_temp_path=off;
     fastcgi_max_temp_file_size  0;
     fastcgi_cache_valid         any 60m;
     fastcgi_cache_revalidate    off;
@@ -69,20 +69,8 @@ http {
         application/xml font/eot font/opentype font/otf image/svg+xml image/vnd.microsoft.icon;
     gzip_disable "MSIE [1-6]\.";
     
-    proxy_cache_path /cache/1 levels=1:2 keys_zone=pool_1:64m inactive=180m max_size=20G use_temp_path=off;
-    proxy_cache_path /cache/2 levels=1:2 keys_zone=pool_2:64m inactive=180m max_size=20G use_temp_path=off;
-    proxy_cache_path /cache/3 levels=1:2 keys_zone=pool_3:64m inactive=180m max_size=20G use_temp_path=off;
-    proxy_cache_path /cache/4 levels=1:2 keys_zone=pool_4:64m inactive=180m max_size=20G use_temp_path=off;
-    
     proxy_buffering             off;
     proxy_request_buffering     off;
-    
-    split_clients $request_uri $pool {
-        25%     "pool_1";
-        25%     "pool_2";
-        25%     "pool_3";
-        *       "pool_4";
-    }
     
     upstream php {
         server php-elb-531321207.us-east-1.elb.amazonaws.com:9000 resolve;
@@ -142,15 +130,31 @@ http {
     
     # Main Server Entry - rewrite all http to https
     server {
-       listen         80 reuseport deferred fastopen=16384 backlog=4096;
-       server_name    default_server;
-       return         301 https://$host$request_uri;
+        listen         80 reuseport deferred fastopen=16384 backlog=16384;
+        server_name    default_server;
+        
+        root            /html;
+        aio             threads=default;
+        
+        location /swarm_status {
+            stub_status     on;
+            access_log      off;
+            allow           127.0.0.1;
+            deny            all;
+        }
+        
+        error_page 404 = @https;
+        location @https {
+            return 302 https://$host$request_uri;
+        }
     }
     server {
-        listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=4096;
+        listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=16384;
         server_name default_server;
         
         root                        /html;
+        aio                         threads=pool_ps;
+        
         gzip                        on;
         gzip_vary                   on;
         gzip_proxied                any;
@@ -175,34 +179,38 @@ http {
         ssl_certificate             /html/certs/ssl.pem;
         ssl_certificate_key         /html/certs/ssl.key;
         
-        location / {
-            aio threads=$pool;
-            
-            proxy_cache             $pool;
-            proxy_cache_key         "$scheme$uri";
-            proxy_cache_revalidate  on;
-            proxy_cache_min_uses    3;
-            proxy_cache_lock        off;
-            proxy_cache_valid       all 10m;
-            
-            proxy_read_timeout      10;
-            proxy_set_header        Host $http_host;
-            
-            add_header              X-Cache-Status $upstream_cache_status;
-            add_header              X-Frame-Options SAMEORIGIN;
-            add_header              X-XSS-Protection "1; mode=block;";
-            add_header              Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-            
-            proxy_pass              http://127.0.0.1:8080;
-        }
+        pagespeed                   on;
+                                    
+        pagespeed                   Domain $host;
+        pagespeed                   Domain *.$host;
+        pagespeed                   MapOriginDomain localhost *.$host $host;
+        pagespeed                   LoadFromFileMatch "^https?://$host/(.*)" "/html/\\1";
+                                    
+        pagespeed                   EnableFilters add_instrumentation;
+        pagespeed                   EnableFilters collapse_whitespace;
+        pagespeed                   EnableFilters dedup_inlined_images;
+        pagespeed                   EnableFilters elide_attributes;
+        pagespeed                   EnableFilters inline_google_font_css;
+        pagespeed                   EnableFilters lazyload_images;
+        pagespeed                   EnableFilters move_css_to_head;
+        pagespeed                   EnableFilters insert_dns_prefetch;
+        pagespeed                   EnableFilters prioritize_critical_css;
+        pagespeed                   EnableFilters remove_comments;
+        pagespeed                   EnableFilters rewrite_css,sprite_images;
+        pagespeed                   EnableFilters convert_jpeg_to_progressive;
+        pagespeed                   EnableFilters convert_jpeg_to_webp;
+        
+        add_header                  X-Cache-Status $upstream_cache_status;
+        add_header                  X-Frame-Options SAMEORIGIN;
+        add_header                  X-XSS-Protection "1; mode=block;";
+        add_header                  Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
         
         location ~ \.php$ {
-            aio threads=$pool;
-            
-            root                    /html;
             try_files               $fastcgi_script_name =403;
-            
             include                 /etc/nginx/fastcgi.conf;
+            
+            aio                     threads=pool_php;
+            fastcgi_cache           cache_php;
             
             fastcgi_split_path_info ^(.+\.php)(/.+)$;
             set                     $path_info $fastcgi_path_info;
@@ -210,35 +218,5 @@ http {
             
             fastcgi_pass            php;
         }
-    }
-    
-    # Pagespeed Proxy Configuration
-    server {
-        listen 8080 reuseport deferred fastopen=16384 backlog=4096;
-        server_name pagespeed;
-        root /html;
-        
-        pagespeed on;
-        
-        pagespeed Domain $host;
-        pagespeed Domain *.$host;
-        pagespeed MapOriginDomain localhost *.$host $host;
-        pagespeed LoadFromFileMatch "^https?://$host/(.*)" "/html/\\1";
-        
-        pagespeed EnableFilters add_instrumentation;
-        pagespeed EnableFilters collapse_whitespace;
-        pagespeed EnableFilters dedup_inlined_images;
-        pagespeed EnableFilters elide_attributes;
-        pagespeed EnableFilters inline_google_font_css;
-        pagespeed EnableFilters lazyload_images;
-        pagespeed EnableFilters move_css_to_head;
-        pagespeed EnableFilters insert_dns_prefetch;
-        pagespeed EnableFilters prioritize_critical_css;
-        pagespeed EnableFilters remove_comments;
-        pagespeed EnableFilters rewrite_css,sprite_images;
-        pagespeed EnableFilters convert_jpeg_to_progressive;
-        pagespeed EnableFilters convert_jpeg_to_webp;
-        
-        index index.html;
     }
 }
