@@ -37,7 +37,7 @@ http {
     fastcgi_buffer_size         4k;
     fastcgi_keep_conn           on;
     
-    fastcgi_cache_path          /cache/php levels=1:2 keys_zone=cache_php:64m inactive=180m max_size=20G use_temp_path=off;
+    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=180m max_size=1G use_temp_path=off;
     fastcgi_max_temp_file_size  0;
     fastcgi_cache_valid         any 60m;
     fastcgi_cache_revalidate    off;
