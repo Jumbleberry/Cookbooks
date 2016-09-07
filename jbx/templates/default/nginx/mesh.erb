@@ -1,3 +1,20 @@
+map $sent_http_set_cookie $bps_cookie {
+    default                                   "";
+    ~*bps=(?<uuid>)deleted                    $uuid;
+    ~*bps=(?<uuid>[0-9A-Za-z-]+)              $uuid;
+}
+
+map $arg_bps $bps {
+    ~(?<uuid>[0-9A-Za-z-]+)                         $uuid;
+    ^-?$                                      $bps_cookie;
+    default                                   $bps_cookie;
+}
+
+log_format  mesh  '$remote_addr [$time_local] "$request" "bps=$bps" '
+                  '$status $body_bytes_sent "$http_referer" '
+                  '"$http_user_agent" "$http_x_forwarded_for" '
+                  '$request_time $upstream_response_time $pipe';
+
 server {
     listen 80;
     server_name <%= @hostname %> www.<%= @hostname %> ~^(.*)\.<%= @hostname %>$;
@@ -12,7 +29,7 @@ server {
     location = /robots.txt  { access_log off; log_not_found off; try_files $uri =404; }
     location = /favicon.ico { access_log off; log_not_found off; try_files $uri =404; }	
     
-    access_log  /var/log/nginx/<%= @hostname %>.access.log  main buffer=4k flush=1m;
+    access_log  /var/log/nginx/<%= @hostname %>.access.log  mesh buffer=4k flush=1m;
     error_log  /var/log/nginx/<%= @hostname %>.error.log  warn;
 
     location ~ index\.php$ {
