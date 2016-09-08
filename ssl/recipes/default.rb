@@ -10,17 +10,18 @@ packages.each do |pkg|
   end
 end
 
-# Fix module object has no attribute warnings
-execute "pip-upgrade-requests" do
-    command 'pip install --upgrade requests'
-    user 'root'
-end
-
 # Pull letsencrypt-aws repo from Github
 git node['letsencrypt_aws']['repo_path'] do
   repository node['letsencrypt_aws']['github_url']
   revision 'master'
   action :sync
+end
+
+# Fix module object has no attribute warnings
+execute "pip-upgrade-requests" do
+    cwd node['letsencrypt_aws']['repo_path']
+    command 'sudo pip install --upgrade requests'
+    user 'root'
 end
 
 # Install letencrypt-aws
@@ -31,7 +32,7 @@ execute "install-letencrypt-aws" do
         python -m virtualenv .venv
         pip install -U pip
         pip install flake8
-        pip install -r requirements.txt
+        sudo pip install -r requirements.txt
         EOF
     user 'root'
 end
@@ -39,6 +40,7 @@ end
 # Pin cryptography to 1.2.1 to avoid enterypoint error
 # May not need this in the future if letsencrypt-aws release patch
 execute "pin-cryptography" do
+    cwd node['letsencrypt_aws']['repo_path']
     command 'pip install cryptography==1.2.1'
     user 'root'
 end
@@ -48,6 +50,7 @@ end
 
 # Set environment variables for letsencrypt-aws
 execute "export-letsencrypt-aws-config" do
+    cwd node['letsencrypt_aws']['repo_path']
     command <<-EOF
         export LETSENCRYPT_AWS_CONFIG='{
             "domains": [
@@ -71,6 +74,6 @@ end
 # If the certificate is not expiring soon, but you need to issue a new one anyways, the --force-issue flag can be provided
 # execute "run-letsencrypt-aws" do
 #     cwd node['letsencrypt_aws']['repo_path']
-#     command 'python letsencrypt-aws.py update-certificates --force-issue'
+#     command 'sudo python letsencrypt-aws.py update-certificates --force-issue'
 #     user 'root'
 # end
