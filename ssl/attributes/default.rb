@@ -25,6 +25,20 @@ default['ssl']['packages'] = [
 # Letsencrypt-aws config
 default['letsencrypt_aws']['github_url'] = 'https://github.com/alex/letsencrypt-aws.git'
 default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'
+default['letsencrypt_aws']['config'] = '{
+    "domains": [
+        {
+            "elb": {
+                "name": "secure-elb",
+                "port": "443"
+            },
+            "hosts": ["jbxstatic.com", "jbxswarm.com", "www.jbxstatic.com", "www.jbxswarm.com"],
+            "key_type": "rsa"
+        }
+    ],
+    "acme_account_key": "file:///var/www/letsencrypt-aws/acme-staging-private.pem",
+    "acme_directory_url": "https://acme-staging.api.letsencrypt.org/directory"
+}'
 
 # ACME config - staging
 default['acme']['account_key']['staging'] = 'file:///var/www/letsencrypt-aws/acme-staging-private.pem'

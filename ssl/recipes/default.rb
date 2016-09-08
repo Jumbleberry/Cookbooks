@@ -52,20 +52,7 @@ end
 ENV['AWS_DEFAULT_REGION'] = 'us-east-1'
 
 # Set environment variables for letsencrypt-aws
-ENV['LETSENCRYPT_AWS_CONFIG'] = '{
-    "domains": [
-        {
-            "elb": {
-                "name": "#{node['elb']['name']}",
-                "port": "443"
-            },
-            "hosts": #{node['elb']['hosts']},
-            "key_type": "rsa"
-        }
-    ],
-    "acme_account_key": "#{node['acme']['account_key']['staging']}",
-    "acme_directory_url": "#{node['acme']['directory_url']['staging']}"
-}'
+ENV['LETSENCRYPT_AWS_CONFIG'] = node['letsencrypt_aws']['config']
 
 # Register ACME account (so we dont need to upload the private key)
 execute "register-acme-account" do
