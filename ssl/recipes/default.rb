@@ -48,6 +48,13 @@ end
 # Make sure we have private key for ACME server
 # Make sure AWS credentials are configured (aws_access_key_id, aws_secret_access_key and aws_region)
 
+# Set default AWS region (not sure if we need this if IAM role is properly configured)
+execute "set-default-aws-region" do
+    cwd node['letsencrypt_aws']['repo_path']
+    command 'export AWS_DEFAULT_REGION=us-east-1'
+    user 'root'
+end
+
 # Set environment variables for letsencrypt-aws
 execute "export-letsencrypt-aws-config" do
     cwd node['letsencrypt_aws']['repo_path']
@@ -69,11 +76,18 @@ execute "export-letsencrypt-aws-config" do
         EOF
     user 'root'
 end
+
+# Register ACME account (so we dont need to upload the private key)
+execute "register-acme-account" do
+    cwd node['letsencrypt_aws']['repo_path']
+    command 'python letsencrypt-aws.py register hao.ling@jumbleberry.com > acme-staging-private.pem'
+    user 'root'
+end
  
 # Run letsencrypt-aws
 # If the certificate is not expiring soon, but you need to issue a new one anyways, the --force-issue flag can be provided
-# execute "run-letsencrypt-aws" do
-#     cwd node['letsencrypt_aws']['repo_path']
-#     command 'sudo python letsencrypt-aws.py update-certificates --force-issue'
-#     user 'root'
-# end
+execute "run-letsencrypt-aws" do
+    cwd node['letsencrypt_aws']['repo_path']
+    command 'python letsencrypt-aws.py update-certificates --force-issue'
+    user 'root'
+end
