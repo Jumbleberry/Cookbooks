@@ -69,8 +69,8 @@ end
  
 # Run letsencrypt-aws
 # If the certificate is not expiring soon, but you need to issue a new one anyways, the --force-issue flag can be provided
-execute "run-letsencrypt-aws" do
-    cwd "#{node['letsencrypt_aws']['repo_path']}/#{node['letsencrypt_aws']['repo_name']}"
-    command 'python letsencrypt-aws.py update-certificates --force-issue'
-    user 'root'
-end
+# execute "run-letsencrypt-aws" do
+#     cwd "#{node['letsencrypt_aws']['repo_path']}/#{node['letsencrypt_aws']['repo_name']}"
+#     command 'python letsencrypt-aws.py update-certificates --force-issue'
+#     user 'root'
+# end
