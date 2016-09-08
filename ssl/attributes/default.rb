@@ -24,8 +24,7 @@ default['ssl']['packages'] = [
 
 # Letsencrypt-aws config
 default['letsencrypt_aws']['github_url'] = 'https://github.com/alex/letsencrypt-aws.git'
-default['letsencrypt_aws']['repo_path'] = '/var/www'
-default['letsencrypt_aws']['repo_name'] = 'letsencrypt-aws'
+default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'
 
 # ACME config - staging
 default['acme']['account_key']['staging'] = 'file:///var/www/letsencrypt-aws/acme-staging-private.pem'
