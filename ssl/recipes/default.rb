@@ -49,33 +49,23 @@ end
 # Make sure AWS credentials are configured (aws_access_key_id, aws_secret_access_key and aws_region)
 
 # Set default AWS region (not sure if we need this if IAM role is properly configured)
-execute "set-default-aws-region" do
-    cwd node['letsencrypt_aws']['repo_path']
-    command 'export AWS_DEFAULT_REGION=us-east-1'
-    user 'root'
-end
+ENV['AWS_DEFAULT_REGION'] = 'us-east-1'
 
 # Set environment variables for letsencrypt-aws
-execute "export-letsencrypt-aws-config" do
-    cwd node['letsencrypt_aws']['repo_path']
-    command <<-EOF
-        export LETSENCRYPT_AWS_CONFIG='{
-            "domains": [
-                {
-                    "elb": {
-                        "name": "#{node['elb']['name']}",
-                        "port": "443"
-                    },
-                    "hosts": #{node['elb']['hosts']},
-                    "key_type": "rsa"
-                }
-            ],
-            "acme_account_key": "#{node['acme']['account_key']['staging']}",
-            "acme_directory_url": "#{node['acme']['directory_url']['staging']}"
-        }'
-        EOF
-    user 'root'
-end
+ENV['LETSENCRYPT_AWS_CONFIG'] = '{
+    "domains": [
+        {
+            "elb": {
+                "name": "#{node['elb']['name']}",
+                "port": "443"
+            },
+            "hosts": #{node['elb']['hosts']},
+            "key_type": "rsa"
+        }
+    ],
+    "acme_account_key": "#{node['acme']['account_key']['staging']}",
+    "acme_directory_url": "#{node['acme']['directory_url']['staging']}"
+}'
 
 # Register ACME account (so we dont need to upload the private key)
 execute "register-acme-account" do
