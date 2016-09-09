@@ -79,7 +79,7 @@ cron "renew-ssl-certificate" do
   hour '0'
   weekday '1'
   home node['letsencrypt_aws']['repo_path']
-  environment ({"LETSENCRYPT_AWS_CONFIG" => "#{node['letsencrypt_aws']['config']}", "AWS_DEFAULT_REGION" => "#{node['aws_default_region']}"})
+  environment ({"LETSENCRYPT_AWS_CONFIG" => "#{node['letsencrypt_aws']['config']}".delete!("\n"), "AWS_DEFAULT_REGION" => "#{node['aws_default_region']}"})
   command "python $HOME/letsencrypt-aws.py update-certificates --force-issue"
   user 'root'
   action :create
