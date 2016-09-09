@@ -54,7 +54,7 @@ ENV['LETSENCRYPT_AWS_CONFIG'] = node['letsencrypt_aws']['config']
 # Register ACME account (so we dont need to upload the private key)
 execute "register-acme-account" do
     cwd node['letsencrypt_aws']['repo_path']
-    command 'python letsencrypt-aws.py register swarm@jumbleberry.com > acme-staging-private.pem'
+    command 'python letsencrypt-aws.py register swarm@jumbleberry.com > acme-private.pem'
     user 'root'
 end
  

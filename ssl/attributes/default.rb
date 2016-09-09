@@ -36,6 +36,6 @@ default['letsencrypt_aws']['config'] = '{
             "key_type": "rsa"
         }
     ],
-    "acme_account_key": "file:///var/www/letsencrypt-aws/acme-staging-private.pem",
-    "acme_directory_url": "https://acme-staging.api.letsencrypt.org/directory"
+    "acme_account_key": "file:///var/www/letsencrypt-aws/acme-private.pem",
+    "acme_directory_url": "https://acme-v01.api.letsencrypt.org/directory"
 }'
