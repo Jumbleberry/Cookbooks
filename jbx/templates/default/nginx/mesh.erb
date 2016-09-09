@@ -1,12 +1,12 @@
 map $cookie_bps $stored_bps {
-    default                                   "";
-    ^-?$                                      "";
+    default                                   "-";
+    ^-?$                                      "-";
     ~*(?<uuid>[0-9A-Za-z-]+)                  $uuid;
 }
 
 map $sent_http_set_cookie $response_bps {
-    default                                   "";
-    ~*bps=(?<uuid>)deleted                    "";
+    default                                   "-";
+    ~*bps=(?<uuid>)deleted                    "-";
     ~*bps=(?<uuid>[0-9A-Za-z-]+)              $uuid;
 }
 
