@@ -46,7 +46,7 @@ execute "pin-cryptography" do
 end
 
 # Set default AWS region (not sure if we need this if IAM role is properly configured)
-ENV['AWS_DEFAULT_REGION'] = 'us-east-1'
+ENV['AWS_DEFAULT_REGION'] = node['aws_default_region']
 
 # Set environment variables for letsencrypt-aws
 ENV['LETSENCRYPT_AWS_CONFIG'] = node['letsencrypt_aws']['config']
@@ -64,4 +64,16 @@ execute "run-letsencrypt-aws" do
     cwd node['letsencrypt_aws']['repo_path']
     command 'python letsencrypt-aws.py update-certificates --force-issue'
     user 'root'
+end
+
+# Set up weekly cron to auto-renew certificates
+cron "renew-ssl-certificate" do
+  minute '0'
+  hour '0'
+  weekday '1'
+  home node['letsencrypt_aws']['repo_path']
+  environment ({"LETSENCRYPT_AWS_CONFIG" => "#{node['letsencrypt_aws']['config']}", "AWS_DEFAULT_REGION" => "#{node['aws_default_region']}"})
+  command "python $HOME/letsencrypt-aws.py update-certificates --force-issue"
+  user 'root'
+  action :create
 end
