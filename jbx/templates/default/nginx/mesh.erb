@@ -1,16 +1,16 @@
-map $sent_http_set_cookie $bps_cookie {
+map $cookie_bps $stored_bps {
     default                                   "";
-    ~*bps=(?<uuid>)deleted                    $uuid;
+    ^-?$                                      "";
+    ~*(?<uuid>[0-9A-Za-z-]+)                  $uuid;
+}
+
+map $sent_http_set_cookie $response_bps {
+    default                                   "";
+    ~*bps=(?<uuid>)deleted                    "";
     ~*bps=(?<uuid>[0-9A-Za-z-]+)              $uuid;
 }
 
-map $arg_bps $bps {
-    ~(?<uuid>[0-9A-Za-z-]+)                         $uuid;
-    ^-?$                                      $bps_cookie;
-    default                                   $bps_cookie;
-}
-
-log_format  mesh  '$remote_addr [$time_local] "$request" "bps=$bps" '
+log_format  mesh  '$remote_addr [$time_local] "$request" "[cookie=$stored_bps, request=$arg_bps, response=$response_bps]" '
                   '$status $body_bytes_sent "$http_referer" '
                   '"$http_user_agent" "$http_x_forwarded_for" '
                   '$request_time $upstream_response_time $pipe';
@@ -34,6 +34,7 @@ server {
 
     location ~ index\.php$ {
         try_files $uri index.php =404;
+        fastcgi_ignore_client_abort on;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
         fastcgi_index index.php;
         fastcgi_split_path_info       ^(.+\.php)(/.+)$;
