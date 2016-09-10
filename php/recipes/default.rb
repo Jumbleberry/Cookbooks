@@ -21,7 +21,8 @@ end
 
 #Register Php service
 service 'php5-fpm' do
-  action :nothing
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :start
 end
 
 #Check if we need to change the php include path
@@ -45,7 +46,7 @@ template '/etc/php5/fpm/php.ini' do
     'display_errors' => node['php']['fpm']['display_errors'],
     'include_path' => include_path
   })
-  notifies :restart, "service[php5-fpm]", :delayed
+  notifies :reload, "service[php5-fpm]", :delayed
 end
 
 template '/etc/php5/fpm/pool.d/www.conf' do
@@ -58,7 +59,7 @@ template '/etc/php5/fpm/pool.d/www.conf' do
     'min_spare_servers' => node['php']['fpm']['min_spare_servers'],
     'max_spare_servers' => node['php']['fpm']['max_spare_servers']
   })
-  notifies :restart, "service[php5-fpm]", :delayed
+  notifies :reload, "service[php5-fpm]", :delayed
 end
 
 #Cli Configurations

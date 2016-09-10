@@ -11,13 +11,18 @@ server {
 
     location /nginx {
         stub_status on;
-        access_log off;
     }
 
     location /fpm {
-        access_log off;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
-        include        fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /fpm;
+        include fastcgi_params;
+    }
+    
+    location /fpm-ping {
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME /fpm-ping;
+        include fastcgi_params;
     }
 
     location ^~ /consul/ {
