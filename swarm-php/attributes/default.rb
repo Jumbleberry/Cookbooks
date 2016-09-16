@@ -1,12 +1,12 @@
 default['php']['composer_download_path'] = '/tmp/composer-install.php'
 
 default['php']['fpm']['display_errors'] = 'Off'
-default['php']['fpm']['listen'] = '127.0.0.1:9000'
+default['php']['fpm']['listen'] = '0.0.0.0:9000'
 default['php']['fpm']['pm'] = 'dynamic'
 default['php']['fpm']['max_children'] = '100'
-default['php']['fpm']['start_servers'] = '40'
-default['php']['fpm']['min_spare_servers'] = '20'
-default['php']['fpm']['max_spare_servers'] = '40'
+default['php']['fpm']['start_servers'] = '10'
+default['php']['fpm']['min_spare_servers'] = '10'
+default['php']['fpm']['max_spare_servers'] = '10'
 default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
 default['php']['fpm']['conf_dirs'] = ['/etc/php/7.0/mods-available']
