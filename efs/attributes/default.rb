@@ -7,8 +7,8 @@ default['efs_mount_point'] = '/html'
 
 # Regex
 default['region_reg'] = '(?<=region\"\s:\s\")[^\"]*'
-default['efs_name_reg'] = '\"Name\":\s\"Campaigns\"'
-default['file_system_id_reg'] = '(?<=FileSystemId\":\s\")[^\"\.]*'
+default['efs_name_reg'] = '\"Name\":\s\"efs\"'
+default['file_system_id_reg'] = '(?<=FileSystemId\":\s\")[^\"]*'
 
 # Packages
 default['efs']['packages'] = [
