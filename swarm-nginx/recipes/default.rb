@@ -163,7 +163,7 @@ execute 'upstream' do
 end
 
 # Install nginx
-["php", "ps/file", "ps/memory"].each do |type|
+["ssi", "php", "ps/file", "ps/memory"].each do |type|
     directory '/dev/shm/' + type do
         owner 'www-data'
         group 'www-data'
