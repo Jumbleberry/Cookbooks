@@ -110,5 +110,3 @@ if composer_download_path
     not_if { ::File.exists?("/usr/local/bin/composer")}
   end
 end
-
-include_recipe "efs"
