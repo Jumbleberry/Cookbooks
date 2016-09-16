@@ -32,9 +32,12 @@ end
 service "memcached" do
     action :nothing
 end
-cookbook_file 'memcached.conf' do
-  source 'memcached.conf'
+template 'memcached.conf' do
+  source 'memcached.conf.erb'
   path '/etc/memcached.conf'
+  variables({
+    'cache_size' => (node['memory']['total'][0..-3].to_i / 12 ),
+  })
   owner 'root'
   group 'root'
   mode '0644'
@@ -160,8 +163,8 @@ execute 'upstream' do
 end
 
 # Install nginx
-["file", "memory"].each do |type|
-    directory '/dev/shm/ps/' + type do
+["php", "ps/file", "ps/memory"].each do |type|
+    directory '/dev/shm/' + type do
         owner 'www-data'
         group 'www-data'
         mode 0644
@@ -281,6 +284,9 @@ end
 template 'nginx.conf' do
   path '/etc/nginx/nginx.conf'
   source 'nginx.conf.erb'
+  variables({
+    'cache_size' => (node['memory']['total'][0..-3].to_i / 12 ),
+  })
   owner 'www-data'
   group 'www-data'
   mode '0644'

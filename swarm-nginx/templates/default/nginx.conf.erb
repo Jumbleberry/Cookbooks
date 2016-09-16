@@ -1,7 +1,7 @@
 user                    www-data;
 pid                     /var/run/nginx.pid;
 
-worker_processes        4;
+worker_processes        auto;
 worker_rlimit_nofile    124000;
 
 thread_pool             default  threads=32 max_queue=65536;
@@ -30,16 +30,16 @@ http {
     output_buffers              4 32k;
     postpone_output             1460;
     
-    fastcgi_read_timeout        60;
+    fastcgi_read_timeout        120;
     fastcgi_buffering           on;
     fastcgi_request_buffering   off;
     fastcgi_buffers             64 4k;
+    fastcgi_max_temp_file_size  0;
     fastcgi_buffer_size         4k;
     fastcgi_keep_conn           on;
     
-    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=180m max_size=1G use_temp_path=off;
-    fastcgi_max_temp_file_size  0;
-    fastcgi_cache_valid         any 60m;
+    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=300m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
+    fastcgi_cache_valid         any 300m;
     fastcgi_cache_revalidate    off;
     fastcgi_cache_use_stale     off;
     
@@ -49,8 +49,8 @@ http {
     client_body_timeout         120;
     send_timeout                120;
 
-    open_file_cache             max=16384 inactive=5m;
-    open_file_cache_valid       5m;
+    open_file_cache             max=16384 inactive=300m;
+    open_file_cache_valid       15m;
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
     
@@ -86,7 +86,7 @@ http {
     pagespeed                   UseNativeFetcher on;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
                                 
-    pagespeed                   LRUCacheKbPerProcess          524288;
+    pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
     pagespeed                   LRUCacheByteLimit             65536;
     pagespeed                   GoogleFontCssInlineMaxBytes   131072;
     pagespeed                   CssInlineMaxBytes             131072;
@@ -100,12 +100,12 @@ http {
     pagespeed                   MaxCombinedCssBytes 512000;
                                 
     pagespeed                   FileCachePath /dev/shm/ps/file;
-    pagespeed                   FileCacheSizeKb 1048576;
+    pagespeed                   FileCacheSizeKb <%= @cache_size %>;
     pagespeed                   FileCacheCleanIntervalMs 900000;
     pagespeed                   FileCacheInodeLimit 1000000;
     pagespeed                   MessageBufferSize 32000;
-    pagespeed                   CreateSharedMemoryMetadataCache /dev/shm/ps/memory 1048576;
-    pagespeed                   DefaultSharedMemoryCacheKB 1048576;
+    pagespeed                   CreateSharedMemoryMetadataCache /dev/shm/ps/memory <%= @cache_size %>;
+    pagespeed                   DefaultSharedMemoryCacheKB <%= @cache_size %>;
                                 
     pagespeed                   StatisticsPath /ngx_pagespeed_statistics;
     pagespeed                   GlobalStatisticsPath /ngx_pagespeed_global_statistics;
@@ -205,13 +205,23 @@ http {
         add_header                  X-XSS-Protection "1; mode=block;";
         add_header                  Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
         
+        set                         $no_cache 0;
+        
+        if ($request_method = POST) {
+            set $no_cache 1;
+        }
+        
         location ~ \.php$ {
             try_files               $fastcgi_script_name =403;
             include                 /etc/nginx/fastcgi.conf;
             
             aio                     threads=pool_php;
+            
             fastcgi_cache           cache_php;
-            fastcgi_cache_key       $request_method$remote_addr$scheme$host$request_uri
+            fastcgi_cache_key       $request_method$remote_addr$scheme$host$request_uri;
+            
+            fastcgi_cache_bypass    $no_cache;
+            fastcgi_no_cache        $no_cache;
             
             fastcgi_split_path_info ^(.+\.php)(/.+)$;
             set                     $path_info $fastcgi_path_info;
