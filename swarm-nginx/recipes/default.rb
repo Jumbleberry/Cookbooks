@@ -162,6 +162,22 @@ execute 'upstream' do
   notifies :touch, 'remote_file[nginx]', :delayed
 end
 
+# Install upstream check
+remote_file '/tmp/nginx_upstream_check_module.zip' do
+    source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/nginx_upstream_check_module.zip?raw=true'
+    action :create
+    notifies :run, 'execute[check]', :immediate
+end
+execute 'check' do
+  command <<-EOH
+    rm -rf nginx_upstream_check_module-master
+    unzip nginx_upstream_check_module.zip
+    EOH
+  cwd '/tmp'
+  action :nothing
+  notifies :touch, 'remote_file[nginx]', :delayed
+end
+
 # Install nginx
 ["ssi", "php", "ps/file", "ps/memory"].each do |type|
     directory '/dev/shm/' + type do
@@ -218,6 +234,7 @@ execute 'nginx' do
     cd nginx-1.9.7/
     patch -d . -p 1 < /tmp/nginx_http2_spdy.patch
     patch -d . -p 1 < /tmp/nginx_dynamic_tls.patch
+    patch -d . -p 0 < /tmp/nginx_upstream_check_module-master/check_1.9.2+.patch
     echo "3" > /proc/sys/net/ipv4/tcp_fastopen
     ./configure \
 --sbin-path=/etc/nginx/nginx \
@@ -239,6 +256,7 @@ execute 'nginx' do
 --group=www-data \
 --add-module=/tmp/ngx_pagespeed-release-1.11.33.3-beta \
 --add-module=/tmp/nginx-upstream-dynamic-servers-master \
+--add-module=/tmp/nginx_upstream_check_module-master \
 --with-cc-opt='-O2  -DTCP_FASTOPEN=23 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
     make
     sudo make install
@@ -299,4 +317,11 @@ service "nginx" do
     provider Chef::Provider::Service::Upstart
     ignore_failure true
     action :nothing
+end
+
+cron 'nginx' do
+  action :create
+  minute '*'
+  user 'root'
+  command 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; /usr/sbin/service nginx reload'
 end
