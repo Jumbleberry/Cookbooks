@@ -286,7 +286,7 @@ execute 'upstart' do
     notifies :start, 'service[nginx]', :delayed
     notifies :reload, 'service[nginx]', :delayed
 end
-["dhparam.pem", "ticket.key"].each do | file |
+["mime.types", "dhparam.pem", "ticket.key"].each do | file |
     cookbook_file file do
       source file
       path '/etc/nginx/' + file
