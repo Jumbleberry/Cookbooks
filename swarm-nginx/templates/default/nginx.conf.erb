@@ -82,7 +82,7 @@ http {
         check_fastcgi_param     "REQUEST_METHOD" "GET";
         check_fastcgi_param     "SCRIPT_NAME" "/ping";
         check_fastcgi_param     "SCRIPT_FILENAME" "/ping";
-        check interval=5000     fall=3 rise=1 timeout=4000 default_down=false type=fastcgi port=9000;
+        check                   interval=5000 fall=3 rise=1 timeout=4000 default_down=false type=fastcgi port=9000;
         
         keepalive               128;
     }
