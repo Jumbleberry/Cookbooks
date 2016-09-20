@@ -61,7 +61,7 @@ http {
     resolver                    156.154.70.1 8.8.8.8 8.8.4.4 valid=60s;
     resolver_timeout            10s;
     
-    gzip                        off;
+    gzip                        on;
     gzip_vary                   off;
     gzip_proxied                any;
     gzip_comp_level             5;
@@ -262,6 +262,8 @@ http {
                                     
         root                        /html;
         aio                         threads=pool_ssi;
+        
+        gzip                        off;
                                     
         ssi                         on;
         ssi_last_modified           on;
