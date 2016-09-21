@@ -150,9 +150,9 @@ remote_file 'nginx' do
     path '/tmp/nginx-1.9.7.tar.gz'
     source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/nginx-1.9.7.tar.gz?raw=true'
     action :create
-    notifies :create, 'cookbook_file[nginx_dynamic_tls.patch]', :immediate
-    notifies :create, 'cookbook_file[nginx_http2_spdy.patch]', :immediate
-    notifies :run, 'execute[nginx]', :immediate
+    notifies :create, 'cookbook_file[nginx_dynamic_tls.patch]', :delayed
+    notifies :create, 'cookbook_file[nginx_http2_spdy.patch]', :delayed
+    notifies :run, 'execute[nginx]', :delayed
 end
 cookbook_file 'nginx_http2_spdy.patch' do
   source 'nginx_http2_spdy.patch'
