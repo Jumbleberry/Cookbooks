@@ -99,6 +99,7 @@ http {
     pagespeed                   LowercaseHtmlNames on;
     pagespeed                   FetchHttps enable;
     pagespeed                   UseNativeFetcher on;
+    pagespeed                   ListOutstandingUrlsOnError on;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
                                 
     pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
@@ -206,6 +207,12 @@ http {
         if ($request_method = POST) {
             set $no_cache 1;
         }
+        
+        location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
+            add_header              "" "";
+        }
+        location ~ "^/static/"      { }
+        location ~ "^/swarm_radar$" { }
         
         location /nginx {
             stub_status             on;
