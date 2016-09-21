@@ -1,6 +1,2 @@
-# AWS config
-default['aws_default_region'] = 'us-east-1'
-
-# Regex
-default['elb_name_reg'] = 'nginx-elb'
-default['target_group_arn_reg'] = 'TargetGroupArn\"\s?:\s?\"\K[^\"]*'
+# Config
+default['metadata_instance_id_url'] = 'http://instance-data/latest/meta-data/instance-id'

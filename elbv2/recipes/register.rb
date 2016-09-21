@@ -2,14 +2,13 @@ include_recipe "apt"
 include_recipe "awscli"
 
 # Set default AWS region
-ENV['AWS_DEFAULT_REGION'] = node['aws_default_region']
+ENV['AWS_DEFAULT_REGION'] = node['awsRegion']
 
 # Register the instance
 execute "register-targets" do
     command <<-EOF
-        instanceId=$(wget -q -O - http://instance-data/latest/meta-data/instance-id)
-        targetGroupArn=$(aws elbv2 describe-target-groups | grep '#{node['elb_name']}' | grep -ioP '#{node['target_group_arn_reg']}')
-        aws elbv2 register-targets --target-group-arn $targetGroupArn --targets Id=$instanceId
+        instanceId=$(wget -q -O - #{node['metadata_instance_id_url']})
+        aws elbv2 register-targets --target-group-arn #{node['nginxELBTargetArn']} --targets Id=$instanceId
         EOF
     user 'root'
 end
