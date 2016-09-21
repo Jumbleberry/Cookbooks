@@ -106,6 +106,7 @@ end
 execute 'psol' do
   command <<-EOH
     tar -xzvf 1.11.33.3.tar.gz
+    find . -type f -exec sed -i 's/ngx_pagespeed_beacon/swarm_radar/g' {} +
     EOH
   cwd '/tmp/ngx_pagespeed-release-1.11.33.3-beta'
   action :nothing
