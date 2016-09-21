@@ -104,6 +104,7 @@ template 'nginx.conf' do
   source 'nginx.conf.erb'
   variables({
     'cache_size' => (node['memory']['total'][0..-3].to_i / 12 ),
+    'php_host'   => (node['phpHost'])
   })
   owner 'www-data'
   group 'www-data'
