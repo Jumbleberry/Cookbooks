@@ -29,7 +29,7 @@ default['letsencrypt_aws']['config'] = '{
     "domains": [
         {
             "elb": {
-                "name": "us-east-1-NginxELB-HQD1QU718V4T",
+                "name": "' + node['nginxELBName'] + '",
                 "port": "443"
             },
             "hosts": ["jbxstatic.com", "jbxswarm.com", "www.jbxstatic.com", "www.jbxswarm.com"],
