@@ -9,7 +9,7 @@ execute 'nginx' do
         ln -s /etc/nginx/nginx /usr/bin/nginx-new && mv -Tf /usr/bin/nginx-new /usr/bin/nginx
     EOH
     action :nothing
-    notifies :enable, 'service[nginx]', :immediate
+    notifies :enable, 'service[nginx]', :delayed
     notifies :start, 'service[nginx]', :delayed
     notifies :reload, 'service[nginx]', :delayed
 end

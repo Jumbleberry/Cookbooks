@@ -57,9 +57,6 @@ template 'memcached.conf' do
   notifies :restart, 'service[memcached]', :immediate
 end
 
-# Either build from source, or download pre-compiled
-include_recipe 'swarm-nginx::download'
-
 cookbook_file 'upstart.conf' do
   source 'upstart.conf'
   path '/etc/init/nginx.conf'
@@ -74,7 +71,7 @@ execute 'upstart' do
         initctl reload-configuration
     EOH
     action :nothing
-    notifies :enable, 'service[nginx]', :immediate
+    notifies :enable, 'service[nginx]', :delayed
     notifies :start, 'service[nginx]', :delayed
     notifies :reload, 'service[nginx]', :delayed
 end
@@ -116,6 +113,10 @@ template 'nginx.conf' do
   notifies :start, 'service[nginx]', :delayed
   notifies :reload, 'service[nginx]', :delayed
 end
+
+# Either build from source, or download pre-compiled
+include_recipe 'swarm-nginx::download'
+
 service "nginx" do 
     provider Chef::Provider::Service::Upstart
     ignore_failure true
