@@ -22,9 +22,6 @@ default['ssl']['packages'] = [
   }
 ]
 
-# AWS config
-default['aws_default_region'] = 'us-east-1'
-
 # Letsencrypt-aws config
 default['letsencrypt_aws']['github_url'] = 'https://github.com/alex/letsencrypt-aws.git'
 default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'

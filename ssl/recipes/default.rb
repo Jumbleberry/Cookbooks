@@ -52,7 +52,7 @@ execute "pin-cryptography" do
 end
 
 # Set default AWS region (not sure if we need this if IAM role is properly configured)
-ENV['AWS_DEFAULT_REGION'] = node['aws_default_region']
+ENV['AWS_DEFAULT_REGION'] = node['awsRegion']
 
 # Set environment variables for letsencrypt-aws
 ENV['LETSENCRYPT_AWS_CONFIG'] = node['letsencrypt_aws']['config']
