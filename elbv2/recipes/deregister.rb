@@ -8,7 +8,7 @@ ENV['AWS_DEFAULT_REGION'] = node['awsRegion']
 execute "deregister-targets" do
     command <<-EOF
         instanceId=$(wget -q -O - #{node['metadata_instance_id_url']})
-        aws elbv2 deregister-targets --target-group-arn #{node['nginxELBTargetArn']} --targets Id=$instanceId
+        aws elbv2 deregister-targets --target-group-arn #{node['nginxElbTargetArn']} --targets Id=$instanceId
         EOF
     user 'root'
 end
