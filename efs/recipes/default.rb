@@ -14,7 +14,7 @@ efsMountPoint = node['efs_mount_point']
 directory efsMountPoint do
     user 'www-data'
     group 'www-data'
-    mode '0554'
+    mode '0755'
     action :create
 end
 
