@@ -1,0 +1,15 @@
+--- a/src/http/modules/ngx_http_ssi_filter_module.c	2015-11-17 14:50:58.000000000 +0000
++++ b/src/http/modules/ngx_http_ssi_filter_module.c	2016-09-21 23:55:10.141090853 +0000
+@@ -2062,9 +2062,9 @@
+     ngx_str_null(&args);
+     flags = NGX_HTTP_LOG_UNSAFE;
+ 
+-    if (ngx_http_parse_unsafe_uri(r, uri, &args, &flags) != NGX_OK) {
+-        return NGX_HTTP_SSI_ERROR;
+-    }
++    /**if (ngx_http_parse_unsafe_uri(r, uri, &args, &flags) != NGX_OK) {
++        return NGX_HTTP_SSI_ERROR;
++    }*/
+ 
+     psr = NULL;
+ 

@@ -152,6 +152,7 @@ remote_file 'nginx' do
     action :create
     notifies :create, 'cookbook_file[nginx_dynamic_tls.patch]', :delayed
     notifies :create, 'cookbook_file[nginx_http2_spdy.patch]', :delayed
+    notifies :create, 'cookbook_file[ssi.patch]', :delayed
     notifies :run, 'execute[nginx]', :delayed
 end
 cookbook_file 'nginx_http2_spdy.patch' do
@@ -165,6 +166,14 @@ end
 cookbook_file 'nginx_dynamic_tls.patch' do
   source 'nginx_dynamic_tls.patch'
   path '/tmp/nginx_dynamic_tls.patch'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :nothing
+end
+cookbook_file 'ssi.patch' do
+  source 'ssi.patch'
+  path '/tmp/ssi.patch'
   owner 'root'
   group 'root'
   mode '0644'
@@ -192,6 +201,7 @@ execute 'nginx' do
     cd nginx-1.9.7/
     patch -d . -p 1 < /tmp/nginx_http2_spdy.patch
     patch -d . -p 1 < /tmp/nginx_dynamic_tls.patch
+    patch -d . -p 1 < /tmp/ssi.patch
     patch -d . -p 0 < /tmp/nginx_upstream_check_module-master/check_1.9.2+.patch
     echo "3" > /proc/sys/net/ipv4/tcp_fastopen
     ./configure \
