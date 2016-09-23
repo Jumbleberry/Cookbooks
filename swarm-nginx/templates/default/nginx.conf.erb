@@ -16,6 +16,21 @@ events {
 }
 
 http {
+    map $http_x_forwarded_proto $real_scheme {
+        'http'          $http_x_forwarded_proto;
+        'https'         $http_x_forwarded_proto;
+        default         $scheme;
+        ''              $scheme;
+    }
+    
+    map $subdomain $device {
+        'm'                     'mobile/';
+        'tablet'                'tablet/';
+        'www'                   'desktop/';
+        default                 '';
+        ''                      '';
+    }
+
     server_tokens               off;
     include                     mime.types;
     
@@ -40,12 +55,12 @@ http {
     fastcgi_keep_conn           on;
     
     fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=300m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
-    fastcgi_cache_valid         200 204 301 302 307 308 403 404 300m;
+    fastcgi_cache_valid         200 204 301 302 307 308 403 300m;
     fastcgi_cache_revalidate    off;
     fastcgi_cache_use_stale     off;
     
     proxy_cache_path            /dev/shm/ssi levels=1:2 keys_zone=cache_ssi:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
-    proxy_cache_valid           200 204 301 302 307 308 403 404 15m;
+    proxy_cache_valid           200 204 301 302 307 308 403 15m;
     
     keepalive_requests          512000;
     keepalive_timeout           300;
@@ -98,14 +113,16 @@ http {
     pagespeed                   StaticAssetPrefix /static/;
     pagespeed                   LowercaseHtmlNames on;
     pagespeed                   FetchHttps enable;
+    pagespeed                   RespectXForwardedProto on;
     pagespeed                   UseNativeFetcher on;
     pagespeed                   ListOutstandingUrlsOnError on;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
-                                
+    
     pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
+    pagespeed                   InlineResourcesWithoutExplicitAuthorization Script,Stylesheet;
     pagespeed                   LRUCacheByteLimit             65536;
-    pagespeed                   GoogleFontCssInlineMaxBytes   131072;
-    pagespeed                   CssInlineMaxBytes             131072;
+    pagespeed                   GoogleFontCssInlineMaxBytes   262144;
+    pagespeed                   CssInlineMaxBytes             262144;
     pagespeed                   MemcachedServers              "127.0.0.1:11211";
     pagespeed                   MemcachedTimeoutUs            500000;
     
@@ -114,6 +131,8 @@ http {
     
     pagespeed                   MaxCombinedJsBytes 512000;
     pagespeed                   MaxCombinedCssBytes 512000;
+    pagespeed                   CssFlattenMaxBytes 512000;
+    pagespeed                   MinImageSizeLowResolutionBytes 32000;
                                 
     pagespeed                   FileCachePath /dev/shm/ps/file;
     pagespeed                   FileCacheSizeKb <%= @cache_size %>;
@@ -196,25 +215,23 @@ http {
         pagespeed                   EnableFilters rewrite_css,sprite_images;
         pagespeed                   EnableFilters convert_jpeg_to_progressive;
         pagespeed                   EnableFilters convert_jpeg_to_webp;
+        pagespeed                   EnableFilters flatten_css_imports;
+        pagespeed                   EnableFilters inline_preview_images;
+        pagespeed                   EnableFilters resize_mobile_images;
+        pagespeed                   EnableFilters defer_javascript;
         
         add_header                  X-Cache-Status $upstream_cache_status;
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";
-        add_header                  Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        
-        set                         $no_cache 0;
-        
-        if ($request_method = POST) {
-            set $no_cache 1;
-        }
+        add_header                  Strict-Transport-Security "max-age=31536000;" always;
         
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
             add_header              "" "";
         }
-        location ~ "^/static/"      { }
-        location ~ "^/swarm_radar$" { }
+        location ~ ^/static/     { }
+        location ~ ^/swarm_radar { }
         
-        location /nginx {
+        location ~ /nginx {
             stub_status             on;
             
             access_log              off;
@@ -222,7 +239,7 @@ http {
             deny                    all;
         }
         
-        location /upstream {
+        location ~ /upstream {
             check_status            json;
             
             access_log              off;
@@ -231,17 +248,22 @@ http {
         }
         
         location / {
-            index                   index.html index.htm;
-            
+            index                   index.html index.htm index;
             proxy_set_header        Host $host;
             proxy_set_header        X-Real-IP $remote_addr;
             proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_set_header        X-Forwarded-Proto $real_scheme;
             
             proxy_cache             cache_ssi;
-            proxy_cache_key         $request_method$remote_addr$scheme$host$request_uri;
+            proxy_cache_key         $request_method$remote_addr$real_scheme$host$request_uri;
             
             proxy_pass              http://ssi;
+        }
+        
+        set                         $no_cache 0;
+        
+        if ($request_method = POST) {
+            set $no_cache 1;
         }
         
         location ~ \.php$ {
@@ -251,7 +273,7 @@ http {
             aio                     threads=pool_php;
             
             fastcgi_cache           cache_php;
-            fastcgi_cache_key       $request_method$remote_addr$scheme$host$request_uri;
+            fastcgi_cache_key       $request_method$remote_addr$real_scheme$host$request_uri;
             
             fastcgi_cache_bypass    $no_cache;
             fastcgi_no_cache        $no_cache;
@@ -266,20 +288,32 @@ http {
     server {
         listen                      unix:/var/run/ssi.sock;
         server_name                 default_server;
-                                    
-        root                        /html;
+        
         aio                         threads=pool_ssi;
         
+        sendfile                    off;
         gzip                        off;
                                     
         ssi                         on;
         ssi_last_modified           on;
-        ssi_silent_errors           off;
         ssi_types                   application/x-javascript text/css application/javascript text/javascript text/plain;
+        
+        error_log                   /var/log/nginx/ssi_log;
+        log_subrequest              off;
+        ssi_silent_errors           off;
+        
+        set                         $base_path '../domains/$host';
+        
+        if ($uri ~ ^/(.+)/) {
+            set                     $base_path '../../domains/$host';
+        }
                                     
-        location / {                
+        location / {
             ssi                     on;
-            root                    /html;
+            
+            root                    /html/templates;
+            index                   index.html index.htm index;
+            try_files               $uri $uri.html $uri/ /../domains/$host/index.html =404;
         }
     }
 }
