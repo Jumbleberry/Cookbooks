@@ -69,7 +69,7 @@ end
 # If the certificate is not expiring soon, but you need to issue a new one anyways, the --force-issue flag can be provided
 execute "run-letsencrypt-aws" do
     cwd node['letsencrypt_aws']['repo_path']
-    command 'python letsencrypt-aws.py update-certificates'
+    command 'python letsencrypt-aws.py update-certificates &> $HOME/cron-log.txt'
     user 'root'
 end
 
@@ -80,7 +80,7 @@ cron "renew-ssl-certificate" do
   weekday '1'
   home node['letsencrypt_aws']['repo_path']
   environment ({"LETSENCRYPT_AWS_CONFIG" => "#{node['letsencrypt_aws']['config']}".delete!("\n"), "AWS_DEFAULT_REGION" => "#{node['awsRegion']}"})
-  command "python $HOME/letsencrypt-aws.py update-certificates --force-issue"
+  command "python $HOME/letsencrypt-aws.py update-certificates --force-issue &> $HOME/cron-log.txt"
   user 'root'
   action :create
 end
