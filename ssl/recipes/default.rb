@@ -60,8 +60,8 @@ ENV['LETSENCRYPT_AWS_CONFIG'] = node['letsencrypt_aws']['config']
 # Register ACME account (so we dont need to upload the private key)
 execute "register-acme-account" do
     cwd node['letsencrypt_aws']['repo_path']
-    command 'python letsencrypt-aws.py register swarm@jumbleberry.com > acme-private.pem'
-    not_if { ::File.exists?("#{node['letsencrypt_aws']['repo_path']}/acme-private.pem") }
+    command "python letsencrypt-aws.py register swarm@jumbleberry.com > #{node['letsencrypt_aws']['acme_private_key']}"
+    not_if { ::File.exists?("#{node['letsencrypt_aws']['repo_path']}/#{node['letsencrypt_aws']['acme_private_key']}") }
     user 'root'
 end
  
@@ -69,7 +69,7 @@ end
 # If the certificate is not expiring soon, but you need to issue a new one anyways, the --force-issue flag can be provided
 execute "run-letsencrypt-aws" do
     cwd node['letsencrypt_aws']['repo_path']
-    command 'python letsencrypt-aws.py update-certificates &> $HOME/cron-log.txt'
+    command 'python letsencrypt-aws.py update-certificates &> cron-log.txt'
     user 'root'
 end
 
