@@ -1,34 +1,34 @@
-user                    www-data;
-pid                     /var/run/nginx.pid;
-
-worker_processes        auto;
-worker_rlimit_nofile    124000;
-
-thread_pool             default  threads=32 max_queue=65536;
-thread_pool             pool_ssi threads=32 max_queue=65536;
-thread_pool             pool_ps  threads=32 max_queue=65536;
-thread_pool             pool_php threads=32 max_queue=65536;
+user                            www-data;
+pid                             /var/run/nginx.pid;
+                                
+worker_processes                auto;
+worker_rlimit_nofile            124000;
+                                
+thread_pool                     default  threads=32 max_queue=65536;
+thread_pool                     pool_ssi threads=32 max_queue=65536;
+thread_pool                     pool_ps  threads=32 max_queue=65536;
+thread_pool                     pool_php threads=32 max_queue=65536;
 
 events {
-    worker_connections  65536;
-    use                 epoll;
-    multi_accept        on;
+    worker_connections          65536;
+    use                         epoll;
+    multi_accept                on; 
 }
 
 http {
     map $http_x_forwarded_proto $real_scheme {
-        'http'          $http_x_forwarded_proto;
-        'https'         $http_x_forwarded_proto;
-        default         $scheme;
-        '-'             $scheme;
+        'http'                  $http_x_forwarded_proto;
+        'https'                 $http_x_forwarded_proto;
+        default                 $scheme;
+        '-'                     $scheme;
     }
     
     map $subdomain $device {
-        'm'                     'mobile/';
-        'tablet'                'tablet/';
-        'www'                   'desktop/';
-        default                 'default/';
-        ''                      'default/';
+        'm'                     'mobile';
+        'tablet'                'tablet';
+        'www'                   'desktop';
+        default                 'default';
+        ''                      'default';
     }
 
     server_tokens               off;
