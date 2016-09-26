@@ -222,6 +222,7 @@ http {
         pagespeed                   EnableFilters inline_preview_images;
         pagespeed                   EnableFilters resize_mobile_images;
         pagespeed                   EnableFilters defer_javascript;
+        pagespeed                   EnableFilters combine_javascript,combine_css;
         
         add_header                  X-Cache-Status $upstream_cache_status;
         add_header                  X-Frame-Options SAMEORIGIN;
@@ -250,7 +251,7 @@ http {
             deny                    all;
         }
         
-        location ~ ^/(?<theme>[^/]*)/?(?<path>.*)?$ {
+        location ~ ^/(?<theme>[^/]*)(?<path>/.*)?$ {
             proxy_set_header        Host $domain;
             proxy_cache             cache_ssi;
             proxy_cache_key         $real_scheme$domain$uri;
@@ -307,11 +308,17 @@ http {
             try_files               $version$path $default$path @empty;
         }
         
-        location ~ ^(?<theme>/[^/]*)?(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)$ {
-            root                    /html/templates$theme;
+        location ~ ^(?<theme>/[^/]*)?(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
+            root                    /html/templates;
+            index                   $theme$version$path/index.html                      $theme$default$path/index.html 
+                                    /../domains/$host$version$theme$path/index.html     /../domains/$host$default$theme$path/index.html;
             
             set                     $base_path '/../domains/$host$version';
-            try_files               $version$path $version${path}/index.html $default$path $default${path}/index.html =404;
+            try_files               $theme$version$path                     $theme$version$path.html                              $theme$version$path/index.html
+                                    $theme$default$path                     $theme$default$path.html                              $theme$default$path/index.html
+                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html             /../domains/$host$version$theme$path/index.html
+                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html             /../domains/$host$default$theme$path/index.html
+                                    =404;
         }
         
         location @empty {
