@@ -235,7 +235,7 @@ http {
         location ~ ^/static/     { }
         location ~ ^/swarm_radar { }
         
-        location ~ /nginx {
+        location ~ ^/nginx {
             stub_status             on;
             
             access_log              off;
@@ -243,7 +243,7 @@ http {
             deny                    all;
         }
         
-        location ~ /upstream {
+        location ~ ^/upstream {
             check_status            json;
             
             access_log              off;
@@ -310,14 +310,16 @@ http {
         
         location ~ ^(?<theme>/[^/]*)?(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
             root                    /html/templates;
-            index                   $theme$version$path/index.html                      $theme$default$path/index.html 
-                                    /../domains/$host$version$theme$path/index.html     /../domains/$host$default$theme$path/index.html;
             
             set                     $base_path '/../domains/$host$version';
-            try_files               $theme$version$path                     $theme$version$path.html                              $theme$version$path/index.html
-                                    $theme$default$path                     $theme$default$path.html                              $theme$default$path/index.html
-                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html             /../domains/$host$version$theme$path/index.html
-                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html             /../domains/$host$default$theme$path/index.html
+            
+            index                   $theme$version${path}index.html                      $theme$default${path}index.html 
+                                    /../domains/$host$version$theme${path}index.html     /../domains/$host$default$theme${path}index.html;
+            
+            try_files               $theme$version$path                     $theme$version$path.html
+                                    $theme$default$path                     $theme$default$path.html
+                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html
+                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html
                                     =404;
         }
         
