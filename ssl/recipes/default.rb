@@ -75,9 +75,7 @@ end
 
 # Set up weekly cron to auto-renew certificates
 cron "renew-ssl-certificate" do
-  minute '0'
-  hour '0'
-  weekday '1'
+  minute '*'
   home node['letsencrypt_aws']['repo_path']
   environment ({"LETSENCRYPT_AWS_CONFIG" => "#{node['letsencrypt_aws']['config']}".delete!("\n"), "AWS_DEFAULT_REGION" => "#{node['awsRegion']}"})
   command "python $HOME/letsencrypt-aws.py update-certificates --force-issue &> $HOME/cron-log.txt"

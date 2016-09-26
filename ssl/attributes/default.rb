@@ -3,9 +3,11 @@ default['letsencrypt_aws']['hosts'] = '["jbxstatic.com", "jbxswarm.com", "www.jb
 default['letsencrypt_aws']['github_url'] = 'https://github.com/Hao-Jumbleberry/letsencrypt-aws.git'
 default['letsencrypt_aws']['branch'] = 'elbv2'
 default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'
-default['letsencrypt_aws']['acme_private_key'] = 'acme-private.pem'
+# default['letsencrypt_aws']['acme_private_key'] = 'acme-private.pem'
+default['letsencrypt_aws']['acme_private_key'] = 'acme-staging-private.pem'
 default['letsencrypt_aws']['acme_account_key'] = 'file:///var/www/letsencrypt-aws/' + default['letsencrypt_aws']['acme_private_key']
-default['letsencrypt_aws']['acme_directory_url'] = 'https://acme-v01.api.letsencrypt.org/directory'
+# default['letsencrypt_aws']['acme_directory_url'] = 'https://acme-v01.api.letsencrypt.org/directory'
+default['letsencrypt_aws']['acme_directory_url'] = 'https://acme-staging.api.letsencrypt.org/directory'
 
 # Build the config json object
 default['letsencrypt_aws']['config'] = '{
