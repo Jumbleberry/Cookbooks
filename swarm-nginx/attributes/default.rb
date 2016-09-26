@@ -1,4 +1,4 @@
-default['phpHost']                              = '127.0.0.1:9000';
+default['phpHost']                              = 'localhost:9000';
 default['nginx_swarm']['worker_processes']      = 4
 default['nginx_swarm']['worker_connections']    = 2048
 default['nginx_swarm']['certs']                 = []
