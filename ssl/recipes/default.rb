@@ -13,7 +13,7 @@ end
 # Pull letsencrypt-aws repo from Github
 git node['letsencrypt_aws']['repo_path'] do
   repository node['letsencrypt_aws']['github_url']
-  revision 'master'
+  revision node['letsencrypt_aws']['branch']
   action :sync
   notifies :run, 'execute[pip-upgrade-requests]', :immediate
   notifies :run, 'execute[install-letencrypt-aws]', :immediate

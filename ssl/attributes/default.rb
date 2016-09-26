@@ -23,14 +23,14 @@ default['ssl']['packages'] = [
 ]
 
 # Letsencrypt-aws config
-default['letsencrypt_aws']['github_url'] = 'https://github.com/alex/letsencrypt-aws.git'
+default['letsencrypt_aws']['github_url'] = 'https://github.com/Hao-Jumbleberry/letsencrypt-aws.git'
+default['letsencrypt_aws']['branch'] = 'elbv2'
 default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'
 default['letsencrypt_aws']['config'] = '{
     "domains": [
         {
             "elb": {
                 "arn": "' + node['nginxElbArn'] + '",
-                "targetArn": "' + node['nginxElbTargetArn'] + '",
                 "port": "443"
             },
             "hosts": ["jbxstatic.com", "jbxswarm.com", "www.jbxstatic.com", "www.jbxswarm.com"],
