@@ -224,10 +224,11 @@ http {
         pagespeed                   EnableFilters defer_javascript;
         pagespeed                   EnableFilters combine_javascript,combine_css;
         
-        add_header                  X-Cache-Status $upstream_cache_status;
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";
         add_header                  Strict-Transport-Security "max-age=31536000;" always;
+        
+        set                         $default 'default';
         
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
             add_header              "" "";
