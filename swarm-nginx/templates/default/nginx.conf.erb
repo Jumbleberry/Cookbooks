@@ -1,34 +1,34 @@
-user                    www-data;
-pid                     /var/run/nginx.pid;
-
-worker_processes        auto;
-worker_rlimit_nofile    124000;
-
-thread_pool             default  threads=32 max_queue=65536;
-thread_pool             pool_ssi threads=32 max_queue=65536;
-thread_pool             pool_ps  threads=32 max_queue=65536;
-thread_pool             pool_php threads=32 max_queue=65536;
+user                            www-data;
+pid                             /var/run/nginx.pid;
+                                
+worker_processes                auto;
+worker_rlimit_nofile            124000;
+                                
+thread_pool                     default  threads=32 max_queue=65536;
+thread_pool                     pool_ssi threads=32 max_queue=65536;
+thread_pool                     pool_ps  threads=32 max_queue=65536;
+thread_pool                     pool_php threads=32 max_queue=65536;
 
 events {
-    worker_connections  65536;
-    use                 epoll;
-    multi_accept        on;
+    worker_connections          65536;
+    use                         epoll;
+    multi_accept                on; 
 }
 
 http {
     map $http_x_forwarded_proto $real_scheme {
-        'http'          $http_x_forwarded_proto;
-        'https'         $http_x_forwarded_proto;
-        default         $scheme;
-        ''              $scheme;
+        'http'                  $http_x_forwarded_proto;
+        'https'                 $http_x_forwarded_proto;
+        default                 $scheme;
+        '-'                     $scheme;
     }
     
     map $subdomain $device {
-        'm'                     'mobile/';
-        'tablet'                'tablet/';
-        'www'                   'desktop/';
-        default                 '';
-        ''                      '';
+        'm'                     'mobile';
+        'tablet'                'tablet';
+        'www'                   'desktop';
+        default                 'default';
+        ''                      'default';
     }
 
     server_tokens               off;
@@ -69,7 +69,7 @@ http {
     send_timeout                120;
 
     open_file_cache             max=16384 inactive=300m;
-    open_file_cache_valid       15m;
+    open_file_cache_valid       5m;
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
     
@@ -166,7 +166,7 @@ http {
     server {
         listen 80 reuseport deferred fastopen=16384 backlog=16384;
         listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=16384;
-        server_name default_server;
+        server_name ~^((?<subdomain>www|m|tablet)\.)?(?<domain>.+)$ default_server;
         
         root                        /html;
         aio                         threads=pool_ps;
@@ -196,12 +196,15 @@ http {
         #ssl_certificate_key         /html/certs/ssl.key;
         
         pagespeed                   on;
-                                    
-        pagespeed                   Domain $host;
-        pagespeed                   Domain *.$host;
-        pagespeed                   MapOriginDomain localhost *.$host $host;
-        pagespeed                   LoadFromFileMatch "^https?://$host/(.*)" "/html/\\1";
-                                    
+        
+        pagespeed                   Domain $domain;
+        pagespeed                   Domain *.$domain;
+        
+        pagespeed                   MapOriginDomain localhost $domain $real_scheme$host;
+        pagespeed                   MapOriginDomain localhost *.$domain $real_scheme$host;
+        
+        #pagespeed                   LoadFromFileMatch "^https?://$host/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
+        
         pagespeed                   EnableFilters add_instrumentation;
         pagespeed                   EnableFilters collapse_whitespace;
         pagespeed                   EnableFilters dedup_inlined_images;
@@ -219,6 +222,7 @@ http {
         pagespeed                   EnableFilters inline_preview_images;
         pagespeed                   EnableFilters resize_mobile_images;
         pagespeed                   EnableFilters defer_javascript;
+        pagespeed                   EnableFilters combine_javascript,combine_css;
         
         add_header                  X-Cache-Status $upstream_cache_status;
         add_header                  X-Frame-Options SAMEORIGIN;
@@ -231,7 +235,7 @@ http {
         location ~ ^/static/     { }
         location ~ ^/swarm_radar { }
         
-        location ~ /nginx {
+        location ~ ^/nginx {
             stub_status             on;
             
             access_log              off;
@@ -239,7 +243,7 @@ http {
             deny                    all;
         }
         
-        location ~ /upstream {
+        location ~ ^/upstream {
             check_status            json;
             
             access_log              off;
@@ -247,17 +251,12 @@ http {
             deny                    all;
         }
         
-        location / {
-            index                   index.html index.htm index;
-            proxy_set_header        Host $host;
-            proxy_set_header        X-Real-IP $remote_addr;
-            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $real_scheme;
-            
+        location ~ ^/(?<theme>[^/]*)(?<path>/.*)?$ {
+            proxy_set_header        Host $domain;
             proxy_cache             cache_ssi;
-            proxy_cache_key         $request_method$remote_addr$real_scheme$host$request_uri;
+            proxy_cache_key         $real_scheme$domain$uri;
             
-            proxy_pass              http://ssi;
+            proxy_pass              http://ssi/$theme/$device$path;
         }
         
         set                         $no_cache 0;
@@ -298,22 +297,34 @@ http {
         ssi_last_modified           on;
         ssi_types                   application/x-javascript text/css application/javascript text/javascript text/plain;
         
-        error_log                   /var/log/nginx/ssi_log;
         log_subrequest              off;
         ssi_silent_errors           off;
         
-        set                         $base_path '../domains/$host';
+        set                         $default '/default';
         
-        if ($uri ~ ^/(.+)/) {
-            set                     $base_path '../../domains/$host';
-        }
-                                    
-        location / {
-            ssi                     on;
+        location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)$ {
+            root                    /html/domains/$domain;
             
+            try_files               $version$path $default$path @empty;
+        }
+        
+        location ~ ^(?<theme>/[^/]*)?(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
             root                    /html/templates;
-            index                   index.html index.htm index;
-            try_files               $uri $uri.html $uri/ /../domains/$host/index.html =404;
+            
+            set                     $base_path '/../domains/$host$version';
+            
+            index                   $theme$version${path}index.html                      $theme$default${path}index.html 
+                                    /../domains/$host$version$theme${path}index.html     /../domains/$host$default$theme${path}index.html;
+            
+            try_files               $theme$version$path                     $theme$version$path.html
+                                    $theme$default$path                     $theme$default$path.html
+                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html
+                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html
+                                    =404;
+        }
+        
+        location @empty {
+            return 200 "";
         }
     }
 }
