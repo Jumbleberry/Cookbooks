@@ -24,11 +24,11 @@ http {
     }
     
     map $subdomain $device {
-        'm'                     'mobile';
-        'tablet'                'tablet';
-        'www'                   'desktop';
-        default                 'default';
-        ''                      'default';
+        'm.'                     'mobile';
+        'tablet.'                'tablet';
+        'www.'                   'desktop';
+        default                  'default';
+        ''                       'default';
     }
 
     server_tokens               off;
@@ -166,7 +166,7 @@ http {
     server {
         listen 80 reuseport deferred fastopen=16384 backlog=16384;
         listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=16384;
-        server_name ~^((?<subdomain>www|m|tablet)\.)?(?<domain>.+)$ default_server;
+        server_name ~^(?<subdomain>(www|m|tablet)\.)?(?<domain>.+)$ default_server;
         
         root                        /html;
         aio                         threads=pool_ps;
@@ -226,7 +226,7 @@ http {
         
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";
-        add_header                  Strict-Transport-Security "max-age=31536000;" always;
+        #add_header                  Strict-Transport-Security "max-age=31536000;" always;
         
         set                         $default 'default';
         
@@ -252,25 +252,25 @@ http {
             deny                    all;
         }
         
-        location ~ ^/(?<theme>[^/]*)(?<path>/.*)?$ {
-            proxy_set_header        Host $domain;
-            proxy_cache             cache_ssi;
-            proxy_cache_key         $real_scheme$domain$uri;
-            
-            proxy_pass              http://ssi/$theme/$device$path;
-        }
-        
         set                         $no_cache 0;
         
         if ($request_method = POST) {
             set $no_cache 1;
         }
         
-        location ~ \.php$ {
-            try_files               $fastcgi_script_name =403;
+        rewrite                     ^(.*)\.php$ $1 redirect;
+        
+        location ~ ^(?<theme>/[^/]*)(?<path>/.*)?$ {
+            root                    /html/templates;
             include                 /etc/nginx/fastcgi.conf;
             
             aio                     threads=pool_php;
+            
+            try_files               $theme/$device$path.php                        $theme/$device$path/index.php
+                                    $theme/$default$path.php                       $theme/$default$path/index.php
+                                    /../domains/$domain/$device$theme$path.php     /../domains/$domain/$device$theme$path/index.php
+                                    /../domains/$domain/$default$theme$path.php    /../domains/$domain/$default$theme$path/index.php
+                                    @ssi;
             
             fastcgi_cache           cache_php;
             fastcgi_cache_key       $request_method$remote_addr$real_scheme$host$request_uri;
@@ -278,11 +278,24 @@ http {
             fastcgi_cache_bypass    $no_cache;
             fastcgi_no_cache        $no_cache;
             
+            fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
+            fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
+            fastcgi_param           QUERY_STRING       "domain=/$domain&device=/$device&theme=$theme&path=$path";
+            
             fastcgi_split_path_info ^(.+\.php)(/.+)$;
             set                     $path_info $fastcgi_path_info;
             fastcgi_param           PATH_INFO $path_info;
             
             fastcgi_pass            php;
+        }
+        
+        location @ssi {
+            proxy_set_header        Host $domain;
+            proxy_set_header        X-Real-Host $subdomain$domain;
+            proxy_cache             cache_ssi;
+            proxy_cache_key         $real_scheme$domain$uri;
+            
+            proxy_pass              http://ssi$theme/$device$path;
         }
     }
     server {
@@ -303,6 +316,8 @@ http {
         
         set                         $default '/default';
         
+        rewrite                     ^(/[^/]+)(/(default|mobile|desktop|tablet))$ $real_scheme://$http_x_real_host$1/ redirect;
+        
         location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)$ {
             root                    /html/domains/$domain;
             
@@ -314,13 +329,10 @@ http {
             
             set                     $base_path '/../domains/$host$version';
             
-            index                   $theme$version${path}index.html                      $theme$default${path}index.html 
-                                    /../domains/$host$version$theme${path}index.html     /../domains/$host$default$theme${path}index.html;
-            
-            try_files               $theme$version$path                     $theme$version$path.html
-                                    $theme$default$path                     $theme$default$path.html
-                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html
-                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html
+            try_files               $theme$version$path                     $theme$version$path.html                    $theme$version$path/index.html
+                                    $theme$default$path                     $theme$default$path.html                    $theme$default$path/index.html
+                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html   /../domains/$host$version$theme$path/index.html
+                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html   /../domains/$host$default$theme$path/index.html
                                     =404;
         }
         
