@@ -153,12 +153,7 @@ http {
       '"$request" $status $bytes_sent '
       '"$http_referer" "$http_user_agent" '
   		'"$gzip_ratio"';
-
-    log_format download  '$remote_addr - $remote_user [$time_local]  '
-      '"$request" $status $bytes_sent '
-      '"$http_referer" "$http_user_agent" '
-  		'"$http_range" "$sent_http_content_range"';
-
+    
     log_not_found               off;
     access_log                  off;
     error_log                   off;
@@ -260,16 +255,22 @@ http {
         
         rewrite                     ^(.*)\.php$ $1 redirect;
         
-        location ~ ^(?<theme>/[^/]*)(?<path>/.*)?$ {
-            root                    /html/templates;
+        location ~ ^(?<theme>/[^/.]*)?(?<path>/.*)$ {
+            root                    /html;
             include                 /etc/nginx/fastcgi.conf;
             
             aio                     threads=pool_php;
             
-            try_files               $theme/$device$path.php                        $theme/$device$path/index.php
-                                    $theme/$default$path.php                       $theme/$default$path/index.php
-                                    /../domains/$domain/$device$theme$path.php     /../domains/$domain/$device$theme$path/index.php
-                                    /../domains/$domain/$default$theme$path.php    /../domains/$domain/$default$theme$path/index.php
+            try_files               /domains/$domain$theme/$device$path.php         /domains/$domain$theme/$default$path.php
+                                    /domains/$domain/$device$path.php               /domains/$domain/$default$path.php
+                                    /domains/$domain$theme/$device$path/index.php   /domains/$domain$theme/$default$path/index.php
+                                    /domains/$domain/$device$path/index.php         /domains/$domain/$default$path/index.php
+                                    
+                                    /templates$theme/$device$path.php               /templates$theme/$default$path.php
+                                    /templates/$device$path.php                     /templates/$default$path.php
+                                    /templates$theme/$device$path/index.php         /templates$theme/$default$path/index.php
+                                    /templates/$device$path/index.php               /templates/$default$path/index.php
+                                    
                                     @ssi;
             
             fastcgi_cache           cache_php;
@@ -280,7 +281,11 @@ http {
             
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
-            fastcgi_param           QUERY_STRING       "domain=/$domain&device=/$device&theme=$theme&path=$path";
+            
+            fastcgi_param           SWARM_DOMAIN "/$domain";
+            fastcgi_param           SWARM_DEVICE "/$device";
+            fastcgi_param           SWARM_THEME "$theme";
+            fastcgi_param           SWARM_PATH "$path";
             
             fastcgi_split_path_info ^(.+\.php)(/.+)$;
             set                     $path_info $fastcgi_path_info;
@@ -292,6 +297,7 @@ http {
         location @ssi {
             proxy_set_header        Host $domain;
             proxy_set_header        X-Real-Host $subdomain$domain;
+            
             proxy_cache             cache_ssi;
             proxy_cache_key         $real_scheme$domain$uri;
             
