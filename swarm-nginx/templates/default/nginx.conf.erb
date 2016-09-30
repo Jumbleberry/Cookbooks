@@ -255,7 +255,7 @@ http {
         
         rewrite                     ^(.*)\.php$ $1 redirect;
         
-        location ~ ^(?<theme>/[^/.]*)?(?<path>/.*)$ {
+        location ~ ^(?<theme>/[^/.]*(?!/$))?(?<path>/.*)$ {
             root                    /html;
             include                 /etc/nginx/fastcgi.conf;
             
@@ -263,11 +263,13 @@ http {
             
             try_files               /domains/$domain$theme/$device$path.php         /domains/$domain$theme/$default$path.php
                                     /domains/$domain/$device$path.php               /domains/$domain/$default$path.php
-                                    /domains/$domain$theme/$device$path/index.php   /domains/$domain$theme/$default$path/index.php
-                                    /domains/$domain/$device$path/index.php         /domains/$domain/$default$path/index.php
                                     
                                     /templates$theme/$device$path.php               /templates$theme/$default$path.php
                                     /templates/$device$path.php                     /templates/$default$path.php
+                                    
+                                    /domains/$domain$theme/$device$path/index.php   /domains/$domain$theme/$default$path/index.php
+                                    /domains/$domain/$device$path/index.php         /domains/$domain/$default$path/index.php
+                                    
                                     /templates$theme/$device$path/index.php         /templates$theme/$default$path/index.php
                                     /templates/$device$path/index.php               /templates/$default$path/index.php
                                     
@@ -322,28 +324,66 @@ http {
         
         set                         $default '/default';
         
-        rewrite                     ^(/[^/]+)(/(default|mobile|desktop|tablet))$ $real_scheme://$http_x_real_host$1/ redirect;
-        
-        location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)$ {
+        location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
             root                    /html/domains/$domain;
             
-            try_files               $version$path $default$path @empty;
+            try_files               $theme$version$path $theme$default$path $version$path $default$path @empty;
         }
         
-        location ~ ^(?<theme>/[^/]*)?(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
+        location ~ ^(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/]*)(?<sep>/)?$ {
             root                    /html/templates;
             
-            set                     $base_path '/../domains/$host$version';
+            set                     $base_path '/../domains/$host$version$theme';
+            if ($theme ~ '\.') {
+                set                 $base_path '/../domains/$host$version';
+            }
             
-            try_files               $theme$version$path                     $theme$version$path.html                    $theme$version$path/index.html
-                                    $theme$default$path                     $theme$default$path.html                    $theme$default$path/index.html
-                                    /../domains/$host$version$theme$path    /../domains/$host$version$theme$path.html   /../domains/$host$version$theme$path/index.html
-                                    /../domains/$host$default$theme$path    /../domains/$host$default$theme$path.html   /../domains/$host$default$theme$path/index.html
-                                    =404;
+            try_files               /../domains/$host$theme${version}/index.html  /../domains/$host$theme${default}/index.html
+                                    
+                                    /../domains/$host$version$theme$sep           /../domains/$host$version$theme$sep.html          /../domains/$host$version${theme}${sep}index.html
+                                    /../domains/$host$default$theme$sep           /../domains/$host$default$theme$sep.html          /../domains/$host$default${theme}${sep}index.html
+                                    
+                                    $theme${version}${sep}index.html              $theme${default}${sep}index.html
+                                    
+                                    $version$theme                                $version$theme.html                               $version${theme}${sep}index.html
+                                    $default$theme                                $default$theme.html                               $default${theme}${sep}index.html
+                                    
+                                    @directory;
+        }
+        
+        location ~ ^(?<theme>/[^/.]*)(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
+            root                    /html/templates;
+            
+            set                     $base_path '/../domains/$host$version$theme';
+            
+            try_files               /../domains/$host$theme$version$path                /../domains/$host$theme$version$path.html       /../domains/$host$theme$version${path}index.html
+                                    /../domains/$host$theme$default$path                /../domains/$host$theme$default$path.html       /../domains/$host$theme$default${path}index.html
+                                    /../domains/$host$version$path                      /../domains/$host$version$path.html             /../domains/$host$version${path}index.html
+                                    /../domains/$host$default$path                      /../domains/$host$default$path.html             /../domains/$host$default${path}index.html
+                                    
+                                    $theme$version$path                                 $theme$version$path.html                        $theme$version${path}index.html
+                                    $theme$default$path                                 $theme$default$path.html                        $theme$default${path}index.html
+                                    $version$path                                       $version$path.html                              $version${path}index.html
+                                    $default$path                                       $default$path.html                              $default${path}index.html
+                                    
+                                    @directory;
         }
         
         location @empty {
             return 200 "";
         }
+        
+        location @directory {
+            rewrite ^(/(default|mobile|desktop|tablet))(/[^/.]+)$                   $real_scheme://$http_x_real_host$3/ redirect;
+            rewrite ^(/[^/.]+)(/(default|mobile|desktop|tablet))(/.*)?(/[^/.]+)$    $real_scheme://$http_x_real_host$1$5/ redirect;
+            
+            return 301 $real_scheme://$http_x_real_host/;
+        }
+        
+        location / {
+            return 301 $real_scheme://$http_x_real_host/;
+        }
+        
+        error_page 403 404 405 500 501 502 503 504 505 =200 /;
     }
 }
