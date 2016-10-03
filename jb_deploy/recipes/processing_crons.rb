@@ -128,7 +128,7 @@ cron "Processing - Cap Sunday Snapshot" do
   hour '0-23'
   weekday '0,5,6'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Monday Snapshot" do
