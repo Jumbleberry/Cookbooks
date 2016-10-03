@@ -164,7 +164,7 @@ cron "Processing - Cap Unapprovals Friday" do
   hour '16-23'
   weekday '5'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Unapprovals Weekends" do
@@ -173,5 +173,5 @@ cron "Processing - Cap Unapprovals Weekends" do
   hour '0-23'
   weekday '0,6'
   user 'www-data'
-  action :create
+  action :delete
 end
