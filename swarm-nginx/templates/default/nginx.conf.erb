@@ -283,6 +283,7 @@ http {
             
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
+            fastcgi_param           SERVER_NAME        $subdomain$domain;
             
             fastcgi_param           SWARM_DOMAIN "/$domain";
             fastcgi_param           SWARM_DEVICE "/$device";
