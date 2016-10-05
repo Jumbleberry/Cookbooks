@@ -182,7 +182,7 @@ http {
     
     server {
         listen 80 reuseport deferred fastopen=16384 backlog=16384;
-        listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=16384;
+        listen 443 reuseport deferred fastopen=16384 backlog=16384;
         server_name ~^(?<subdomain>(www|m|tablet)\.)?(?<domain>.+)$ default_server;
         
         root                        /html;
