@@ -215,6 +215,8 @@ http {
         
         pagespeed                   Domain $domain;
         pagespeed                   Domain *.$domain;
+        pagespeed                   Domain https://$domain;
+        pagespeed                   Domain https://*.$domain;
         
         pagespeed                   MapOriginDomain http://localhost http://$domain http://$subdomain$domain;
         pagespeed                   MapOriginDomain http://localhost http://*.$domain http://$subdomain$domain;
@@ -303,7 +305,7 @@ http {
                                     @ssi;
             
             fastcgi_cache           cache_php;
-            fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme://$host$request_uri;
+            fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme$subdomain$domain$request_uri;
             
             fastcgi_cache_bypass    $no_cache;
             fastcgi_no_cache        $no_cache;
@@ -329,7 +331,7 @@ http {
             proxy_set_header        X-Real-Host $subdomain$domain;
             
             proxy_cache             cache_ssi;
-            proxy_cache_key         $real_scheme$domain$uri;
+            proxy_cache_key         $real_scheme$subdomain$domain$uri;
             
             proxy_pass              http://ssi$theme/$device$path;
         }
