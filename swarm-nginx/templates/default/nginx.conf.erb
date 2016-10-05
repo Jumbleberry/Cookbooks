@@ -23,12 +23,33 @@ http {
         '-'                     $scheme;
     }
     
+    map $http_user_agent $is_xp {
+        '~*Windows NT 5.1'      1;
+        default                 0;
+    }
+    
+    map $http_user_agent $whitelist_browser {
+        '~*Firefox'             1;
+        default                 0;
+    }
+    
+    map $real_scheme$is_xp$whitelist_browser $use_ssl {
+        '~*http10'              0;
+        '~*https'               0;
+        default                 1;
+    }
+    
+    map $real_scheme $hsts {
+        'https'                 "max-age=31536000; always";
+        default                 "";
+    }
+    
     map $subdomain $device {
-        'm.'                     'mobile';
-        'tablet.'                'tablet';
-        'www.'                   'desktop';
-        default                  'default';
-        ''                       'default';
+        'm.'                    'mobile';
+        'tablet.'               'tablet';
+        'www.'                  'desktop';
+        default                 'default';
+        ''                      'default';
     }
 
     server_tokens               off;
@@ -195,8 +216,8 @@ http {
         pagespeed                   Domain $domain;
         pagespeed                   Domain *.$domain;
         
-        pagespeed                   MapOriginDomain localhost $domain $real_scheme$host;
-        pagespeed                   MapOriginDomain localhost *.$domain $real_scheme$host;
+        pagespeed                   MapOriginDomain localhost $domain $real_scheme://$host;
+        pagespeed                   MapOriginDomain localhost *.$domain $real_scheme://$host;
         
         #pagespeed                   LoadFromFileMatch "^https?://$host/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
         
@@ -221,7 +242,11 @@ http {
         
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";
-        #add_header                  Strict-Transport-Security "max-age=31536000;" always;
+        add_header                  Strict-Transport-Security $hsts;
+        
+        if ($use_ssl = 1) {
+            return 301 https://$subdomain$domain$request_uri;
+        }
         
         set                         $default 'default';
         
