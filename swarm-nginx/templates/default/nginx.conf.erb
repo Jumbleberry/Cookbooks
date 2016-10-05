@@ -219,10 +219,10 @@ http {
         pagespeed                   Domain https://$domain;
         pagespeed                   Domain https://*.$domain;
         
-        pagespeed                   MapOriginDomain http://localhost http://$domain http://$subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost http://*.$domain http://$subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost https://$domain https://$subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost https://*.$domain https://$subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost http://$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost http://*.$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost https://$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost https://*.$domain $subdomain$domain;
         
         #pagespeed                   LoadFromFileMatch "^https?://$host/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
         
