@@ -23,8 +23,9 @@ http {
         '-'                     $scheme;
     }
     
-    map $http_user_agent $is_xp {
+    map $http_user_agent $is_whitelist {
         '~*Windows NT 5.1'      1;
+        '~*NgxNativeFetcher'    2;
         default                 0;
     }
     
@@ -39,8 +40,9 @@ http {
         default                 0;
     }
     
-    map $real_scheme$has_host$is_xp$whitelist_browser $use_ssl {
+    map $real_scheme$has_host$is_whitelist$whitelist_browser $use_ssl {
         '~*http0'               0;
+        '~*http.2'              0;
         '~*http110'             0;
         '~*https'               0;
         default                 1;
