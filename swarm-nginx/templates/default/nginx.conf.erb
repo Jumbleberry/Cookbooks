@@ -23,12 +23,33 @@ http {
         '-'                     $scheme;
     }
     
+    map $http_user_agent $is_xp {
+        '~*Windows NT 5.1'      1;
+        default                 0;
+    }
+    
+    map $http_user_agent $whitelist_browser {
+        '~*Firefox'             1;
+        default                 0;
+    }
+    
+    map $real_scheme$is_xp$whitelist_browser $use_ssl {
+        '~*http10'              0;
+        '~*https'               0;
+        default                 1;
+    }
+    
+    map $real_scheme $hsts {
+        'https'                 "max-age=31536000; always";
+        default                 "";
+    }
+    
     map $subdomain $device {
-        'm.'                     'mobile';
-        'tablet.'                'tablet';
-        'www.'                   'desktop';
-        default                  'default';
-        ''                       'default';
+        'm.'                    'mobile';
+        'tablet.'               'tablet';
+        'www.'                  'desktop';
+        default                 'default';
+        ''                      'default';
     }
 
     server_tokens               off;
@@ -152,6 +173,7 @@ http {
     log_format main      '$remote_addr - $remote_user [$time_local]  '
       '"$request" $status $bytes_sent '
       '"$http_referer" "$http_user_agent" '
+      '"$real_scheme" "$subdomain" "$domain" "$use_ssl" '
   		'"$gzip_ratio"';
     
     log_not_found               off;
@@ -160,7 +182,7 @@ http {
     
     server {
         listen 80 reuseport deferred fastopen=16384 backlog=16384;
-        listen 443 ssl spdy http2 reuseport deferred fastopen=16384 backlog=16384;
+        listen 443 reuseport deferred fastopen=16384 backlog=16384;
         server_name ~^(?<subdomain>(www|m|tablet)\.)?(?<domain>.+)$ default_server;
         
         root                        /html;
@@ -194,9 +216,13 @@ http {
         
         pagespeed                   Domain $domain;
         pagespeed                   Domain *.$domain;
+        pagespeed                   Domain https://$domain;
+        pagespeed                   Domain https://*.$domain;
         
-        pagespeed                   MapOriginDomain localhost $domain $real_scheme$host;
-        pagespeed                   MapOriginDomain localhost *.$domain $real_scheme$host;
+        pagespeed                   MapOriginDomain http://localhost http://$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost http://*.$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost https://$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost https://*.$domain $subdomain$domain;
         
         #pagespeed                   LoadFromFileMatch "^https?://$host/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
         
@@ -221,7 +247,11 @@ http {
         
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";
-        #add_header                  Strict-Transport-Security "max-age=31536000;" always;
+        add_header                  Strict-Transport-Security $hsts;
+        
+        if ($use_ssl = 1) {
+            return 301 https://$subdomain$domain$request_uri;
+        }
         
         set                         $default 'default';
         
@@ -276,7 +306,7 @@ http {
                                     @ssi;
             
             fastcgi_cache           cache_php;
-            fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme://$host$request_uri;
+            fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme$subdomain$domain$request_uri;
             
             fastcgi_cache_bypass    $no_cache;
             fastcgi_no_cache        $no_cache;
@@ -302,7 +332,7 @@ http {
             proxy_set_header        X-Real-Host $subdomain$domain;
             
             proxy_cache             cache_ssi;
-            proxy_cache_key         $real_scheme$domain$uri;
+            proxy_cache_key         $real_scheme$subdomain$domain$uri;
             
             proxy_pass              http://ssi$theme/$device$path;
         }
