@@ -134,8 +134,9 @@ http {
     pagespeed                   StaticAssetPrefix /static/;
     pagespeed                   LowercaseHtmlNames on;
     pagespeed                   FetchHttps enable;
-    pagespeed                   RespectXForwardedProto on;
+    #pagespeed                   RespectXForwardedProto on;
     pagespeed                   UseNativeFetcher on;
+    pagespeed                   SslCertDirectory /etc/ssl/certs/;
     pagespeed                   ListOutstandingUrlsOnError on;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
     
@@ -188,6 +189,10 @@ http {
         root                        /html;
         aio                         threads=pool_ps;
         
+        set                         $default 'default';
+        set                         $real_protocol "$real_scheme://";
+        set                         $this_protocol "$scheme://";
+        
         gzip                        on;
         gzip_vary                   on;
         gzip_proxied                any;
@@ -214,17 +219,15 @@ http {
         
         pagespeed                   on;
         
-        pagespeed                   Domain $domain;
-        pagespeed                   Domain *.$domain;
-        pagespeed                   Domain https://$domain;
-        pagespeed                   Domain https://*.$domain;
+        pagespeed                   Domain $this_protocol$subdomain$domain;
         
-        pagespeed                   MapOriginDomain http://localhost http://$domain $subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost http://*.$domain $subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost https://$domain $subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost https://*.$domain $subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost $real_protocol$domain $real_protocol$domain;
+        pagespeed                   MapOriginDomain http://localhost $real_protocol$subdomain$domain $real_protocol$subdomain$domain;
         
-        #pagespeed                   LoadFromFileMatch "^https?://$host/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
+        pagespeed                   MapRewriteDomain $real_protocol$domain $this_protocol$domain;
+        pagespeed                   MapRewriteDomain $real_protocol$subdomain$domain $this_protocol$subdomain$domain;
+        
+        #pagespeed                   LoadFromFileMatch "^https?://$subdomain$domain/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
         
         pagespeed                   EnableFilters add_instrumentation;
         pagespeed                   EnableFilters collapse_whitespace;
@@ -252,8 +255,6 @@ http {
         if ($use_ssl = 1) {
             return 301 https://$subdomain$domain$request_uri;
         }
-        
-        set                         $default 'default';
         
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
             add_header              "" "";
