@@ -28,13 +28,20 @@ http {
         default                 0;
     }
     
+    map $http_host $has_host {
+        '~*localhost'           0;
+        '~*.'                   1;
+        default                 0;
+    }
+    
     map $http_user_agent $whitelist_browser {
         '~*Firefox'             1;
         default                 0;
     }
     
-    map $real_scheme$is_xp$whitelist_browser $use_ssl {
-        '~*http10'              0;
+    map $real_scheme$has_host$is_xp$whitelist_browser $use_ssl {
+        '~*http0'               0;
+        '~*http110'             0;
         '~*https'               0;
         default                 1;
     }
