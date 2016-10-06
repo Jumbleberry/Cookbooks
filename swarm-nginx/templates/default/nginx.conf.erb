@@ -147,6 +147,9 @@ http {
     pagespeed                   ListOutstandingUrlsOnError on;
     pagespeed                   XHeaderValue 'Powered by JBX Swarm';
     
+    pagespeed                   PreserveUrlRelativity on;
+    pagespeed                   EnableFilters trim_urls;
+    
     pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
     pagespeed                   InlineResourcesWithoutExplicitAuthorization Script,Stylesheet;
     pagespeed                   LRUCacheByteLimit             65536;
@@ -226,10 +229,11 @@ http {
         
         pagespeed                   on;
         
+        pagespeed                   Domain $this_protocol$domain;
         pagespeed                   Domain $this_protocol$subdomain$domain;
         
-        pagespeed                   MapOriginDomain http://localhost $real_protocol$domain $real_protocol$domain;
-        pagespeed                   MapOriginDomain http://localhost $real_protocol$subdomain$domain $real_protocol$subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost https://$domain https://$domain;
+        pagespeed                   MapOriginDomain http://localhost https://$subdomain$domain https://$subdomain$domain;
         
         pagespeed                   MapRewriteDomain $real_protocol$domain $this_protocol$domain;
         pagespeed                   MapRewriteDomain $real_protocol$subdomain$domain $this_protocol$subdomain$domain;
