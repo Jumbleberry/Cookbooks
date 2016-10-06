@@ -1,0 +1,29 @@
+#!/bin/bash
+
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+upstream=$(curl localhost/upstream 2>/dev/null)
+regex="^[^,]*,php,([^:,]+).*?(\n|$)"
+
+for line in $upstream
+do
+    if [[ $line =~ $regex ]]
+    then
+        ips="$ips${BASH_REMATCH[1]} "
+    fi
+done
+ips=$(echo $ips | tr " " "\n" | sort -V)
+
+
+dns=$(dig +short <%= @php_host %> A)
+dns=$(echo -e $dns | tr " " "\n" | sort -V)
+
+if [[ "$ips" != "$dns" ]]
+then
+    echo "Reloading Nginx, DNS upstreams have changed"
+    echo "Upstream: $ips"
+    echo "DNS: $dns"
+    $(PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; /usr/sbin/service nginx reload)
+else
+    echo "Upstream matches DNS: $ips"
+fi

@@ -124,9 +124,20 @@ service "nginx" do
     action :nothing
 end
 
+template 'dns.bash' do
+  path '/etc/nginx/dns.bash'
+  source 'dns.bash.erb'
+  variables({
+    'php_host'   => (node['phpHost'].split(":")[0])
+  })
+  owner 'www-data'
+  group 'www-data'
+  mode '0644'
+  action :create
+end
 cron 'nginx' do
   action :create
   minute '*'
   user 'root'
-  command 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; /usr/sbin/service nginx reload'
+  command "/usr/bin/bash /etc/nginx/dns.bash"
 end

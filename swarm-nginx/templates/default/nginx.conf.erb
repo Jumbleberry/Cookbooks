@@ -292,7 +292,7 @@ http {
         }
         
         location ~ ^/upstream {
-            check_status            json;
+            check_status            csv;
             
             access_log              off;
             allow                   127.0.0.1;
