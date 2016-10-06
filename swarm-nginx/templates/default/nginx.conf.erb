@@ -152,6 +152,8 @@ http {
     pagespeed                   PreserveUrlRelativity on;
     pagespeed                   EnableFilters trim_urls;
     
+    
+    pagespeed                   ImplicitCacheTtlMs 900000;
     pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
     pagespeed                   InlineResourcesWithoutExplicitAuthorization Script,Stylesheet;
     pagespeed                   LRUCacheByteLimit             65536;
@@ -354,8 +356,6 @@ http {
             
             proxy_set_header        Host $domain;
             proxy_set_header        X-Real-Host $subdomain$domain;
-            
-            add_header              add_header Cache-Control "max-age=900";
             
             proxy_cache             cache_ssi;
             proxy_cache_key         $real_scheme$subdomain$domain$uri;
