@@ -350,8 +350,12 @@ http {
         }
         
         location @ssi {
+            aio                     threads=pool_ps;
+            
             proxy_set_header        Host $domain;
             proxy_set_header        X-Real-Host $subdomain$domain;
+            
+            add_header              add_header Cache-Control "max-age=900";
             
             proxy_cache             cache_ssi;
             proxy_cache_key         $real_scheme$subdomain$domain$uri;
