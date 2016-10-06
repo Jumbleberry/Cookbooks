@@ -84,8 +84,8 @@ http {
     fastcgi_buffer_size         4k;
     fastcgi_keep_conn           on;
     
-    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=300m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
-    fastcgi_cache_valid         200 204 301 302 307 308 403 300m;
+    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
+    fastcgi_cache_valid         200 204 301 302 307 308 403 15m;
     fastcgi_cache_revalidate    off;
     fastcgi_cache_use_stale     off;
     
@@ -98,8 +98,8 @@ http {
     client_body_timeout         120;
     send_timeout                120;
 
-    open_file_cache             max=16384 inactive=300m;
-    open_file_cache_valid       5m;
+    open_file_cache             max=16384 inactive=15m;
+    open_file_cache_valid       15m;
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
     
