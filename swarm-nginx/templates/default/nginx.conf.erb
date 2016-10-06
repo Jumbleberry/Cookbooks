@@ -229,11 +229,15 @@ http {
         
         pagespeed                   on;
         
-        pagespeed                   Domain $this_protocol$domain;
-        pagespeed                   Domain $this_protocol$subdomain$domain;
+        pagespeed                   Domain $domain;
+        pagespeed                   Domain $subdomain$domain;
+        pagespeed                   Domain https://$domain;
+        pagespeed                   Domain https://$subdomain$domain;
         
-        pagespeed                   MapOriginDomain http://localhost https://$domain https://$domain;
-        pagespeed                   MapOriginDomain http://localhost https://$subdomain$domain https://$subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost http://$domain $real_protocol$domain;
+        pagespeed                   MapOriginDomain http://localhost http://$subdomain$domain $real_protocol$subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost https://$domain $real_protocol$domain;
+        pagespeed                   MapOriginDomain http://localhost https://$subdomain$domain $real_protocol$subdomain$domain;
         
         pagespeed                   MapRewriteDomain $real_protocol$domain $this_protocol$domain;
         pagespeed                   MapRewriteDomain $real_protocol$subdomain$domain $this_protocol$subdomain$domain;
