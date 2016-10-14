@@ -137,7 +137,7 @@ cron "Processing - Cap Monday Snapshot" do
   weekday '1'
   hour '1-15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Approval Monday Midnight" do
@@ -145,6 +145,15 @@ cron "Processing - Cap Approval Monday Midnight" do
   minute '15'
   hour '0'
   weekday '1'
+  user 'www-data'
+  action :create
+end
+
+cron "Processing - Cap Approval Monday - Incremental" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
+  minute '*'
+  weekday '1'
+  hour '7-15'
   user 'www-data'
   action :create
 end
