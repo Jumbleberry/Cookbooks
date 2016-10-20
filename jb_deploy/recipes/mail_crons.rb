@@ -18,7 +18,7 @@ end
 
 cron "Mail - CAP Approvals Notices" do
   command "/usr/bin/php #{node[:jbx][:mail][:path]}/crons/cap_approval.php"
-  hour '8,16'
+  hour '16'
   minute '10'
   weekday 1
   user 'www-data'
@@ -38,5 +38,5 @@ cron "Mail - Cap Exception Report" do
   hour '8'
   weekday '1'
   user 'www-data'
-  action :create
+  action :delete
 end
