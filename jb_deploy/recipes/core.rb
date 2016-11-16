@@ -96,7 +96,7 @@ end
 # Run database migrations
 execute 'Database migrations' do
   cwd "#{node['jbx']['core']['path']}/application/cli"
-  command "php cli.php migrations:migrate --no-interaction"
+  command "php cli.php migrations:migrate --no-interaction && php ./../library/ClearAppCache.php"
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
 end
 
