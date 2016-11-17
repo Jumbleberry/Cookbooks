@@ -1,5 +1,3 @@
-include_attribute "sync"
-
 # Create swarm repo private key
 file node['swarm']['ssh_key'] do
   owner 'root'
