@@ -64,10 +64,10 @@ http {
     server_tokens               off;
     include                     mime.types;
     
-    sendfile                    on;
-    tcp_nopush                  on;
-    tcp_nodelay                 on;
-    reset_timedout_connection   on;
+    sendfile                    <% if node['environment'] != 'development' -%>on<% else -%>off<% end -%>;
+    tcp_nopush                  <% if node['environment'] != 'development' -%>on<% else -%>off<% end -%>;
+    tcp_nodelay                 <% if node['environment'] != 'development' -%>on<% else -%>off<% end -%>;
+    reset_timedout_connection   <% if node['environment'] != 'development' -%>on<% else -%>off<% end -%>;
 
     client_body_buffer_size     16k;
     client_max_body_size        64k;
@@ -84,6 +84,13 @@ http {
     fastcgi_buffer_size         4k;
     fastcgi_keep_conn           on;
     
+    keepalive_requests          512000;
+    keepalive_timeout           300;
+    client_header_timeout       120;
+    client_body_timeout         120;
+    send_timeout                120;
+    
+    <% if node['environment'] != 'development' -%>
     fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
     fastcgi_cache_valid         200 204 301 302 307 308 403 15m;
     fastcgi_cache_revalidate    off;
@@ -91,17 +98,12 @@ http {
     
     proxy_cache_path            /dev/shm/ssi levels=1:2 keys_zone=cache_ssi:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
     proxy_cache_valid           200 204 301 302 307 308 403 15m;
-    
-    keepalive_requests          512000;
-    keepalive_timeout           300;
-    client_header_timeout       120;
-    client_body_timeout         120;
-    send_timeout                120;
 
     open_file_cache             max=16384 inactive=15m;
     open_file_cache_valid       15m;
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
+    <% end -%>
     
     resolver                    156.154.70.1 8.8.8.8 8.8.4.4 valid=60s;
     resolver_timeout            10s;
@@ -127,7 +129,7 @@ http {
         check_fastcgi_param     "REQUEST_METHOD" "GET";
         check_fastcgi_param     "SCRIPT_NAME" "/ping";
         check_fastcgi_param     "SCRIPT_FILENAME" "/ping";
-        check                   interval=5000 fall=3 rise=1 timeout=4000 default_down=false type=fastcgi port=9000;
+        check                   interval=5000 fall=3 rise=3 timeout=4000 default_down=false type=fastcgi port=9000;
         
         keepalive               128;
     }
@@ -151,41 +153,44 @@ http {
     
     pagespeed                   PreserveUrlRelativity on;
     pagespeed                   EnableFilters trim_urls;
+    pagespeed                   MessageBufferSize 32000;
     
-    
-    pagespeed                   ImplicitCacheTtlMs 900000;
-    pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
     pagespeed                   InlineResourcesWithoutExplicitAuthorization Script,Stylesheet;
-    pagespeed                   LRUCacheByteLimit             65536;
     pagespeed                   GoogleFontCssInlineMaxBytes   262144;
     pagespeed                   CssInlineMaxBytes             262144;
-    pagespeed                   MemcachedServers              "127.0.0.1:11211";
-    pagespeed                   MemcachedTimeoutUs            500000;
     
     pagespeed                   ImageMaxRewritesAtOnce        50;
     pagespeed                   ServeRewrittenWebpUrlsToAnyAgent off;
     pagespeed                   ImageRecompressionQuality     75;
     pagespeed                   CombineAcrossPaths            on;
     
-    pagespeed                   MaxCombinedJsBytes 512000;
-    pagespeed                   MaxCombinedCssBytes 512000;
-    pagespeed                   CssFlattenMaxBytes 512000;
+    pagespeed                   MaxCombinedJsBytes            512000;
+    pagespeed                   MaxCombinedCssBytes           512000;
+    pagespeed                   CssFlattenMaxBytes            512000;
     pagespeed                   MinImageSizeLowResolutionBytes 32000;
-                                
-    pagespeed                   FileCachePath /dev/shm/ps/file;
-    pagespeed                   FileCacheSizeKb <%= @cache_size %>;
-    pagespeed                   FileCacheCleanIntervalMs 900000;
-    pagespeed                   FileCacheInodeLimit 1000000;
-    pagespeed                   MessageBufferSize 32000;
+    
+    <% if node['environment'] != 'development' -%>
+    pagespeed                   ImplicitCacheTtlMs            900000;
+    pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
+    pagespeed                   LRUCacheByteLimit             65536;
+    pagespeed                   MemcachedServers              "127.0.0.1:11211";
+    pagespeed                   MemcachedTimeoutUs            500000;
+    
+    pagespeed                   FileCacheCleanIntervalMs      900000;
+    pagespeed                   FileCacheInodeLimit           1000000;
     pagespeed                   CreateSharedMemoryMetadataCache /dev/shm/ps/memory <%= @cache_size %>;
-    pagespeed                   DefaultSharedMemoryCacheKB <%= @cache_size %>;
-                                
-    pagespeed                   StatisticsPath /ngx_pagespeed_statistics;
-    pagespeed                   GlobalStatisticsPath /ngx_pagespeed_global_statistics;
-    pagespeed                   MessagesPath /ngx_pagespeed_message;
-    pagespeed                   ConsolePath /pagespeed_console;
-    pagespeed                   AdminPath /pagespeed_admin;
-    pagespeed                   GlobalAdminPath /pagespeed_global_admin;
+    pagespeed                   DefaultSharedMemoryCacheKB    <%= @cache_size %>;
+    <% end -%>
+    
+    pagespeed                   FileCachePath                 /dev/shm/ps/file;
+    pagespeed                   FileCacheSizeKb               <% if node['environment'] != 'development' -%><%= @cache_size %><% else -%>0<% end -%>;
+    
+    pagespeed                   StatisticsPath                /ngx_pagespeed_statistics;
+    pagespeed                   GlobalStatisticsPath          /ngx_pagespeed_global_statistics;
+    pagespeed                   MessagesPath                  /ngx_pagespeed_message;
+    pagespeed                   ConsolePath                   /pagespeed_console;
+    pagespeed                   AdminPath                     /pagespeed_admin;
+    pagespeed                   GlobalAdminPath               /pagespeed_global_admin;
     
     log_format main      '$remote_addr - $remote_user [$time_local]  '
       '"$request" $status $bytes_sent '
@@ -275,8 +280,14 @@ http {
         add_header                  X-XSS-Protection "1; mode=block;";
         add_header                  Strict-Transport-Security $hsts;
         
+        <% if node['environment'] != 'development' -%>
         if ($use_ssl = 1) {
             return 301 https://$subdomain$domain$request_uri;
+        }
+        <% end -%>
+        
+        if ($device = 'default') {
+            return 301 $real_scheme://www.$domain$request_uri;
         }
         
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
@@ -329,11 +340,13 @@ http {
                                     
                                     @ssi;
             
+            <% if node['environment'] != 'development' -%>
             fastcgi_cache           cache_php;
             fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme$subdomain$domain$request_uri;
+            <% end -%>
             
-            fastcgi_cache_bypass    $no_cache;
-            fastcgi_no_cache        $no_cache;
+            fastcgi_cache_bypass    <% if node['environment'] != 'development' -%>$no_cache<% else -%>1<% end -%>;
+            fastcgi_no_cache        <% if node['environment'] != 'development' -%>$no_cache<% else -%>1<% end -%>;
             
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
@@ -357,8 +370,13 @@ http {
             proxy_set_header        Host $domain;
             proxy_set_header        X-Real-Host $subdomain$domain;
             
+            <% if node['environment'] != 'development' -%>
             proxy_cache             cache_ssi;
             proxy_cache_key         $real_scheme$subdomain$domain$uri;
+            <% end -%>
+            
+            proxy_cache_bypass      <% if node['environment'] != 'development' -%>0<% else -%>1<% end -%>;
+            proxy_no_cache          <% if node['environment'] != 'development' -%>0<% else -%>1<% end -%>;
             
             proxy_pass              http://ssi$theme/$device$path;
         }
@@ -376,8 +394,8 @@ http {
         ssi_last_modified           on;
         ssi_types                   application/x-javascript text/css application/javascript text/javascript text/plain;
         
-        log_subrequest              off;
-        ssi_silent_errors           off;
+        log_subrequest              <% if node['environment'] != 'development' -%>off<% else -%>on<% end -%>;
+        ssi_silent_errors           <% if node['environment'] != 'development' -%>on<% else -%>off<% end -%>;
         
         set                         $default '/default';
         
