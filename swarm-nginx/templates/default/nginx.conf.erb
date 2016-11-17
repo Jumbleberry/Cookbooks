@@ -175,21 +175,22 @@ http {
     pagespeed                   LRUCacheByteLimit             65536;
     pagespeed                   MemcachedServers              "127.0.0.1:11211";
     pagespeed                   MemcachedTimeoutUs            500000;
-                                
-    pagespeed                   FileCachePath                 /dev/shm/ps/file;
-    pagespeed                   FileCacheSizeKb               <%= @cache_size %>;
+    
     pagespeed                   FileCacheCleanIntervalMs      900000;
     pagespeed                   FileCacheInodeLimit           1000000;
     pagespeed                   CreateSharedMemoryMetadataCache /dev/shm/ps/memory <%= @cache_size %>;
     pagespeed                   DefaultSharedMemoryCacheKB    <%= @cache_size %>;
     <% end -%>
     
-    pagespeed                   StatisticsPath /ngx_pagespeed_statistics;
-    pagespeed                   GlobalStatisticsPath /ngx_pagespeed_global_statistics;
-    pagespeed                   MessagesPath /ngx_pagespeed_message;
-    pagespeed                   ConsolePath /pagespeed_console;
-    pagespeed                   AdminPath /pagespeed_admin;
-    pagespeed                   GlobalAdminPath /pagespeed_global_admin;
+    pagespeed                   FileCachePath                 /dev/shm/ps/file;
+    pagespeed                   FileCacheSizeKb               <% if node['environment'] != 'development' -%><%= @cache_size %><% else -%>0<% end -%>;
+    
+    pagespeed                   StatisticsPath                /ngx_pagespeed_statistics;
+    pagespeed                   GlobalStatisticsPath          /ngx_pagespeed_global_statistics;
+    pagespeed                   MessagesPath                  /ngx_pagespeed_message;
+    pagespeed                   ConsolePath                   /pagespeed_console;
+    pagespeed                   AdminPath                     /pagespeed_admin;
+    pagespeed                   GlobalAdminPath               /pagespeed_global_admin;
     
     log_format main      '$remote_addr - $remote_user [$time_local]  '
       '"$request" $status $bytes_sent '
