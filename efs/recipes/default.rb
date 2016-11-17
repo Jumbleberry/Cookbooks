@@ -10,7 +10,7 @@ packages.each do |pkg|
 end
 
 # Create the EFS mount point
-efsMountPoint = node['efs_mount_point']
+efsMountPoint = node['efsMountPoint']
 directory efsMountPoint do
     user 'www-data'
     group 'www-data'
@@ -21,7 +21,7 @@ end
 # Mount EFS
 execute "mount-efs" do
     command <<-EOF
-        mount -t nfs4 -o vers=4.1 $(curl -s #{node['availability_zone_url']}).#{node['fileSystemId']}.efs.#{node['awsRegion']}.amazonaws.com:/ #{node['efs_mount_point']}
+        mount -t nfs4 -o vers=4.1 $(curl -s #{node['availability_zone_url']}).#{node['fileSystemId']}.efs.#{node['awsRegion']}.amazonaws.com:/ #{node['efsMountPoint']}
         EOF
     user 'root'
 end
