@@ -286,6 +286,10 @@ http {
         }
         <% end -%>
         
+        if ($device = 'default') {
+            return 301 $real_scheme://www.$domain$request_uri;
+        }
+        
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
             add_header              "" "";
         }

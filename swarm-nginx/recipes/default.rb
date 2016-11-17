@@ -14,7 +14,7 @@ group 'www-data' do
   append true
   ignore_failure true
 end
-["ssi", "php", "ps/file", "ps/memory"].each do |type|
+["ssi", "php", "ps", "ps/file", "ps/memory"].each do |type|
     directory '/dev/shm/' + type do
         owner 'www-data'
         group 'www-data'
