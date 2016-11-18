@@ -42,11 +42,11 @@ execute "install-letencrypt-aws" do
     action :nothing
 end
 
-# Pin cryptography to 1.2.1 to avoid enterypoint error
+# Pin cryptography to 1.3.4 to avoid enterypoint error
 # May not need this in the future if letsencrypt-aws releases patch
 execute "pin-cryptography" do
     cwd node['letsencrypt_aws']['repo_path']
-    command 'pip install cryptography==1.2.1'
+    command 'pip install cryptography==1.3.4'
     user 'root'
     action :nothing
 end
@@ -69,7 +69,7 @@ end
 # If the certificate is not expiring soon, but you need to issue a new one anyways, the --force-issue flag can be provided
 execute "run-letsencrypt-aws" do
     cwd node['letsencrypt_aws']['repo_path']
-    command 'python letsencrypt-aws.py update-certificates --force-issue'
+    command 'python letsencrypt-aws.py update-certificates'
     user 'root'
 end
 
