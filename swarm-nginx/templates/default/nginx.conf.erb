@@ -399,6 +399,7 @@ http {
         
         set                         $default '/default';
         
+        # SSI subrequests go here
         location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
             root                    /html/domains/$domain;
             
@@ -435,6 +436,8 @@ http {
                                     /../domains/$host$theme$default$path                /../domains/$host$theme$default$path.html       /../domains/$host$theme$default${path}index.html
                                     /../domains/$host$version$path                      /../domains/$host$version$path.html             /../domains/$host$version${path}index.html
                                     /../domains/$host$default$path                      /../domains/$host$default$path.html             /../domains/$host$default${path}index.html
+                                    
+                                    /../integration/ui$path
                                     
                                     $theme$version$path                                 $theme$version$path.html                        $theme$version${path}index.html
                                     $theme$default$path                                 $theme$default$path.html                        $theme$default${path}index.html
