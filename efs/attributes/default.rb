@@ -11,12 +11,12 @@ default['efs']['packages'] = [
 
 # Swarm code
 default['swarm']['path'] = node['efsMountPoint']
-default['swarm']['url'] = 'git@github.com/Jumbleberry/Swarm.git'
+default['swarm']['url'] = 'git@github.com:Jumbleberry/Swarm.git'
 default['swarm']['revision'] = 'master'
-default['swarm']['ssh_key'] = ENV['HOME'] + '/swarm_github_key'
+default['swarm']['ssh_key'] = ENV['HOME'] + '/.ssh/swarm_github_key'
 
 # Integration code
 default['integration']['path'] = node['efsMountPoint'] + '/integration'
-default['integration']['url'] = 'git@github.com/Jumbleberry/Campaign-Library.git'
+default['integration']['url'] = 'git@github.com:Jumbleberry/Campaign-Library.git'
 default['integration']['revision'] = 'swarm'
-default['integration']['ssh_key'] = ENV['HOME'] + '/integration_github_key'
+default['integration']['ssh_key'] = ENV['HOME'] + '/.ssh/integration_github_key'
