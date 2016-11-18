@@ -12,6 +12,7 @@ git node['swarm']['path'] do
   repository node['swarm']['url']
   revision node['swarm']['revision']
   ssh_wrapper "ssh -i #{node['swarm']['ssh_key']}"
+  environment { 'GIT_SSH' => '/usr/bin/ssh' }
   user 'root'
   action :sync
 end
@@ -30,6 +31,7 @@ git node['integration']['path'] do
   repository node['integration']['url']
   revision node['integration']['revision']
   ssh_wrapper "ssh -i #{node['integration']['ssh_key']}"
+  environment { 'GIT_SSH' => '/usr/bin/ssh' }
   user 'root'
   action :sync
 end
