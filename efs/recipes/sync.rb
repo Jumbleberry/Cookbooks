@@ -10,16 +10,16 @@ end
 # Clone swarm repo from Github if none exist
 execute "clone-swarm-repo" do
     cwd node['swarm']['path']
-    command "ssh-agent bash -c 'ssh-add #{node['swarm']['ssh_key']}; git clone -b #{node['swarm']['revision']} git@#{node['swarm']['url']} #{node['swarm']['name']}'"
-    not_if { ::File.directory?("#{node['swarm']['path']}/#{node['swarm']['name']}/.git") }
+    command "ssh-agent bash -c 'ssh-add #{node['swarm']['ssh_key']}; git clone -b #{node['swarm']['revision']} git@#{node['swarm']['url']} .'"
+    not_if { ::File.directory?("#{node['swarm']['path']}/.git") }
     user 'root'
 end
 
 # Sync swarm repo from Github
 execute "sync-swarm-repo" do
-    cwd node['swarm']['path'] + '/' + node['swarm']['name']
+    cwd node['swarm']['path']
     command "ssh-agent bash -c 'ssh-add #{node['swarm']['ssh_key']}; git pull git@#{node['swarm']['url']} #{node['swarm']['revision']}'"
-    only_if { ::File.directory?("#{node['swarm']['path']}/#{node['swarm']['name']}/.git") }
+    only_if { ::File.directory?("#{node['swarm']['path']}/.git") }
     user 'root'
 end
 
@@ -44,6 +44,6 @@ end
 execute "sync-integration-repo" do
     cwd node['integration']['path'] + '/' + node['integration']['name']
     command "ssh-agent bash -c 'ssh-add #{node['integration']['ssh_key']}; git pull git@#{node['integration']['url']} #{node['integration']['revision']}'"
-    only_if { ::File.directory?("#{node['integration']['path']}/#{node['integration']['name']}/,git") }
+    only_if { ::File.directory?("#{node['integration']['path']}/#{node['integration']['name']}/.git") }
     user 'root'
 end
