@@ -9,13 +9,14 @@ packages.each do |pkg|
   end
 end
 
-# Create the EFS mount point
+# Create the EFS mount point if not exist
 efsMountPoint = node['efsMountPoint']
 directory efsMountPoint do
     user 'www-data'
     group 'www-data'
     mode '0755'
     action :create
+    notifies :run, 'execute[mount-efs]', :immediate
 end
 
 # Mount EFS
@@ -24,4 +25,5 @@ execute "mount-efs" do
         mount -t nfs4 -o vers=4.1 $(curl -s #{node['availability_zone_url']}).#{node['fileSystemId']}.efs.#{node['awsRegion']}.amazonaws.com:/ #{node['efsMountPoint']}
         EOF
     user 'root'
+    action :nothing
 end
