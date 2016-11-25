@@ -18,7 +18,7 @@ end
     directory '/dev/shm/' + type do
         owner 'www-data'
         group 'www-data'
-        mode 0644
+        mode 0664
         action :create
         recursive true
     end
@@ -27,7 +27,7 @@ end
     directory dir do
         owner 'www-data'
         group 'www-data'
-        mode 0644
+        mode 0664
         action :create
         recursive true
     end
