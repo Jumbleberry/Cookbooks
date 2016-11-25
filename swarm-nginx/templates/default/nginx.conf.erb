@@ -401,9 +401,11 @@ http {
         
         # SSI subrequests go here
         location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
-            root                    /html/domains/$domain;
+            root                    /html/domains/;
             
-            try_files               $theme$version$path $theme$default$path $version$path $default$path @empty;
+            try_files               /$domain$theme$version$path /$domain$theme$default$path /$domain$version$path /$domain$default$path
+                                    /default$theme$version$path /default$theme$default$path /default$version$path /default$default$path
+                                    @empty;
         }
         
         location ~ ^(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/]*)(?<sep>/)?$ {
