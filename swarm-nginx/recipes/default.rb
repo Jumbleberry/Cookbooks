@@ -139,5 +139,5 @@ cron 'nginx' do
   action :create
   minute '*'
   user 'root'
-  command "/usr/bin/bash /etc/nginx/dns.bash"
+  command "/bin/bash /etc/nginx/dns.bash"
 end
