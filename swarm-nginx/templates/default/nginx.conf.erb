@@ -280,16 +280,6 @@ http {
         add_header                  X-XSS-Protection "1; mode=block;";
         add_header                  Strict-Transport-Security $hsts;
         
-        <% if node['environment'] != 'development' -%>
-        if ($use_ssl = 1) {
-            return 301 https://$subdomain$domain$request_uri;
-        }
-        <% end -%>
-        
-        if ($device = 'default') {
-            return 301 $real_scheme://www.$domain$request_uri;
-        }
-        
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
             add_header              "" "";
         }
@@ -302,6 +292,8 @@ http {
             access_log              off;
             allow                   127.0.0.1;
             deny                    all;
+            
+            break;
         }
         
         location ~ ^/upstream {
@@ -310,6 +302,18 @@ http {
             access_log              off;
             allow                   127.0.0.1;
             deny                    all;
+            
+            break;
+        }
+        
+        <% if node['environment'] != 'development' -%>
+        if ($use_ssl = 1) {
+            return 301 https://$subdomain$domain$request_uri;
+        }
+        <% end -%>
+        
+        if ($device = 'default') {
+            return 301 $real_scheme://www.$domain$request_uri;
         }
         
         set                         $no_cache 0;
