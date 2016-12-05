@@ -53,7 +53,8 @@ http {
         default                 "";
     }
     
-    map $subdomain $device {
+    map $subdomain$has_host $device {
+        '~^(.*\.)?0$'           '';
         'm.'                    'mobile';
         'tablet.'               'tablet';
         'www.'                  'desktop';
