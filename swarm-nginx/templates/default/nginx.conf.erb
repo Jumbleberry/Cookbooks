@@ -31,8 +31,7 @@ http {
     
     map $http_host $has_host {
         '~*localhost'           0;
-        '~*.'                   1;
-        default                 0;
+        default                 1;
     }
     
     map $http_user_agent $whitelist_browser {
