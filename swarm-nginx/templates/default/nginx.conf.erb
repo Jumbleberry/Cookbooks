@@ -31,7 +31,8 @@ http {
     
     map $http_host $has_host {
         '~*localhost'           0;
-        default                 1;
+        '~*.'                   1;
+        default                 0;
     }
     
     map $http_user_agent $whitelist_browser {
@@ -54,9 +55,9 @@ http {
     
     map $subdomain$has_host $device {
         '~^(.*\.)?0$'           '';
-        'm.'                    'mobile';
-        'tablet.'               'tablet';
-        'www.'                  'desktop';
+        'm.1'                   'mobile';
+        'tablet.1'              'tablet';
+        'www.1'                 'desktop';
         default                 'default';
         ''                      'default';
     }
