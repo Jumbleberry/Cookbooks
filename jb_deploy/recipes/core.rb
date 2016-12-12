@@ -79,6 +79,9 @@ template credentials_file do
       "alchemy_free"            => node['jbx']['credentials']['alchemy']['free'],
       "alchemy_paid"            => node['jbx']['credentials']['alchemy']['paid'],
       
+      "visualRecognition_free"  => node['jbx']['credentials']['visualRecognition']['free'],
+      "visualRecognition_paid"  => node['jbx']['credentials']['visualRecognition']['paid'],
+      
       "trackrevenue"            => node['jbx']['credentials']['trackrevenue']
     })
 end
