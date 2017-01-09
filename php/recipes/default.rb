@@ -1,6 +1,6 @@
 # Custom repositories
 apt_repository 'php5.5-ppa' do
-  uri           'ppa:ondrej/php5'
+  uri           'ppa:ondrej/php'
   distribution  'precise'
   components    ['main', 'stable']
 end
