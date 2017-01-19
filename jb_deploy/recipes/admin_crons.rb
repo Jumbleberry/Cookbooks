@@ -3,7 +3,7 @@ cron "Admin - Sync Hitpath" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/sync_hitpath.php"
   minute '*'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Admin - Sale Projections" do
