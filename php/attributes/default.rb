@@ -1,7 +1,7 @@
 default['php']['composer_download_path'] = '/tmp/composer-install.php'
 
 default['php']['fpm']['display_errors'] = 'Off'
-default['php']['fpm']['listen'] = '/var/run/php5-fpm.sock'
+default['php']['fpm']['listen'] = '/var/run/php5.6-fpm.sock'
 default['php']['fpm']['pm'] = 'dynamic'
 default['php']['fpm']['max_children'] = '100'
 default['php']['fpm']['start_servers'] = '40'
@@ -11,35 +11,35 @@ default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
 default['php']['packages'] = [
   {
-    "name" => "php5-fpm",
-    "version" => "5.*"
-  },
-  {
-    "name" => "php5-mysql",
-    "version" => "5.*"
-  },
-  {
-    "name" => "php5-mcrypt",
-    "version" => "5.*"
-  },
-  {
-    "name" => "php5-memcache",
+    "name" => "php5.6-fpm",
     "version" => "*"
   },
   {
-    "name" => "php5-cli",
-    "version" => "5.*"
+    "name" => "php5.6-mysql",
+    "version" => "*"
   },
   {
-    "name" => "php5-dev",
-    "version" => "5.*"
+    "name" => "php5.6-mcrypt",
+    "version" => "*"
+  },
+  {
+    "name" => "php-memcache",
+    "version" => "*"
+  },
+  {
+    "name" => "php5.6-cli",
+    "version" => "*"
+  },
+  {
+    "name" => "php5.6-dev",
+    "version" => "*"
   },
   {
     "name" => "php-redis",
     "version" => "*"
   },
   {
-    "name" => "php5-xcache",
+    "name" => "php-xcache",
     "version" => "*"
   },
   {
@@ -51,9 +51,13 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
-      "name" => "php5-gd",
+    "name" => "php5.6-mbstring",
+    "version" => "*"
+  },
+  {
+      "name" => "php5.6-gd",
       "version" => "*"
-   }
+    }
 ]
 
 
