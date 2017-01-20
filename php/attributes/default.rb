@@ -12,43 +12,43 @@ default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 default['php']['packages'] = [
   {
     "name" => "php5-fpm",
-    "version" => "5.6.*"
+    "version" => "5.*"
   },
   {
     "name" => "php5-mysql",
-    "version" => "5.6.*"
+    "version" => "5.*"
   },
   {
     "name" => "php5-mcrypt",
-    "version" => "5.6.*"
+    "version" => "5.*"
   },
   {
     "name" => "php5-memcache",
-    "version" => "3.0.8*"
+    "version" => "*"
   },
   {
     "name" => "php5-cli",
-    "version" => "5.6.*"
+    "version" => "5.*"
   },
   {
     "name" => "php5-dev",
-    "version" => "5.6.*"
+    "version" => "5.*"
   },
   {
-    "name" => "php5-redis",
-    "version" => "2.2.*"
+    "name" => "php-redis",
+    "version" => "*"
   },
   {
     "name" => "php5-xcache",
-    "version" => "3.2.0*"
+    "version" => "*"
   },
   {
-    "name" => "php5-gearman",
-    "version" => "1.1.2*"
+    "name" => "php-gearman",
+    "version" => "*"
   },
   {
     "name" => "php5-curl",
-    "version" => "5.6.*"
+    "version" => "5.*"
   },
   {
       "name" => "php5-gd",
