@@ -3,7 +3,7 @@ cron "Processing - Detect CRM Features" do
   hour '2-23/6'
   minute '2-59/10'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Campaigns" do
@@ -11,7 +11,7 @@ cron "Processing - Get CRM Campaigns" do
   hour '0-2,6,8-23'
   minute '4-59/10'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Current Day Stats" do
@@ -19,7 +19,7 @@ cron "Processing - Get CRM Current Day Stats" do
   hour '0-2,6,8-23'
   minute '6-59/10'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Historical Stats" do
@@ -27,7 +27,7 @@ cron "Processing - Get CRM Historical Stats" do
   hour '3,5'
   minute '8-59/10'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Rebill Orders" do
@@ -43,7 +43,7 @@ cron "Processing - Get CRM Current Orders" do
   hour '0-2,7-23'
   minute '30'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get Unmapped Campaigns" do
