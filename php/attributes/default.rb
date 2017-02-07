@@ -23,7 +23,7 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
-    "name" => "php-memcache",
+    "name" => "php5.6-memcache",
     "version" => "*"
   },
   {
@@ -31,19 +31,23 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
+    "name" => "php5.6-xml",
+    "version" => "*"
+  },
+  {
     "name" => "php5.6-dev",
     "version" => "*"
   },
   {
-    "name" => "php-redis",
+    "name" => "php5.6-redis",
     "version" => "*"
   },
   {
-    "name" => "php-xcache",
+    "name" => "php5.6-xcache",
     "version" => "*"
   },
   {
-    "name" => "php-gearman",
+    "name" => "php5.6-gearman",
     "version" => "*"
   },
   {
