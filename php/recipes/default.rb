@@ -41,6 +41,7 @@ execute 'php5.6-rename' do
       cp /etc/init.d/php5.6-fpm /etc/init.d/php5-fpm
       update-rc.d -f php5.6-fpm remove
       rm -f /etc/init.d/php5.6-fpm
+      mv /etc/init/php5.6-fpm.conf /etc/init/php5-fpm.conf
       update-rc.d php5-fpm defaults
     EOH
     only_if { ::File.exists?("/etc/init.d/php5.6-fpm")}
