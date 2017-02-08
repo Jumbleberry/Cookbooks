@@ -39,6 +39,10 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
+    "name" => "php5.6-bcmath",
+    "version" => "*"
+  },
+  {
     "name" => "php5.6-redis",
     "version" => "*"
   },
