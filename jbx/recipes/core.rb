@@ -1,3 +1,4 @@
+include_recipe "phalcon"
 include_recipe "nginx"
 include_recipe "jb_deploy::core"
 

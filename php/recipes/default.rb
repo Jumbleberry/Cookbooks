@@ -19,6 +19,43 @@ phpmodules.each do |pkg|
   end
 end
 
+# Symlink our config script
+['fpm', 'mods-available', 'cli'].each do |dir|
+    directory "/etc/php5/" + dir do
+        action :delete
+        recursive true
+        not_if { File.symlink?("/etc/php5/" + dir) || !::Dir.exists?("/etc/php/5.6/" + dir) }
+    end
+        
+    link "/etc/php5/" + dir do
+        to "/etc/php/5.6/" + dir
+        action :create
+        owner "root"
+        group "root"
+        not_if { ::Dir.exists?("/etc/php5/" + dir) || !::Dir.exists?("/etc/php/5.6/" + dir) }
+    end
+end
+
+execute 'php5.6-rename' do
+    command <<-EOH
+      cp /etc/init.d/php5.6-fpm /etc/init.d/php5-fpm
+      update-rc.d -f php5.6-fpm remove
+      rm -f /etc/init.d/php5.6-fpm
+      mv /etc/init/php5.6-fpm.conf /etc/init/php5-fpm.conf
+      update-rc.d php5-fpm defaults
+    EOH
+    only_if { ::File.exists?("/etc/init.d/php5.6-fpm")}
+end
+
+# Remove 5.6 service if it exists
+service 'php5.6-fpm' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :stop
+  ignore_failure true
+  notifies :run, 'execute[php5.6-rename]', :immediately
+end
+
+
 #Register Php service
 service 'php5-fpm' do
   supports :status => true, :restart => true, :reload => true, :stop => true
