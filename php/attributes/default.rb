@@ -23,6 +23,10 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
+    "name" => "php5.6-zip",
+    "version" => "*"
+  },
+  {
     "name" => "php5.6-memcache",
     "version" => "*"
   },
