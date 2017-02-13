@@ -1,5 +1,11 @@
 # Letsencrypt-aws config
-default['letsencrypt_aws']['hosts'] = '["jbxstatic.com", "www.jbxstatic.com", "jbxswarm.com", "www.jbxswarm.com", "renewforskin.com", "m.renewforskin.com", "www.renewforskin.com", "try-juvanere.com", "m.try-juvanere.com", "www.try-juvanere.com"]'
+default['letsencrypt_aws']['hosts'] = '[
+    "jbxstatic.com", "www.jbxstatic.com", 
+    "jbxswarm.com", "www.jbxswarm.com", 
+    "renewforskin.com", "m.renewforskin.com", "www.renewforskin.com", 
+    "try-juvanere.com", "m.try-juvanere.com", "www.try-juvanere.com",
+    "buyroyaltyskin.com", "m.buyroyaltyskin.com", "www.buyroyaltyskin.com"
+]'
 default['letsencrypt_aws']['github_url'] = 'https://github.com/Hao-Jumbleberry/letsencrypt-aws.git'
 default['letsencrypt_aws']['branch'] = 'elbv2'
 default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'
