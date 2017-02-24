@@ -1,7 +1,7 @@
 # Letsencrypt-aws config
 default['letsencrypt_aws']['hosts'] = '[
-    "jbxstatic.com", "www.jbxstatic.com", 
-    "jbxswarm.com", "www.jbxswarm.com", 
+    "jbxstatic.com", "m.jbxstatic.com", "www.jbxstatic.com", 
+    "jbxswarm.com", "m.jbxswarm.com", "www.jbxswarm.com", 
     "renewforskin.com", "m.renewforskin.com", "www.renewforskin.com", 
     "try-juvanere.com", "m.try-juvanere.com", "www.try-juvanere.com",
     "buyroyaltyskin.com", "m.buyroyaltyskin.com", "www.buyroyaltyskin.com"
