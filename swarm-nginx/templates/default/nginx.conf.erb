@@ -61,17 +61,7 @@ http {
         default                 'default';
         ''                      'default';
     }
-    
-    map $query_string $click_id {
-        "~*click_id=(?<id>[0-9]+)"  $id;
-        default                     '';
-    }
-    
-    map $click_id $cookie_name {
-        "~*[0-9]+"              "JBSC=";
-        default                 'JBSN=';
-    }
-    
+
     server_tokens               off;
     include                     mime.types;
     
@@ -290,7 +280,6 @@ http {
         add_header                  X-Frame-Options SAMEORIGIN;
         add_header                  X-XSS-Protection "1; mode=block;";
         add_header                  Strict-Transport-Security $hsts;
-        add_header                  Set-Cookie "$cookie_name$click_id;Domain=.$domain;Path=/;Max-Age=31536000";
         
         location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
             add_header              "" "";
