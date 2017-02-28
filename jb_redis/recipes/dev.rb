@@ -4,6 +4,13 @@ include_recipe "redisio"
 redis_path = '/etc/redis'
 consul_path = node["consul"]["config_dir"]
 
+user 'redis' do
+  comment 'redis user'
+  home '/html'
+  shell '/bin/bash'
+  action :create
+  ignore_failure true
+end
 # Add redis to the cluster group
 group "cluster" do
   action :create

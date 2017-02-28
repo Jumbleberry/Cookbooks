@@ -1,11 +1,15 @@
 # Custom repositories
-apt_repository 'php5.5-ppa' do
+apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
   distribution  'precise'
   components    ['main', 'stable']
 end
 
 include_recipe "apt"
+execute "apt-get-update-periodic-php" do
+    command "apt-get update"
+    user 'root'
+end
 
 # Installs php package and modules
 phpmodules = node['php']['packages']
@@ -59,7 +63,7 @@ end
 #Register Php service
 service 'php5-fpm' do
   supports :status => true, :restart => true, :reload => true, :stop => true
-  action :start
+  action :restart
 end
 
 #Check if we need to change the php include path

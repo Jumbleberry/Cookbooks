@@ -51,8 +51,15 @@ include_recipe "nginx"
 include_recipe "php"
 
 # Install phpmyadmin
-apt_package 'phpmyadmin' do
-    action :install
+execute 'phpmyadmin' do
+    command <<-EOH
+echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
+apt-get -y install phpmyadmin
+true
+    EOH
+    user 'root'
 end
 
 # Copy phpmyadmin config file
@@ -159,9 +166,11 @@ end
 # Create JBX
 execute "restore-JBX-DB" do
     command "jbdb_import jbx --create"
+    ignore_failure true
 end
 
 # Create Gearman
-execute "restore-gearman-DB" do
-    command "jbdb_import gearman --gearman"
-end
+# execute "restore-gearman-DB" do
+#     command "jbdb_import gearman --gearman"
+#     ignore_failure true
+# end

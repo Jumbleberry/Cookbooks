@@ -1,7 +1,7 @@
 server {
     listen 80;
 
-    server_name <%= node[:fqdn] %> <%= node[:hostname] %>;
+    server_name <%= node[:fqdn] %> <%= node[:hostname] %> db.jumble.dev;
     root /var/www/phpmyadmin;
     index index.php;
     client_max_body_size 100m;

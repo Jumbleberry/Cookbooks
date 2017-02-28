@@ -15,6 +15,10 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
+    "name" => "php5.6-common",
+    "version" => "*"
+  },
+  {
     "name" => "php5.6-mysql",
     "version" => "*"
   },
@@ -67,9 +71,13 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
-      "name" => "php5.6-gd",
-      "version" => "*"
-    }
+    "name" => "php-gettext",
+    "version" => "*"
+  },
+  {
+    "name" => "php5-gd",
+    "version" => "*"
+  }
 ]
 
 
