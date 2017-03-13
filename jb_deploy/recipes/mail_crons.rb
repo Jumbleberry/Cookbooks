@@ -29,7 +29,7 @@ cron "Mail - Affiliate Cap Notices" do
   command "/usr/bin/php #{node[:jbx][:mail][:path]}/crons/cap_notices.php"
   minute '*/1'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Mail - Cap Exception Report" do
