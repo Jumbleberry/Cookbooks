@@ -310,6 +310,8 @@ http {
         location ~ ^/thisthingisnotathing {
             root                    /html/templates/default;
             try_files               /thisthingisnotathing =500;
+            
+            break;
         }
         
         <% if node['environment'] != 'development' -%>
