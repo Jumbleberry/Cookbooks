@@ -71,11 +71,11 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
-    "name" => "php-gettext",
+    "name" => "php5.6-gettext",
     "version" => "*"
   },
   {
-    "name" => "php5-gd",
+    "name" => "php5.6-gd",
     "version" => "*"
   }
 ]
