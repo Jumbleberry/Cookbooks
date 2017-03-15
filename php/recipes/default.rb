@@ -23,6 +23,13 @@ phpmodules.each do |pkg|
   end
 end
 
+directory '/etc/php5' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  action :create
+end
+
 # Symlink our config script
 ['fpm', 'mods-available', 'cli'].each do |dir|
     directory "/etc/php5/" + dir do
@@ -49,6 +56,19 @@ execute 'php5.6-rename' do
       update-rc.d php5-fpm defaults
     EOH
     only_if { ::File.exists?("/etc/init.d/php5.6-fpm")}
+end
+
+file '/usr/bin/php5' do
+  action :delete
+  not_if { File.symlink?('/usr/bin/php5') }
+end
+
+link "/usr/bin/php5" do
+    to "/usr/bin/php5.6"
+    action :create
+    owner "root"
+    group "root"
+    not_if { File.symlink?('/usr/bin/php5') }
 end
 
 # Remove 5.6 service if it exists
