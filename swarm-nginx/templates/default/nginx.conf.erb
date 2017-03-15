@@ -307,6 +307,11 @@ http {
             break;
         }
         
+        location ~ ^/thisthingisnotathing {
+            root                    /html/templates/default;
+            try_files               /thisthingisnotathing =500;
+        }
+        
         <% if node['environment'] != 'development' -%>
         if ($use_ssl = 1) {
             return 301 https://$subdomain$domain$request_uri;
