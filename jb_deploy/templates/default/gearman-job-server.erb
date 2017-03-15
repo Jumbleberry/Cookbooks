@@ -23,5 +23,5 @@ PARAMS="-q mysql \
     --mysql-db=<%= node['gearman']['mysql']['db'] %> \
     --mysql-table=<%= node['gearman']['mysql']['table'] %> \
     --mysql-port=<%= node['gearman']['mysql']['port'] %> \
-    -L <%= node['gearman']['ip'] %>\
+    -L 0.0.0.0 \
     --job-retries=<%= node['gearman']['retries'] %>"
