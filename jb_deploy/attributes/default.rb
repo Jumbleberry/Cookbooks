@@ -12,7 +12,7 @@ default['admin']['storage']['user_images']  = '/s3/images/user/'
 default['admin']['jbxroute']                = 'http://jbxroute.com'
 default['admin']['jbxtrack']                = 'https://jbxtrack.com'
 
-default["gearman"]["retries"]           = "3"
+default["gearman"]["retries"]           = "1"
 default["gearman"]["ip"]                = "0.0.0.0"
 default['gearman']['mysql']['host']     = ""
 default['gearman']['mysql']['user']     = ""
