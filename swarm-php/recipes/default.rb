@@ -43,7 +43,7 @@ service 'php7.0-fpm' do
       provider Chef::Provider::Service::Upstart
     end
   end
-  supports :restart=>true, :status=>true
+  supports :restart=>true, :status=>true, :reload=>true, :start=>true, :stop=>true
   action :nothing
 end
 
