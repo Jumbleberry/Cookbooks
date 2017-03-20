@@ -17,3 +17,11 @@ execute 'warm-cache' do
     user 'www-data'
     action :run
 end
+
+cron 'warm_cache.php' do
+  action :create
+  minute '*/5'
+  user 'www-data'
+  cwd '/html'
+  command '/usr/bin/php /html/admin/warm_cache.php'
+end
