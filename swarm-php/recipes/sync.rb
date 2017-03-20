@@ -11,3 +11,9 @@ service 'php7.0-fpm' do
   supports :restart=>true, :status=>true, :reload=>true, :start=>true, :stop=>true
   action :reload
 end
+
+execute 'warm-cache' do
+    command '/usr/bin/php /html/admin/warm_cache.php'
+    user 'www-data'
+    action :run
+end

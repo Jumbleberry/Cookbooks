@@ -360,8 +360,8 @@ http {
             fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme$subdomain$domain$request_uri;
             <% end -%>
             
-            fastcgi_cache_bypass    <% if node['environment'] != 'development' -%>$no_cache<% else -%>1<% end -%>;
-            fastcgi_no_cache        <% if node['environment'] != 'development' -%>$no_cache<% else -%>1<% end -%>;
+            fastcgi_cache_bypass    <% if node['environment'] != 'development' -%>$no_cache $arg_bc $arg_lt<% else -%>1<% end -%>;
+            fastcgi_no_cache        <% if node['environment'] != 'development' -%>$no_cache $arg_lt<% else -%>1<% end -%>;
             
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
@@ -390,8 +390,8 @@ http {
             proxy_cache_key         $real_scheme$subdomain$domain$uri;
             <% end -%>
             
-            proxy_cache_bypass      <% if node['environment'] != 'development' -%>0<% else -%>1<% end -%>;
-            proxy_no_cache          <% if node['environment'] != 'development' -%>0<% else -%>1<% end -%>;
+            proxy_cache_bypass      <% if node['environment'] != 'development' -%>0 $arg_bc $arg_lt<% else -%>1<% end -%>;
+            proxy_no_cache          <% if node['environment'] != 'development' -%>0 $arg_lt<% else -%>1<% end -%>;
             
             proxy_pass              http://ssi$theme/$device$path;
         }
