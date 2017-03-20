@@ -95,16 +95,16 @@ http {
     send_timeout                120;
     
     <% if node['environment'] != 'development' -%>
-    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
-    fastcgi_cache_valid         200 204 301 302 307 308 403 15m;
+    fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=60m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
+    fastcgi_cache_valid         200 204 301 302 307 308 403 60m;
     fastcgi_cache_revalidate    off;
     fastcgi_cache_use_stale     off;
     
     proxy_cache_path            /dev/shm/ssi levels=1:2 keys_zone=cache_ssi:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
-    proxy_cache_valid           200 204 301 302 307 308 403 15m;
+    proxy_cache_valid           200 204 60m;
 
-    open_file_cache             max=16384 inactive=15m;
-    open_file_cache_valid       15m;
+    open_file_cache             max=16384 inactive=240m;
+    open_file_cache_valid       240m;
     open_file_cache_min_uses    1;
     open_file_cache_errors      on;
     <% end -%>
