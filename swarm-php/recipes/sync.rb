@@ -22,6 +22,5 @@ cron 'warm_cache.php' do
   action :create
   minute '*/5'
   user 'www-data'
-  cwd '/html'
   command '/usr/bin/php /html/admin/warm_cache.php'
 end
