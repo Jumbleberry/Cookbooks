@@ -3,7 +3,7 @@ execute 'sleep 180'
 
 # Empty out memcached
 execute 'clear memcached' do
-    command 'echo 'flush_all' | nc localhost 11211'
+    command 'echo "flush_all" | nc localhost 11211'
     user 'root'
     action :run
 end
