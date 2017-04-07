@@ -44,5 +44,9 @@ default['php']['packages'] = [
   {
       "name" => "php7.0-json",
       "version" => "*"
+  },
+  {
+      "name" => "php7.0-mbstring",
+      "version" => "*"
   }
 ]
