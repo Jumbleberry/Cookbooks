@@ -20,7 +20,7 @@ end
 
 cron 'warm_cache.php' do
   action :create
-  minute '*/5'
+  minute '*/15'
   user 'www-data'
   command '/usr/bin/php /html/admin/warm_cache.php'
 end
