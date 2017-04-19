@@ -135,7 +135,7 @@ http {
         check_fastcgi_param     "SCRIPT_FILENAME" "/ping";
         check                   interval=5000 fall=3 rise=3 timeout=4000 default_down=false type=fastcgi port=9000;
         
-        keepalive               128;
+        keepalive               64;
     }
     
     upstream ssi {
