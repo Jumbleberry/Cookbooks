@@ -244,6 +244,11 @@ http {
         
         pagespeed                   on;
         
+        pagespeed                   Allow wildcard_spec;
+        pagespeed                   Disallow wildcard_spec;
+        
+        pagespeed                   Disallow "*/resource";
+        
         pagespeed                   Domain $domain;
         pagespeed                   Domain $subdomain$domain;
         pagespeed                   Domain https://$domain;
