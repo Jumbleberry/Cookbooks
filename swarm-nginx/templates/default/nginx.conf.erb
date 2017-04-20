@@ -96,11 +96,11 @@ http {
     
     <% if node['environment'] != 'development' -%>
     fastcgi_cache_path          /dev/shm/php levels=1:2 keys_zone=cache_php:64m inactive=60m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
-    fastcgi_cache_valid         200 204 301 302 307 308 403 60m;
+    fastcgi_cache_valid         200 204 308 403 60m;
     fastcgi_cache_revalidate    off;
     fastcgi_cache_use_stale     off;
     
-    proxy_cache_path            /dev/shm/ssi levels=1:2 keys_zone=cache_ssi:64m inactive=15m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
+    proxy_cache_path            /dev/shm/ssi levels=1:2 keys_zone=cache_ssi:64m inactive=60m max_size=<%= @cache_size / 2 %>k use_temp_path=off;
     proxy_cache_valid           200 204 60m;
 
     open_file_cache             max=16384 inactive=240m;
@@ -135,7 +135,7 @@ http {
         check_fastcgi_param     "SCRIPT_FILENAME" "/ping";
         check                   interval=10000 fall=6 rise=3 timeout=8000 default_down=false type=fastcgi port=9000;
         
-        keepalive               32;
+        keepalive               64;
     }
     
     upstream ssi {
@@ -432,8 +432,6 @@ http {
                                     @subreq;
         
             include                 /etc/nginx/fastcgi.conf;
-        
-            aio                     threads=pool_php;
         
             
             fastcgi_cache_bypass    <% if node['environment'] != 'development' -%>$no_cache $arg_bc $arg_lt<% else -%>1<% end -%>;
