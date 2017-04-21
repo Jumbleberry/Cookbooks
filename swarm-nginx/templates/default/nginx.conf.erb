@@ -248,7 +248,8 @@ http {
         pagespeed                   Disallow wildcard_spec;
         
         pagespeed                   Disallow "*/resource*";
-        pagespeed                   Disallow "*/store[^\.]*";
+        pagespeed                   Disallow "*/store/*";
+        pagespeed                   Allow "*/store/*.*";
         
         pagespeed                   Domain $domain;
         pagespeed                   Domain $subdomain$domain;
