@@ -109,8 +109,8 @@ http {
     open_file_cache_errors      on;
     <% end -%>
     
-    resolver                    156.154.70.1 8.8.8.8 8.8.4.4 valid=60s;
-    resolver_timeout            30s;
+    resolver                    127.0.0.1 valid=1800s;
+    resolver_timeout            60s;
     
     gzip                        on;
     gzip_vary                   off;
@@ -144,6 +144,11 @@ http {
     
     pagespeed                   off;
     
+    pagespeed                   NumRewriteThreads 4;
+    pagespeed                   NumExpensiveRewriteThreads 4;
+    pagespeed                   RewriteDeadlinePerFlushMs 10000;
+    pagespeed                   RewriteRandomDropPercentage 50;
+
     pagespeed                   RewriteLevel CoreFilters;
     pagespeed                   ProcessScriptVariables on;
     pagespeed                   StaticAssetPrefix /static/;
@@ -174,11 +179,11 @@ http {
     pagespeed                   MinImageSizeLowResolutionBytes 32000;
     
     <% if node['environment'] != 'development' -%>
-    pagespeed                   ImplicitCacheTtlMs            900000;
+    pagespeed                   ImplicitCacheTtlMs            1800000;
     pagespeed                   LRUCacheKbPerProcess          <%= @cache_size / 2 %>;
-    pagespeed                   LRUCacheByteLimit             65536;
+    pagespeed                   LRUCacheByteLimit             131702;
     pagespeed                   MemcachedServers              "127.0.0.1:11211";
-    pagespeed                   MemcachedTimeoutUs            500000;
+    pagespeed                   MemcachedTimeoutUs            250000;
     
     pagespeed                   FileCacheCleanIntervalMs      900000;
     pagespeed                   FileCacheInodeLimit           1000000;
