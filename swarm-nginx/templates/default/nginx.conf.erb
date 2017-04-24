@@ -269,6 +269,7 @@ http {
         
         #pagespeed                   LoadFromFileMatch "^https?://$subdomain$domain/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
         
+        pagespeed                   EnableFilters insert_dns_prefetch;
         pagespeed                   EnableFilters add_instrumentation;
         pagespeed                   EnableFilters collapse_whitespace;
         pagespeed                   EnableFilters dedup_inlined_images;
