@@ -456,8 +456,9 @@ http {
         location @subreq  {
             root                    /html/domains/;
         
-            try_files               /$domain$theme$version$path /$domain$theme$default$path /$domain$version$path /$domain$default$path
-                                    /default$theme$version$path /default$theme$default$path /default$version$path /default$default$path
+            try_files               /$domain$theme$version$path      /$domain$theme$default$path      /$domain$version$path              /$domain$default$path
+                                    /default$theme$version$path      /default$theme$default$path      /default$version$path              /default$default$path
+                                    /../templates$theme$version$path /../templates$theme$default$path /../templates/default$version$path /../templates/default$default$path
                                     @empty;
         }
         
