@@ -7,7 +7,8 @@ default['letsencrypt_aws']['hosts'] = '[
     "skindermarewind.com", "m.skindermarewind.com", "www.skindermarewind.com", "tablet.skindermarewind.com",
     "try-oveena.com", "m.try-oveena.com", "www.try-oveena.com", "tablet.try-oveena.com",
     "trytendermaskin.com", "m.trytendermaskin.com", "www.trytendermaskin.com", "tablet.trytendermaskin.com",
-    "discountedgarcinia.com", "www.discountedgarcinia.com"
+    "discountedgarcinia.com", "www.discountedgarcinia.com",
+    "tryevantiskincream.com", "m.tryevantiskincream.com", "www.tryevantiskincream.com", "tablet.tryevantiskincream.com"
 ]'
 default['letsencrypt_aws']['github_url'] = 'https://github.com/Hao-Jumbleberry/letsencrypt-aws.git'
 default['letsencrypt_aws']['branch'] = 'elbv2'
