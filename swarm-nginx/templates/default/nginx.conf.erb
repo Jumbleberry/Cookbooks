@@ -379,7 +379,7 @@ http {
             
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
-            fastcgi_param           SERVER_NAME        $subdomain$domain;
+            fastcgi_param           SERVER_NAME        $subdomain$domain$tld;
             
             fastcgi_param           SWARM_DOMAIN "/$domain";
             fastcgi_param           SWARM_DEVICE "/$device";
@@ -398,6 +398,7 @@ http {
             
             proxy_set_header        Connection "";
             proxy_set_header        Host $domain;
+            proxy_set_header        X-Real-Tld $tld;
             proxy_set_header        X-Real-Host $subdomain$domain$tld;
             
             <% if node['environment'] != 'development' -%>
@@ -430,7 +431,7 @@ http {
         set                         $default '/default';
         
         # SSI subrequests go here
-        location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
+        location ~ /\.\./domains/(?<domain>[^/]+)(?<tld>\.[^\./]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
             root                    /html/domains/;
         
             try_files               /$domain$theme$version$path.php /$domain$theme$default$path.php /$domain$version$path.php /$domain$default$path.php
@@ -445,7 +446,7 @@ http {
         
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
-            fastcgi_param           SERVER_NAME        $subdomain$domain;
+            fastcgi_param           SERVER_NAME        $subdomain$domain$tld;
         
             fastcgi_param           SWARM_DOMAIN "/$domain";
             fastcgi_param           SWARM_DEVICE "$version";
@@ -471,9 +472,9 @@ http {
         location ~ ^(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/]*)(?<sep>/)?$ {
             root                    /html/templates;
             
-            set                     $base_path '/../domains/$host$version$theme';
+            set                     $base_path '/../domains/$host$http_x_real_tld$version$theme';
             if ($theme ~ '\.') {
-                set                 $base_path '/../domains/$host$version';
+                set                 $base_path '/../domains/$host$http_x_real_tld$version';
             }
             
             try_files               /../domains/$host$theme${version}/index.html  /../domains/$host$theme${default}/index.html
@@ -492,7 +493,7 @@ http {
         location ~ ^(?<theme>/[^/.]*)(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
             root                    /html/templates;
             
-            set                     $base_path '/../domains/$host$version$theme';
+            set                     $base_path '/../domains/$host$http_x_real_tld$version$theme';
             
             try_files               /../domains/$host$theme$version$path                /../domains/$host$theme$version$path.html       /../domains/$host$theme$version${path}index.html
                                     /../domains/$host$theme$default$path                /../domains/$host$theme$default$path.html       /../domains/$host$theme$default${path}index.html
