@@ -214,7 +214,7 @@ http {
     server {
         listen 80 reuseport deferred fastopen=16384 backlog=16384;
         listen 443 reuseport deferred fastopen=16384 backlog=16384;
-        server_name ~^(?<subdomain>(www|m|tablet)\.)?(?<domain>.+)$ default_server;
+        server_name ~^(?<subdomain>(www|m|tablet)\.)?(?<domain>.+)(?<tld>\.[^\.]+)$ default_server;
         
         root                        /html;
         aio                         threads=pool_ps;
@@ -254,20 +254,20 @@ http {
         
         pagespeed                   Disallow "*/resource*";
         
-        pagespeed                   Domain $domain;
-        pagespeed                   Domain $subdomain$domain;
-        pagespeed                   Domain https://$domain;
-        pagespeed                   Domain https://$subdomain$domain;
+        pagespeed                   Domain $domain$tld;
+        pagespeed                   Domain $subdomain$domain$tld;
+        pagespeed                   Domain https://$domain$tld;
+        pagespeed                   Domain https://$subdomain$domain$tld;
         
-        pagespeed                   MapOriginDomain http://localhost http://$domain $real_protocol$domain;
-        pagespeed                   MapOriginDomain http://localhost http://$subdomain$domain $real_protocol$subdomain$domain;
-        pagespeed                   MapOriginDomain http://localhost https://$domain $real_protocol$domain;
-        pagespeed                   MapOriginDomain http://localhost https://$subdomain$domain $real_protocol$subdomain$domain;
+        pagespeed                   MapOriginDomain http://localhost http://$domain$tld $real_protocol$domain$tld;
+        pagespeed                   MapOriginDomain http://localhost http://$subdomain$domain$tld $real_protocol$subdomain$domain$tld;
+        pagespeed                   MapOriginDomain http://localhost https://$domain$tld $real_protocol$domain$tld;
+        pagespeed                   MapOriginDomain http://localhost https://$subdomain$domain$tld $real_protocol$subdomain$domain$tld;
         
-        pagespeed                   MapRewriteDomain $real_protocol$domain $this_protocol$domain;
-        pagespeed                   MapRewriteDomain $real_protocol$subdomain$domain $this_protocol$subdomain$domain;
+        pagespeed                   MapRewriteDomain $real_protocol$domain$tld $this_protocol$domain$tld;
+        pagespeed                   MapRewriteDomain $real_protocol$subdomain$domain$tld $this_protocol$subdomain$domain$tld;
         
-        #pagespeed                   LoadFromFileMatch "^https?://$subdomain$domain/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
+        #pagespeed                   LoadFromFileMatch "^https?://$subdomain$domain$tld/([^/]+)/assets/(.*)" "/html/templates/\\1/{$device}assets\\2";
         
         pagespeed                   EnableFilters insert_dns_prefetch;
         pagespeed                   EnableFilters add_instrumentation;
@@ -332,12 +332,12 @@ http {
         
         <% if node['environment'] != 'development' -%>
         if ($use_ssl = 1) {
-            return 301 https://$subdomain$domain$request_uri;
+            return 301 https://$subdomain$domain$tld$request_uri;
         }
         <% end -%>
         
         if ($device = 'default') {
-            return 301 $real_scheme://www.$domain$request_uri;
+            return 301 $real_scheme://www.$domain$tld$request_uri;
         }
         
         set                         $no_cache 0;
@@ -379,7 +379,7 @@ http {
             
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
-            fastcgi_param           SERVER_NAME        $subdomain$domain;
+            fastcgi_param           SERVER_NAME        $subdomain$domain$tld;
             
             fastcgi_param           SWARM_DOMAIN "/$domain";
             fastcgi_param           SWARM_DEVICE "/$device";
@@ -398,7 +398,8 @@ http {
             
             proxy_set_header        Connection "";
             proxy_set_header        Host $domain;
-            proxy_set_header        X-Real-Host $subdomain$domain;
+            proxy_set_header        X-Real-Tld $tld;
+            proxy_set_header        X-Real-Host $subdomain$domain$tld;
             
             <% if node['environment'] != 'development' -%>
             proxy_cache             cache_ssi;
@@ -430,7 +431,7 @@ http {
         set                         $default '/default';
         
         # SSI subrequests go here
-        location ~ /\.\./domains/(?<domain>[^/]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
+        location ~ /\.\./domains/(?<domain>[^/]+)(?<tld>\.[^\./]+)(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/.]*)?(?<path>/.*)$ {
             root                    /html/domains/;
         
             try_files               /$domain$theme$version$path.php /$domain$theme$default$path.php /$domain$version$path.php /$domain$default$path.php
@@ -445,7 +446,7 @@ http {
         
             fastcgi_param           SCRIPT_FILENAME    "/html/integration/index.php";
             fastcgi_param           SCRIPT_NAME        "/html/integration/index.php";
-            fastcgi_param           SERVER_NAME        $subdomain$domain;
+            fastcgi_param           SERVER_NAME        $subdomain$domain$tld;
         
             fastcgi_param           SWARM_DOMAIN "/$domain";
             fastcgi_param           SWARM_DEVICE "$version";
@@ -471,9 +472,9 @@ http {
         location ~ ^(?<version>/(default|mobile|desktop|tablet))(?<theme>/[^/]*)(?<sep>/)?$ {
             root                    /html/templates;
             
-            set                     $base_path '/../domains/$host$version$theme';
+            set                     $base_path '/../domains/$host$http_x_real_tld$version$theme';
             if ($theme ~ '\.') {
-                set                 $base_path '/../domains/$host$version';
+                set                 $base_path '/../domains/$host$http_x_real_tld$version';
             }
             
             try_files               /../domains/$host$theme${version}/index.html  /../domains/$host$theme${default}/index.html
@@ -492,7 +493,7 @@ http {
         location ~ ^(?<theme>/[^/.]*)(?<version>/(default|mobile|desktop|tablet))(?<path>/.*)?$ {
             root                    /html/templates;
             
-            set                     $base_path '/../domains/$host$version$theme';
+            set                     $base_path '/../domains/$host$http_x_real_tld$version$theme';
             
             try_files               /../domains/$host$theme$version$path                /../domains/$host$theme$version$path.html       /../domains/$host$theme$version${path}index.html
                                     /../domains/$host$theme$default$path                /../domains/$host$theme$default$path.html       /../domains/$host$theme$default${path}index.html
