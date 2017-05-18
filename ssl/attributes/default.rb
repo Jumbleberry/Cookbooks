@@ -7,7 +7,6 @@ default['letsencrypt_aws']['hosts'] = '[
     "skindermarewind.com", "m.skindermarewind.com", "www.skindermarewind.com", "tablet.skindermarewind.com",
     "try-oveena.com", "m.try-oveena.com", "www.try-oveena.com", "tablet.try-oveena.com",
     "trytendermaskin.com", "m.trytendermaskin.com", "www.trytendermaskin.com", "tablet.trytendermaskin.com",
-    "discountedgarcinia.com", "www.discountedgarcinia.com",
     "genuine-garcinia.com", "www.genuine-garcinia.com",
     "tryevantiskincream.com", "m.tryevantiskincream.com", "www.tryevantiskincream.com", "tablet.tryevantiskincream.com"
 ]'
