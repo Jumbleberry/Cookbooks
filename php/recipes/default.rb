@@ -1,7 +1,7 @@
 # Custom repositories
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
-  distribution  'trusty'
+  distribution  'xenial'
   components    ['main', 'stable']
 end
 

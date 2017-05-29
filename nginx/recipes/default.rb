@@ -6,7 +6,7 @@ end
 #Nginx package
 apt_repository 'nginx-stable' do
   uri           'ppa:nginx/stable'
-  distribution  'trusty'
+  distribution  'xenial'
   components    ['main', 'stable']
   notifies :stop, "service[nginx]", :immediately
 end
