@@ -9,8 +9,8 @@ default['php']['fpm']['min_spare_servers'] = '20'
 default['php']['fpm']['max_spare_servers'] = '40'
 default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
-default['php']['fpm']['conf_dirs'] = ['/etc/php/7.0/mods-available']
-default['php']['fpm']['conf_dirs_alias'] = ['/etc/php/7.0/cli/conf.d', '/etc/php/7.0/fpm/conf.d']
+default['php']['fpm']['conf_dirs'] = ['/etc/php/7.1/mods-available']
+default['php']['fpm']['conf_dirs_alias'] = ['/etc/php/7.1/cli/conf.d', '/etc/php/7.1/fpm/conf.d']
 default['php']['fpm']['conf_file'] = 'redis.ini'
 
 default['php']['packages'] = [
@@ -56,10 +56,6 @@ default['php']['packages'] = [
   },
   {
     "name" => "php7.1-redis",
-    "version" => "*"
-  },
-  {
-    "name" => "php7.1-xcache",
     "version" => "*"
   },
   {
