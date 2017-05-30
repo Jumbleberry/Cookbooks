@@ -43,6 +43,10 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
+    "name" => "php7.1-apcu",
+    "version" => "*"
+  },
+  {
     "name" => "php7.1-xml",
     "version" => "*"
   },
