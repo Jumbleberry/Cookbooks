@@ -3,7 +3,7 @@ include_recipe "apt"
 # Custom repositories
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
-  distribution  'xenial'
+  distribution  'trusty'
   components    ['main', 'stable']
 end
 
