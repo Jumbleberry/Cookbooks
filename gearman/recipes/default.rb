@@ -1,7 +1,7 @@
 # Add ppa repository
 apt_repository 'gearman-developers' do
   uri           'ppa:gearman-developers/ppa'
-  distribution  'precise'
+  distribution  node['lsb']['codename']
   components    ['main', 'stable']
 end
 

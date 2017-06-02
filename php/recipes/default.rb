@@ -1,7 +1,7 @@
 # Custom repositories
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
-  distribution  'precise'
+  distribution  node['lsb']['codename']
   components    ['main', 'stable']
 end
 
