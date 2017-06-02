@@ -1,18 +1,3 @@
-default['phalcon']['packages'] = [
-  {
-      "name" => "libjson0",
-      "version" => "*"
-  },
-  {
-      "name" => "libjson0-dev",
-      "version" => "*"
-  },
-  {
-      "name" => "re2c",
-      "version" => "*"
-   }
-]
-
 default['phalcon']['git_url'] = 'https://github.com/phalcon/cphalcon.git'
 default['phalcon']['git_ref'] = '2.1.x'
 default['phalcon']['download_path'] = "/tmp/cphalcon"
