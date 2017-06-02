@@ -4,12 +4,15 @@ include_recipe "github-auth"
 # Set the branch to checkout
 branch = ENV['JBX_MESH_BRANCH'] || node['jbx']['mesh']['branch']
 
-git node['jbx']['mesh']['path'] do
-  ssh_wrapper node['github-auth']['wrapper_path'] + "/mesh_wrapper.sh"
-  repository node['jbx']['mesh']['git-url']
-  revision branch
-  user 'root'
-  action :sync
+{ :checkout => true, :sync => node[:user] != 'vagrant' }.each do |action, should|
+    git node['jbx']['mesh']['path'] do
+      ssh_wrapper node['github-auth']['wrapper_path'] + "/mesh_wrapper.sh"
+      repository node['jbx']['mesh']['git-url']
+      revision branch
+      user 'root'
+      action action
+      only_if { should }
+    end
 end
 
 execute "chown-data-www" do

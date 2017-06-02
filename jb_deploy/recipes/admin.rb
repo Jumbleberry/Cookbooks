@@ -9,12 +9,15 @@ end
 
 branch = ENV['JB_ADMIN_BRANCH'] || node['admin']['branch']
 
-git node['admin']['path'] do
-  ssh_wrapper node['github-auth']['wrapper_path'] + "/admin_wrapper.sh"
-  repository node['admin']['git-url']
-  revision branch
-  user 'root'
-  action :sync
+{ :checkout => true, :sync => node[:user] != 'vagrant' }.each do |action, should|
+    git node['admin']['path'] do
+      ssh_wrapper node['github-auth']['wrapper_path'] + "/admin_wrapper.sh"
+      repository node['admin']['git-url']
+      revision branch
+      user 'root'
+      action action
+      only_if { should }
+    end
 end
 
 # Run the deploy script
@@ -41,11 +44,13 @@ template "#{node['admin']['path']}/application/configs/application.ini" do
   variables ({
       "jbx_api"   => jbx_api
   })
+  not_if { node[:user] == 'vagrant' && ::File.exist?("#{node['admin']['path']}/application/configs/application.ini") }
 end
 
 #Add cron configurations
 template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
   source  "admin/settings.php.erb"
+  not_if { node[:user] == 'vagrant' && ::File.exist?("#{node['admin']['path']}/cron_scripts/includes/config/settings.php") }
 end
 
 #Creates bucket directory
