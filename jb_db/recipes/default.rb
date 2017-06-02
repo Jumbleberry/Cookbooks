@@ -167,6 +167,7 @@ end
 execute "restore-JBX-DB" do
     command "jbdb_import jbx --create"
     ignore_failure true
+    not_if 'echo "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = \'jbx\'" |  mysql -uroot -p' + root_password + ' jbx 2> /dev/null | grep "SCHEMA_NAME"'
 end
 
 # Create Gearman
