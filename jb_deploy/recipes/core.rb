@@ -9,12 +9,15 @@ directory node['jbx']['core']['path'] do
   group node["jbx"]["user"]
 end
 
-git node['jbx']['core']['path'] do
-  ssh_wrapper node['github-auth']['wrapper_path'] + "/" + "core_wrapper.sh"
-  repository node['jbx']['core']['git-url']
-  revision branch
-  user 'root'
-  action :sync
+{ :checkout => true, :sync => node[:user] != 'vagrant' }.each do |action, should|
+    git node['jbx']['core']['path'] do
+      ssh_wrapper node['github-auth']['wrapper_path'] + "/" + "core_wrapper.sh"
+      repository node['jbx']['core']['git-url']
+      revision branch
+      user 'root'
+      action action
+      only_if { should }
+    end
 end
 
 execute "chown-data-www" do
@@ -84,10 +87,12 @@ template credentials_file do
       
       "trackrevenue"            => node['jbx']['credentials']['trackrevenue']
     })
+    not_if { node[:user] == 'vagrant' && ::File.exist?(credentials_file) }
 end
 
 template "#{node['jbx']['core']['path']}/config/modules.json" do
     source "modules.json.erb"
+    not_if { node[:user] == 'vagrant' && ::File.exist?("#{node['jbx']['core']['path']}/config/modules.json") }
 end
 
 # Run the deploy script
