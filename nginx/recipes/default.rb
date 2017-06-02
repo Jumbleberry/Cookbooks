@@ -6,7 +6,7 @@ end
 #Nginx package
 apt_repository 'nginx-stable' do
   uri           'ppa:nginx/stable'
-  distribution  'precise'
+  distribution  node['lsb']['codename']
   components    ['main', 'stable']
   notifies :stop, "service[nginx]", :immediately
 end
