@@ -37,7 +37,7 @@ node['phalcon']['conf_dirs'].each do |conf_dir|
           only_if { File.exist? "#{conf_dirs_alias}/20-#{node['phalcon']['conf_file']}" }
         end
     
-        link "#{conf_dirs_alias}/30-#{node['phalcon']['conf_file']}" do
+        link "#{conf_dirs_alias}/50-#{node['phalcon']['conf_file']}" do
           to "#{conf_dir}/#{node['phalcon']['conf_file']}"
           notifies :restart, "service[php7.1-fpm]", :delayed
         end
