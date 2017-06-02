@@ -1,7 +1,7 @@
 # Custom repositories
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
-  distribution  'xenial'
+  distribution  node['lsb']['codename']
   components    ['main', 'stable']
 end
 
@@ -42,6 +42,12 @@ end
 
 #Register Php service
 service 'php7.1-fpm' do
+  case node['platform']
+  when 'ubuntu'
+    if node['lsb']['codename'] == 'trusty'
+      provider Chef::Provider::Service::Upstart
+    end
+  end
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :nothing
 end
