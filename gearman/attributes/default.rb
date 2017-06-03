@@ -1,5 +1,4 @@
 default["gearman"]["version"]           = "1.0.*"
-default["gearman"]["source"]["version"] = "1.1.12"
 default["gearman"]["source"]["version"] = "1.1.16"
 default["gearman"]["ip"]                = (
         node[:network][:interfaces][node[:network_interface]] || 

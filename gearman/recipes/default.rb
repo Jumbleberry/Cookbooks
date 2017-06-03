@@ -35,9 +35,10 @@ execute "build gearman" do
                 apt-get update --fix-missing &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' build-dep gearman-job-server -y &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --only-upgrade gearman-job-server -y  &&
-                apt-get install gperf &&
+                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install libboost-all-dev libevent-dev uuid-dev -y  &&
+                apt-get install gperf -y &&
                 cd /tmp &&
-                wget https://launchpad.net/gearmand/1.2/#{node['gearman']['source']['version']}/+download/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
+                wget https://github.com/gearman/gearmand/releases/download/#{node['gearman']['source']['version']}/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
                 tar -xvzf gearmand-#{node['gearman']['source']['version']}.tar.gz &&
                 cd gearmand-#{node['gearman']['source']['version']} && 
                 ./configure && make && make install;
