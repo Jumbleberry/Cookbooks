@@ -12,4 +12,8 @@ ff02::3 ip6-allhosts
 # Set the hostname with proper format, the rest are aliases.
 127.0.0.1 localhost localhost.<%= node[:role] %>.<%= node[:environment] %>
 127.0.1.1 <%= node[:hostname] %>.<%= node[:role] %>.<%= node[:environment] %> <%= node[:hostname] %>
-<%=(node[:network][:interfaces][node[:network_interface]] || node[:network][:interfaces][:enp0s8])[:addresses].detect{|k,v| v[:family] == "inet" }.first%> externalhost
+<%=(
+    node[:network][:interfaces][node[:network_interface]] || 
+    node[:network][:interfaces][:enp0s8] ||
+    node[:network][:interfaces][:ens3]
+)[:addresses].detect{|k,v| v[:family] == "inet" }.first%> externalhost
