@@ -66,7 +66,7 @@ bash "compile_and_install_s3fs" do
   cwd '/tmp'
   code <<-EOH
     unzip -o s3fs-#{s3fs_version}.zip
-    cd s3fs-fuse-#{s3fs_version}
+    cd ./s3fs-fuse-master
     #{'export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig' if node.platform_family == 'rhel'}
     ./autogen.sh
     ./configure --prefix=/usr/local
