@@ -1,6 +1,6 @@
 # Add ppa repository
 apt_repository 'gearman-developers' do
-  uri           'ppa:'
+  uri           'ppa:gearman-developers/ppa'
   distribution  'precise'
   components    ['main', 'stable']
 end
