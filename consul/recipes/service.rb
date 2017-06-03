@@ -259,7 +259,12 @@ when 'init'
   end
 
   service 'consul' do
-    provider Chef::Provider::Service::Upstart if platform?("ubuntu")
+    case node['platform']
+    when 'ubuntu'
+      if node['lsb']['codename'] == 'trusty'
+        provider Chef::Provider::Service::Upstart
+      end
+    end
     supports status: true, restart: true, reload: true
     action [:enable, :start]
     subscribes :restart, "file[#{consul_config_filename}]"

@@ -47,7 +47,12 @@ sentinel_instances.each do |current_sentinel|
   	end
   elsif job_control == 'upstart'
     service "redis_sentinel_#{sentinel_name}" do
-      provider Chef::Provider::Service::Upstart
+      case node['platform']
+      when 'ubuntu'
+        if node['lsb']['codename'] == 'trusty'
+          provider Chef::Provider::Service::Upstart
+        end
+      end
       start_command "start redis_sentinel_#{sentinel_name}"
       stop_command "stop redis_sentinel_#{sentinel_name}"
       restart_command "restart redis_sentinel_#{sentinel_name}"
