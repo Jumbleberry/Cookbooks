@@ -297,6 +297,7 @@ when 'systemd'
   end
 
   service 'consul' do
+    provider Chef::Provider::Service::Systemd
     supports status: true, restart: true, reload: true
     action [:enable, :start]
     subscribes :restart, "file[#{consul_config_filename}]"
