@@ -15,14 +15,14 @@ ff02::3 ip6-allhosts
 <%=node[:opsworks][:instance][:private_ip]%> externalhost
 
 <% @nodes.each do |node| -%>
-<% if node.attributes.attribute?(:private_ip) && node.attributes.private_ip && Resolv.getaddress(node.attributes.private_ip) -%>
-<%= node.attributes.private_ip %> <%= node.name %> <%= node.hostname %>
+<% if node[:opsworks][:instance].attribute?(:private_ip) && node[:opsworks][:instance][:private_ip] && Resolv.getaddress(node[:opsworks][:instance][:private_ip]) -%>
+<%= node[:opsworks][:instance][:private_ip] %> <%= node[:name] %> <%= node[:hostname] %>
 <% else -%>
-<%= "# Unable to resolve IP '#{node.attributes.private_ip}' for hostname '#{node.name}'" %>
+<%= "# Unable to resolve IP '#{node[:opsworks][:instance][:private_ip]}' for hostname '#{node['name']}'" %>
 <% end -%>
-<% if node.attributes.attribute?(:ip) && node.attributes.ip && Resolv.getaddress(node.attributes.ip) -%>
-<%= node.attributes.ip %> <%= node.name %>-ext <%= node.hostname %>-ext
+<% if node[:opsworks][:instance].attribute?(:ip) && node[:opsworks][:instance][:public_ip] && Resolv.getaddress(node[:opsworks][:instance][:public_ip]) -%>
+<%= node[:opsworks][:instance][:public_ip] %> <%= node[:name] %>-ext <%= node[:hostname] %>-ext
 <% else -%>
-<%= "# Unable to resolve IP '#{node.attributes.ip}' for hostname '#{node.name}'" %>
+<%= "# Unable to resolve IP '#{node[:opsworks][:instance][:public_ip]}' for hostname '#{node['name']}'" %>
 <% end -%>
 <% end -%>
