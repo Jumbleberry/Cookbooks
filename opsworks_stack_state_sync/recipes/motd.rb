@@ -1,3 +1,7 @@
+node[:opsworks][:stack] = search("aws_opsworks_stack").first
+node[:opsworks][:layers] = search("aws_opsworks_layer").first
+node[:opsworks][:instance] = search("aws_opsworks_instance").first
+
 os_release =
   if rhel7?
     os_release = File.read("/etc/redhat-release").chomp
