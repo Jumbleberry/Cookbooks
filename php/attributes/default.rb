@@ -11,71 +11,71 @@ default['php']['fpm']['include_path'] = '.:/usr/share/php:/var/www/lib'
 
 default['php']['packages'] = [
   {
-    "name" => "php5.6-fpm",
+    "name" => "php5-fpm",
     "version" => "*"
   },
   {
-    "name" => "php5.6-common",
+    "name" => "php5-common",
     "version" => "*"
   },
   {
-    "name" => "php5.6-mysql",
+    "name" => "php5-mysql",
     "version" => "*"
   },
   {
-    "name" => "php5.6-mcrypt",
+    "name" => "php5-mcrypt",
     "version" => "*"
   },
   {
-    "name" => "php5.6-zip",
+    "name" => "php5-zip",
     "version" => "*"
   },
   {
-    "name" => "php5.6-memcache",
+    "name" => "php5-memcache",
     "version" => "*"
   },
   {
-    "name" => "php5.6-cli",
+    "name" => "php5-cli",
     "version" => "*"
   },
   {
-    "name" => "php5.6-xml",
+    "name" => "php5-xml",
     "version" => "*"
   },
   {
-    "name" => "php5.6-dev",
+    "name" => "php5-dev",
     "version" => "*"
   },
   {
-    "name" => "php5.6-bcmath",
+    "name" => "php5-bcmath",
     "version" => "*"
   },
   {
-    "name" => "php5.6-redis",
+    "name" => "php5-redis",
     "version" => "*"
   },
   {
-    "name" => "php5.6-xcache",
+    "name" => "php5-xcache",
     "version" => "*"
   },
   {
-    "name" => "php5.6-gearman",
+    "name" => "php5-gearman",
     "version" => "*"
   },
   {
-    "name" => "php5.6-curl",
+    "name" => "php5-curl",
     "version" => "*"
   },
   {
-    "name" => "php5.6-mbstring",
+    "name" => "php5-mbstring",
     "version" => "*"
   },
   {
-    "name" => "php5.6-gettext",
+    "name" => "php5-gettext",
     "version" => "*"
   },
   {
-    "name" => "php5.6-gd",
+    "name" => "php5-gd",
     "version" => "*"
   }
 ]
@@ -84,5 +84,5 @@ default['php']['packages'] = [
 
 #  {
 #    "name" => "php5-mysqlnd",
-#    "version" => "5.6.*"
+#    "version" => "5.*"
 #  },
