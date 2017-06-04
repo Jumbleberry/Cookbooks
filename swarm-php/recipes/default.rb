@@ -4,7 +4,7 @@ include_recipe "apt"
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
   distribution  'trusty'
-  components    ['main', 'stable']
+  components    ['main']
 end
 
 # Update apt

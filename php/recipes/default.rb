@@ -2,7 +2,7 @@
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
   distribution  node['lsb']['codename']
-  components    ['main', 'stable']
+  components    ['main']
 end
 
 include_recipe "apt"
