@@ -35,6 +35,11 @@ else
         action :delete
     end
     
+    directory dir do
+        recursive true
+        action :create
+    end
+    
     # Delete the mount dir
     directory dir_info[:path] do
         recursive true
