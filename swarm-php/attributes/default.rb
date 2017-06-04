@@ -34,7 +34,7 @@ default['php']['packages'] = [
     "version" => "7.*"
   },
   {
-    "name" => "php7.0",
+    "name" => "php7.0-dev",
     "version" => "7.*"
   },
   {
