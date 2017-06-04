@@ -1,7 +1,7 @@
-default[:opsworks] = node[:opsworks] || {}
-default[:opsworks][:stack] = search("aws_opsworks_stack").first
-default[:opsworks][:layers] = search("aws_opsworks_layer").first
-default[:opsworks][:instance] = search("aws_opsworks_instance").first
+node.default[:opsworks] = node[:opsworks] || {}
+node.default[:opsworks][:stack] = search("aws_opsworks_stack").first
+node.default[:opsworks][:layers] = search("aws_opsworks_layer").first
+node.default[:opsworks][:instance] = search("aws_opsworks_instance").first
 
 os_release =
   if rhel7?

@@ -4,10 +4,10 @@ if ( node.attribute?('ec2') && node[:ec2].attribute?('instance_id') && /(i|snap|
 
   include_recipe "route53"
   
-  node[:opsworks] = node[:opsworks] || {}
-  node[:opsworks][:stack] = search("aws_opsworks_stack").first
-  node[:opsworks][:layers] = search("aws_opsworks_layer").first
-  node[:opsworks][:instance] = search("aws_opsworks_instance").first
+  node.default[:opsworks] = node[:opsworks] || {}
+  node.default[:opsworks][:stack] = search("aws_opsworks_stack").first
+  node.default[:opsworks][:layers] = search("aws_opsworks_layer").first
+  node.default[:opsworks][:instance] = search("aws_opsworks_instance").first
 
   layerIps = []
 
