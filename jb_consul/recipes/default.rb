@@ -95,7 +95,7 @@ directory "#{cron_path}/JbServerHelpers/data" do
 end
 
 # Copy the mocked_stack script for non-production environments
-ip = node[:network][:interfaces][node[:consul][:bind_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
+ip = node[:network][:interfaces][node[:network_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
 template "#{cron_path}/JbServerHelpers/data/mocked_stack.json" do
     source "mocked_stack.json.erb"
     owner "root"

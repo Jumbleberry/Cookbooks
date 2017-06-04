@@ -8,11 +8,7 @@ node['datadog']['services'].each do | service, instances |
     owner 'dd-agent'
     mode 00644
     variables ({
-        "ipAddress" => (
-                node[:network][:interfaces][node[:network_interface]] || 
-                node[:network][:interfaces][:enp0s8] ||
-                node[:network][:interfaces][:ens3]
-            )[:addresses].detect{|k,v| v[:family] == "inet" }.first
+        "ipAddress" => node[:network][:interfaces][node[:network_interface]][:addresses].detect{|k,v| v[:family] == "inet" }.first
     })
   end
 end
