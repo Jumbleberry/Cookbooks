@@ -7,17 +7,17 @@ end
 # Set mysql server default password
 root_password = "root"
 execute "mysql-default-password" do
-    command "echo \"mysql-server-5.6 mysql-server/root_password password #{root_password}\" | debconf-set-selections"
+    command "echo \"mysql-server-5.7 mysql-server/root_password password #{root_password}\" | debconf-set-selections"
     user 'root'
 end
 execute "mysql-default-password-again" do
-    command "echo \"mysql-server-5.6 mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
+    command "echo \"mysql-server-5.7 mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
     user 'root'
 end
 
 # Install mysql server 5.6
 execute "mysql-install" do
-    command "(export DEBIAN_FRONTEND=\"noninteractive\"; sudo -E apt-get install -y -q mysql-server-5.6)"
+    command "(export DEBIAN_FRONTEND=\"noninteractive\"; sudo -E apt-get install -y -q mysql-server-5.7)"
     user "root"
 end
 
@@ -29,10 +29,17 @@ cookbook_file "/etc/mysql/my.cnf" do
     mode "0644"
 end
 
-# Restart mysql
-execute "mysql-restart" do
-    command "service mysql restart"
-    user 'root'
+service 'mysql' do
+    case node['platform']
+    when 'ubuntu'
+      if node['lsb']['release'].to_f > 16
+        provider Chef::Provider::Service::Systemd
+      elsif node['lsb']['codename'] == 'trusty'
+        provider Chef::Provider::Service::Upstart
+      end
+    end
+    supports status: true, restart: true, reload: true
+    action [:enable, :restart]
 end
 
 # Create jbx user
