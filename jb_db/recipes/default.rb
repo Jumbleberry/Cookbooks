@@ -4,20 +4,22 @@ execute "apt-get-update-periodic" do
     user 'root'
 end
 
+mysql_version = node[:lsb][:release].to_f > 16? '5.7': '5.6'
+
 # Set mysql server default password
 root_password = "root"
 execute "mysql-default-password" do
-    command "echo \"mysql-server-5.7 mysql-server/root_password password #{root_password}\" | debconf-set-selections"
+    command "echo \"mysql-server-#{mysql_version} mysql-server/root_password password #{root_password}\" | debconf-set-selections"
     user 'root'
 end
 execute "mysql-default-password-again" do
-    command "echo \"mysql-server-5.7 mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
+    command "echo \"mysql-server-#{mysql_version} mysql-server/root_password_again password #{root_password}\" | debconf-set-selections"
     user 'root'
 end
 
-# Install mysql server 5.6
+# Install mysql server
 execute "mysql-install" do
-    command "(export DEBIAN_FRONTEND=\"noninteractive\"; sudo -E apt-get install -y -q mysql-server-5.7)"
+    command "(export DEBIAN_FRONTEND=\"noninteractive\"; sudo -E apt-get install -y -q mysql-server-#{mysql_version})"
     user "root"
 end
 
