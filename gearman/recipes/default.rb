@@ -1,10 +1,3 @@
-# Add ppa repository
-apt_repository 'gearman-developers' do
-  uri           'ppa:gearman-developers/ppa'
-  distribution  'precise'
-  components    ['main', 'stable']
-end
-
 include_recipe "apt"
 
 # Update apt
@@ -32,9 +25,6 @@ end
 # Get all gearman build dependencies
 execute "build gearman" do
     command "DEBIAN_FRONTEND=noninteractive &&
-                apt-get update --fix-missing &&
-                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' build-dep gearman-job-server -y &&
-                apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --only-upgrade gearman-job-server -y  &&
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install libboost-all-dev libevent-dev uuid-dev -y  &&
                 apt-get install gperf -y &&
                 cd /tmp &&
