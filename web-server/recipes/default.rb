@@ -9,7 +9,7 @@ if ( !node.attribute?('ec2') || !node[:ec2].attribute?('instance_id') || !/(i|sn
     end
 else
     
-    # include_recipe "opsworks_stack_state_sync"
+    include_recipe "opsworks_stack_state_sync"
 
 end
 
