@@ -1,9 +1,0 @@
-#!/bin/bash
-
-DIR=$( cd "$( dirname "$0" )" && pwd )
-GROUP="<%= @group %>"
-CONTROLS="<%= @controls.join(',') %>"
-
-/usr/local/bin/rc_mon_confine_proc $DIR $GROUP $CONTROLS &
-
-disown %1

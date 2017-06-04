@@ -1,1 +1,0 @@
-default[:rc_mon] = {}
