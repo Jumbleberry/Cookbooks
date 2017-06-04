@@ -1,9 +1,9 @@
 require 'resolv'
 
-node[:opsworks] = node[:opsworks] || {}
-node[:opsworks][:stack] = search("aws_opsworks_stack").first
-node[:opsworks][:layers] = search("aws_opsworks_layer").first
-node[:opsworks][:instance] = search("aws_opsworks_instance").first
+default[:opsworks] = node[:opsworks] || {}
+default[:opsworks][:stack] = search("aws_opsworks_stack").first
+default[:opsworks][:layers] = search("aws_opsworks_layer").first
+default[:opsworks][:instance] = search("aws_opsworks_instance").first
 
 template '/etc/hosts' do
   source "hosts.erb"
