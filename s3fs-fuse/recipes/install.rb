@@ -21,6 +21,8 @@ when 'debian'
     mime-support
     automake
     libtool
+    pkg-config
+    libssl-dev
   )
 when 'rhel'
   %w(
@@ -48,7 +50,6 @@ end
 
 s3fs_version = node[:s3fs_fuse][:version]
 source_url   = "https://s3.amazonaws.com/miscfile-staging/s3fs-#{s3fs_version}.zip"
-
 remote_file "/tmp/s3fs-#{s3fs_version}.zip" do
   source source_url
   action :create_if_missing
