@@ -16,10 +16,13 @@ when 'debian'
   %w(
     build-essential
     libfuse-dev
-    fuse-utils
     libcurl4-openssl-dev
     libxml2-dev
     mime-support
+    automake
+    libtool
+    pkg-config
+    libssl-dev
   )
 when 'rhel'
   %w(
@@ -46,9 +49,8 @@ prereqs.each do |prereq_name|
 end
 
 s3fs_version = node[:s3fs_fuse][:version]
-source_url = "https://s3.amazonaws.com/jb-vagrant/s3fs-#{s3fs_version}.tar.gz"
-
-remote_file "/tmp/s3fs-#{s3fs_version}.tar.gz" do
+source_url   = "https://s3.amazonaws.com/miscfile-staging/s3fs-#{s3fs_version}.zip"
+remote_file "/tmp/s3fs-#{s3fs_version}.zip" do
   source source_url
   action :create_if_missing
 end
@@ -64,8 +66,8 @@ end
 bash "compile_and_install_s3fs" do
   cwd '/tmp'
   code <<-EOH
-    tar -xzf s3fs-#{s3fs_version}.tar.gz
-    cd s3fs-fuse-#{s3fs_version}
+    unzip -o s3fs-#{s3fs_version}.zip
+    cd ./s3fs-fuse-master
     #{'export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig' if node.platform_family == 'rhel'}
     ./autogen.sh
     ./configure --prefix=/usr/local

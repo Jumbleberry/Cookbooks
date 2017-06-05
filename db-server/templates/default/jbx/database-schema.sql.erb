@@ -26,235 +26,11 @@ CREATE PROCEDURE mysql.store_time_zone ()
 |
 DELIMITER ;
 
-DELIMITER $$
-CREATE DEFINER=`root`@`%` PROCEDURE `cap_history_insert`(IN campaign_id int(10),
-IN old_value INT (11),
-IN new_value INT(11),
-IN notes TEXT,
-IN created_by int(11),
-IN created DATETIME)
-BEGIN
-    INSERT INTO finance_campaign_cap_history (campaign_id, old_value, new_value, notes, created_by, created)
-    VALUES (campaign_id, old_value, new_value, notes, created_by, created);
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `credit_history_insert`(IN advertiser_id INT(11),
-IN old_value DECIMAL(10, 2),
-IN new_value DECIMAL(10, 2),
-IN created_by INT(11),
-IN created DATETIME)
-BEGIN
-    INSERT INTO advertiser_credit_history (advertiser_id, old_value, new_value, created_by, created)
-    VALUES (advertiser_id, old_value, new_value, created_by, created);
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
-IN saleDate DATETIME,
-IN affiliateId INT(11),
-IN landingPageId INT(11),
-IN rejected INT(8),
-IN newEarned DECIMAL(10, 2),
-IN newPaid DECIMAL(10, 2),
-IN _c1 VARCHAR(100),
-IN _c2 VARCHAR(100),
-IN _c3 VARCHAR(100))
-BEGIN
-    DECLARE advertiserId INT;
-    DECLARE hourlyDate DATETIME;
-    DECLARE dailyDate DATETIME;
-    DECLARE updateRows INT;
-    DECLARE advertiserManagerId INT;
-    DECLARE campaignManagerId INT;
-    DECLARE affiliateManagerId INT;
-
-    -- Get advertiser ID
-    SELECT advertiser_id INTO advertiserId
-      FROM hitpath_campaigns
-     WHERE campaign_id = campaignId;
-
-    -- Format dates
-    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
-    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d') INTO dailyDate;
-
-    -- Update hourly log
-    UPDATE `summary_hitpath_hourly`
-       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
-     WHERE transaction_date = hourlyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId
-       AND cpa_in = newEarned
-       AND cpa_out = newPaid
-       AND landing_page_id = landingPageId;
-
-    SET updateRows = ROW_COUNT();
-
-    IF (updateRows = 0) THEN
-        -- Get hitpath manager IDs
-        SELECT hitpath_manager_id INTO advertiserManagerId
-          FROM hitpath_advertisers
-         WHERE advertiser_id = advertiserId;
-
-        SELECT hitpath_manager_id INTO campaignManagerId
-          FROM hitpath_campaigns
-         WHERE campaign_id = campaignId;
-
-        SELECT hitpath_manager_id INTO affiliateManagerId
-          FROM hitpath_affiliates
-         WHERE affiliate_id = affiliateId;
-
-        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
-    END IF;
-
-    -- Update daily log
-    UPDATE `summary_hitpath_daily`
-       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
-     WHERE transaction_date = dailyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId
-       AND cpa_in = newEarned
-       AND cpa_out = newPaid
-       AND landing_page_id = landingPageId;
-
-    SET updateRows = ROW_COUNT();
-
-    IF (updateRows = 0) THEN
-
-        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
-    END IF;
-
-    -- Update daily detail log
-    UPDATE `summary_hitpath_daily_detail`
-       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
-     WHERE transaction_date = dailyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId
-       AND cpa_in = newEarned
-       AND cpa_out = newPaid
-       AND landing_page_id = landingPageId
-       AND c1 = _c1
-       AND c2 = _c2
-       AND c3 = _c3;
-
-    SET updateRows = ROW_COUNT();
-
-    IF (updateRows = 0) THEN
-
-        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, 1, newEarned, newPaid, ABS(newEarned), ABS(newPaid), _c1, _c2, _c3, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
-    END IF;
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `prepay_history_insert`(IN advertiser_id INT(11),
-IN old_value DECIMAL(10, 2),
-IN new_value DECIMAL(10, 2),
-IN created_by INT(11),
-IN created DATETIME)
-BEGIN
-    INSERT INTO advertiser_prepay_history (advertiser_id, old_value, new_value, created_by, created)
-    VALUES (advertiser_id, old_value, new_value, created_by, created);
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `summary_hits_insert_update`(IN campaignId INT(11),
-IN hitDate DATETIME,
-IN affiliateId INT(11),
-IN landingPageId INT(11),
-IN cpaOut DECIMAL,
-IN cpaIn DECIMAL,
-IN _c1 VARCHAR(100),
-IN _c2 VARCHAR(100),
-IN _c3 VARCHAR(100))
-BEGIN
-    DECLARE advertiserId INT;
-    DECLARE hourlyDate DATETIME;
-    DECLARE dailyDate DATETIME;
-    DECLARE updateRows INT;
-    DECLARE advertiserManagerId INT;
-    DECLARE campaignManagerId INT;
-    DECLARE affiliateManagerId INT;
-
-    -- Get advertiser ID
-    SELECT advertiser_id INTO advertiserId
-      FROM hitpath_campaigns
-     WHERE campaign_id = campaignId;
-
-    -- Format dates
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
-    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d') INTO dailyDate;
-
-    -- Update hourly log
-    UPDATE `summary_hitpath_hourly`
-       SET hits = hits + 1, updated = NOW()
-     WHERE transaction_date = hourlyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId;
-
-    SET updateRows = ROW_COUNT();
-
-    IF (updateRows = 0) THEN
-        -- Get hitpath manager IDs
-        SELECT hitpath_manager_id INTO advertiserManagerId
-          FROM hitpath_advertisers
-         WHERE advertiser_id = advertiserId;
-
-        SELECT hitpath_manager_id INTO campaignManagerId
-          FROM hitpath_campaigns
-         WHERE campaign_id = campaignId;
-
-        SELECT hitpath_manager_id INTO affiliateManagerId
-          FROM hitpath_affiliates
-         WHERE affiliate_id = affiliateId;
-
-        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
-    END IF;
-
-    -- Update daily log
-    UPDATE `summary_hitpath_daily`
-       SET hits = hits + 1, updated = NOW()
-     WHERE transaction_date = dailyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId;
-
-    SET updateRows = ROW_COUNT();
-
-    IF (updateRows = 0) THEN
-
-        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
-    END IF;
-
-    -- Update daily detail
-    UPDATE `summary_hitpath_daily_detail`
-       SET hits = hits + 1, updated = NOW()
-     WHERE transaction_date = dailyDate
-       AND campaign_id = campaignId
-       AND affiliate_id = affiliateId
-       AND c1 = _c1
-       AND c2 = _c2
-       AND c3 = _c3;
-
-    SET updateRows = ROW_COUNT();
-
-    IF (updateRows = 0) THEN
-
-        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
-        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, _c1, _c2, _c3, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
-            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
-    END IF;
-END$$
-
-DELIMITER ;
-
 CREATE TABLE IF NOT EXISTS `advertiser_credit` (
   `advertiser_id` int(11) NOT NULL,
   `credit` decimal(10,2) NOT NULL,
+  `type` enum('credit','prepay') NOT NULL DEFAULT 'credit',
+  `hard_cap` enum('yes','no') NOT NULL DEFAULT 'no',
   `notify_percent` decimal(5,2) NOT NULL,
   `notify_date` datetime DEFAULT NULL,
   `notify_status` enum('enabled','disabled') NOT NULL DEFAULT 'enabled',
@@ -262,25 +38,9 @@ CREATE TABLE IF NOT EXISTS `advertiser_credit` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`advertiser_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `advertiser_credit_insert`;
-DELIMITER //
-CREATE TRIGGER `advertiser_credit_insert` AFTER INSERT ON `advertiser_credit`
- FOR EACH ROW BEGIN
-    CALL credit_history_insert(new.advertiser_id, 0, new.credit, new.created_by, new.created);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `advertiser_credit_update`;
-DELIMITER //
-CREATE TRIGGER `advertiser_credit_update` AFTER UPDATE ON `advertiser_credit`
- FOR EACH ROW BEGIN
-    IF (old.credit != new.credit) THEN
-        CALL credit_history_insert(old.advertiser_id, old.credit, new.credit, new.created_by, new.created);
-    END IF;
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `advertiser_credit_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `advertiser_id` int(11) NOT NULL,
@@ -289,8 +49,10 @@ CREATE TABLE IF NOT EXISTS `advertiser_credit_history` (
   `created_by` int(11) NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=920 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `advertiser_prepay` (
   `advertiser_id` int(11) NOT NULL,
   `prepay` decimal(10,2) NOT NULL,
@@ -301,25 +63,9 @@ CREATE TABLE IF NOT EXISTS `advertiser_prepay` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`advertiser_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `advertiser_prepay_insert`;
-DELIMITER //
-CREATE TRIGGER `advertiser_prepay_insert` AFTER INSERT ON `advertiser_prepay`
- FOR EACH ROW BEGIN
-    CALL prepay_history_insert(new.advertiser_id, 0, new.prepay, new.created_by, new.created);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `advertiser_prepay_update`;
-DELIMITER //
-CREATE TRIGGER `advertiser_prepay_update` AFTER UPDATE ON `advertiser_prepay`
- FOR EACH ROW BEGIN
-    IF (old.prepay != new.prepay) THEN
-        CALL prepay_history_insert(old.advertiser_id, old.prepay, new.prepay, new.created_by, new.created);
-    END IF;
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `advertiser_id` int(11) NOT NULL,
@@ -328,8 +74,111 @@ CREATE TABLE IF NOT EXISTS `advertiser_prepay_history` (
   `created_by` int(11) NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=357 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_page_campaigns` (
+  `bridge_page_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`bridge_page_id`,`affiliate_id`,`campaign_id`),
+  KEY `updated` (`updated`),
+  KEY `affiliate_id` (`affiliate_id`),
+  KEY `campaign_id` (`campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_page_image_celebs` (
+  `bridge_page_image_id` int(11) unsigned NOT NULL,
+  `name` varchar(64) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`bridge_page_image_id`,`name`),
+  KEY `name` (`name`),
+  KEY `bridge_page_image_id` (`bridge_page_image_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_page_images` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `md5` char(32) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `md5` (`md5`)
+) ENGINE=InnoDB AUTO_INCREMENT=170815 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_page_keywords` (
+  `bridge_page_id` int(11) NOT NULL,
+  `keyword` varchar(256) NOT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`bridge_page_id`,`keyword`),
+  KEY `keyword` (`keyword`),
+  KEY `updated` (`updated`),
+  FULLTEXT KEY `keyword_2` (`keyword`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_page_phrases` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `phrase` varchar(255) NOT NULL,
+  `is_exclusive` enum('yes','no') NOT NULL,
+  `active` enum('yes','no') NOT NULL DEFAULT 'yes',
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `phrase` (`phrase`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_pages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `url` varchar(755) NOT NULL,
+  `content` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
+  `accessible` enum('yes','no') NOT NULL DEFAULT 'no',
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `url` (`url`),
+  KEY `updated` (`updated`),
+  KEY `id` (`id`),
+  FULLTEXT KEY `content` (`content`)
+) ENGINE=InnoDB AUTO_INCREMENT=260955 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_bridge_pages_and_images` (
+  `bridge_page_id` int(11) unsigned NOT NULL,
+  `bridge_page_image_id` int(11) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`bridge_page_id`,`bridge_page_image_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_redirect_offers` (
+  `affiliate_redirect_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
+  `campaign_name` varchar(255) NOT NULL,
+  `order` int(11) NOT NULL,
+  `daily_cap` int(11) NOT NULL,
+  `weekly_cap` int(11) NOT NULL,
+  `redirect_url` varchar(255) NOT NULL,
+  PRIMARY KEY (`affiliate_redirect_id`,`campaign_id`,`order`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `affiliate_redirects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `affiliate_id` int(11) NOT NULL,
@@ -343,26 +192,514 @@ CREATE TABLE IF NOT EXISTS `affiliate_redirects` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_key` (`token`),
   KEY `affiliate_id` (`affiliate_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `affiliate_redirect_offers` (
-  `affiliate_redirect_id` int(11) NOT NULL,
-  `campaign_id` int(11) NOT NULL,
-  `campaign_name` varchar(255) NOT NULL,
-  `order` int(11) NOT NULL,
-  `daily_cap` int(11) NOT NULL,
-  `weekly_cap` int(11) NOT NULL,
-  `redirect_url` varchar(255) NOT NULL,
-  PRIMARY KEY (`affiliate_redirect_id`,`campaign_id`,`order`)
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `affiliate_terms_notification` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `sent` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1263 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `bin_numbers` (
+  `bin` int(6) unsigned NOT NULL,
+  `brand` varchar(32) DEFAULT NULL,
+  `sub_brand` varchar(32) DEFAULT NULL,
+  `country_code` char(2) DEFAULT NULL,
+  `country_name` varchar(64) DEFAULT NULL,
+  `bank` varchar(64) DEFAULT NULL,
+  `card_type` varchar(16) DEFAULT NULL,
+  `card_category` varchar(32) DEFAULT NULL,
+  `latitude` decimal(7,4) DEFAULT NULL,
+  `longitude` decimal(7,4) DEFAULT NULL,
+  PRIMARY KEY (`bin`),
+  KEY `brand` (`brand`,`bank`,`card_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `campaign_countries` (
   `campaign_id` int(11) NOT NULL,
   `country_id` int(11) NOT NULL,
   UNIQUE KEY `idx_campaign_countries` (`campaign_id`,`country_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `campaign_crm` (
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `campaign_languages` (
+  `campaign_id` int(11) NOT NULL,
+  `language_id` int(11) NOT NULL,
+  UNIQUE KEY `idx_campaign_languages` (`campaign_id`,`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `campaign_metadata` (
+  `campaign_id` int(11) NOT NULL,
+  `vertical` enum('n/a','diet','skin','muscle','e-cig','pain management','cognitive','beauty','other') NOT NULL DEFAULT 'other',
+  `offer_type` enum('n/a','full_sale','trial') NOT NULL DEFAULT 'n/a',
+  `product_asset_id` int(10) unsigned DEFAULT NULL,
+  `step` int(2) NOT NULL DEFAULT '1',
+  `launch_date` datetime NOT NULL,
+  `mobile_optimized` enum('yes','no') NOT NULL DEFAULT 'no',
+  `mobile_responsive` enum('yes','no') NOT NULL DEFAULT 'no',
+  `initial_shipping_price` decimal(8,2) NOT NULL,
+  `local_processing` enum('yes','no') NOT NULL DEFAULT 'no',
+  `discounted_downsell` enum('yes','no') NOT NULL DEFAULT 'no',
+  `discount_code` varchar(40) DEFAULT NULL,
+  `one_click` enum('yes','no') NOT NULL DEFAULT 'no',
+  `subid_upsell_tracking` enum('yes','no') NOT NULL DEFAULT 'no' COMMENT 'Whether the sub ids \r\n\r\nare dynamically passed to the upsell',
+  `multiple_lps` enum('yes','no') NOT NULL DEFAULT 'no',
+  `cap_increase_available` enum('n/a','yes','no') NOT NULL DEFAULT 'n/a',
+  `payout_increase_available` enum('n/a','yes','no') NOT NULL DEFAULT 'n/a',
+  `tech_contact` text,
+  `has_terms` enum('yes','no') NOT NULL DEFAULT 'no',
+  `advertiser_terms` text NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `campaign_pairings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `step1_campaign_id` int(11) DEFAULT NULL,
+  `step2_campaign_id` int(11) DEFAULT NULL,
+  `auto_redirect` enum('no','yes') NOT NULL,
+  `active` enum('yes','no') NOT NULL DEFAULT 'yes',
+  `is_verified` tinyint(1) NOT NULL DEFAULT '0',
+  `verified_by` int(10) unsigned DEFAULT NULL,
+  `verified` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+  `deleted` datetime DEFAULT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `step1_campaign_id` (`step1_campaign_id`,`active`),
+  KEY `step2_campaign_id` (`step2_campaign_id`,`active`)
+) ENGINE=InnoDB AUTO_INCREMENT=2950 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cap_allocation_affiliate` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `transaction_date` date NOT NULL,
+  `cap_amount` int(11) NOT NULL,
+  `cap_type` enum('Live','Test','Sales') NOT NULL DEFAULT 'Live',
+  `modified_by` int(10) unsigned NOT NULL,
+  `modified` datetime NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `campaign_id` (`campaign_id`,`affiliate_id`,`transaction_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=26636 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cap_allocation_affiliate_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) NOT NULL,
+  `transaction_date` date NOT NULL,
+  `old_cap_amount` int(11) NOT NULL,
+  `new_cap_amount` int(11) NOT NULL,
+  `cap_type` enum('Live','Test','Sales') NOT NULL DEFAULT 'Live',
+  `created_by` int(10) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17375 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cap_allocation_manager` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `manager_id` int(10) unsigned NOT NULL,
+  `transaction_date` date NOT NULL,
+  `cap_amount` int(11) NOT NULL,
+  `modified_by` int(10) unsigned NOT NULL,
+  `modified` datetime NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `campaign_id` (`campaign_id`,`manager_id`,`transaction_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=32384 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cap_allocation_manager_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `manager_id` int(10) unsigned NOT NULL,
+  `transaction_date` date NOT NULL,
+  `old_cap_amount` int(11) NOT NULL,
+  `new_cap_amount` int(11) NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=23403 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_credential_access_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `crm_credential_id` int(11) NOT NULL,
+  `access_type` enum('login','view') NOT NULL,
+  `status` enum('success','error') NOT NULL,
+  `message` varchar(128) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `access_type` (`access_type`),
+  KEY `crm_credentials_id` (`crm_credential_id`,`access_type`,`created_by`,`created`)
+) ENGINE=InnoDB AUTO_INCREMENT=13804158 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_credential_campaigns` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `crm_credential_id` int(11) NOT NULL,
+  `campaign_id` varchar(64) NOT NULL,
+  `campaign_name` varchar(128) NOT NULL,
+  `currency_code` varchar(3) DEFAULT NULL,
+  `additional_info` text,
+  `hitpath_campaign_id` int(11) DEFAULT NULL,
+  `active` enum('yes','no') NOT NULL DEFAULT 'yes',
+  `traffic_source` enum('desktop','mobile','mixed') DEFAULT NULL,
+  `categorized` datetime DEFAULT NULL,
+  `categorized_by` int(10) unsigned DEFAULT NULL,
+  `mapped_by` int(11) DEFAULT NULL,
+  `mapped` datetime DEFAULT NULL,
+  `seen` datetime DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `crm_credential_id` (`crm_credential_id`,`campaign_id`),
+  KEY `updated` (`updated`),
+  KEY `created` (`created`),
+  KEY `hitpath_campaign_id` (`hitpath_campaign_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15020 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_credential_features` (
+  `crm_credential_id` int(10) unsigned NOT NULL,
+  `partials` tinyint(1) NOT NULL,
+  `sales` tinyint(1) NOT NULL,
+  `declines` tinyint(1) NOT NULL,
+  `chargebacks` tinyint(1) NOT NULL,
+  `orders` tinyint(1) NOT NULL,
+  `order_details` tinyint(1) NOT NULL,
+  `api` tinyint(1) NOT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`crm_credential_id`),
+  KEY `updated` (`updated`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_credential_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `crm_credential_id` int(11) NOT NULL,
+  `login_url` varchar(256) DEFAULT NULL,
+  `username` varchar(128) DEFAULT NULL,
+  `password` varchar(64) DEFAULT NULL,
+  `api_username` varchar(128) DEFAULT NULL,
+  `api_password` varchar(64) DEFAULT NULL,
+  `api_token` varchar(256) DEFAULT NULL,
+  `notes` text,
+  `created_by` int(11) DEFAULT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `crm_credentials_id` (`crm_credential_id`,`created_by`)
+) ENGINE=InnoDB AUTO_INCREMENT=2780 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_credentials` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `crm_type` enum('limelight','clicksure','lighthouse','lionsbay','ojas','oms','orca','sakura','triangle','netventures','konnective','proprietary','unknown','backoffice','replennage','cmnetwork','react','marketnutra','atlantic','qorox') DEFAULT NULL,
+  `domain` varchar(64) NOT NULL,
+  `login_url` varchar(256) DEFAULT NULL,
+  `username` varchar(128) DEFAULT NULL,
+  `password` varchar(64) DEFAULT NULL,
+  `api_username` varchar(128) DEFAULT NULL,
+  `api_password` varchar(64) DEFAULT NULL,
+  `api_token` varchar(256) DEFAULT NULL,
+  `notes` text,
+  `last_login_status` enum('success','error') NOT NULL DEFAULT 'error',
+  `last_login_message` varchar(128) DEFAULT NULL,
+  `failed_login_attempts` int(11) NOT NULL DEFAULT '0',
+  `updated` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `domain` (`domain`,`username`),
+  KEY `crm_type` (`crm_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=469 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_orders` (
+  `crm_credential_id` int(11) NOT NULL,
+  `crm_campaign_id` varchar(64) NOT NULL,
+  `order_id` varchar(64) NOT NULL,
+  `parent_id` int(10) unsigned DEFAULT NULL,
+  `ancestor_id` int(10) unsigned DEFAULT NULL,
+  `order_total` decimal(10,2) DEFAULT NULL,
+  `billing_cycle` int(10) unsigned DEFAULT NULL,
+  `status` enum('pending','chargeback','approved','cancelled','declined','unknown','void/refund','on_hold','return') NOT NULL DEFAULT 'unknown',
+  `crm_status` varchar(64) NOT NULL DEFAULT 'complete',
+  `is_recurring` enum('no','yes') NOT NULL DEFAULT 'no',
+  `is_test_order` enum('no','yes') NOT NULL DEFAULT 'no',
+  `email` varchar(64) DEFAULT NULL,
+  `affiliate_id` int(10) DEFAULT NULL,
+  `hit_id` int(11) DEFAULT NULL,
+  `c1` varchar(64) DEFAULT NULL,
+  `c2` varchar(64) DEFAULT NULL,
+  `c3` varchar(64) DEFAULT NULL,
+  `affiliate_params` varchar(255) DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `referer` varchar(255) DEFAULT NULL,
+  `transaction_id` varchar(64) DEFAULT NULL,
+  `transaction_date` datetime DEFAULT NULL,
+  `original_sale_date` datetime DEFAULT NULL,
+  `on_hold` tinyint(1) DEFAULT NULL,
+  `encryption_key` binary(128) DEFAULT NULL,
+  `raw_order` mediumblob,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`crm_credential_id`,`crm_campaign_id`,`order_id`),
+  KEY `ancestor_id` (`ancestor_id`),
+  KEY `order_id` (`order_id`),
+  KEY `parent_id` (`parent_id`),
+  KEY `crm_credential_id` (`crm_credential_id`,`crm_campaign_id`,`ancestor_id`,`email`,`billing_cycle`,`status`,`crm_status`),
+  KEY `crm_credential_id_2` (`crm_credential_id`,`crm_campaign_id`,`billing_cycle`,`email`,`original_sale_date`,`transaction_date`),
+  KEY `crm_credential_id_3` (`crm_credential_id`,`crm_campaign_id`,`original_sale_date`,`billing_cycle`,`email`,`affiliate_id`),
+  KEY `billing_cycle` (`billing_cycle`,`status`,`original_sale_date`),
+  KEY `encryption_key` (`encryption_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_payment_cycle_ranges` (
+  `cycle_id` int(11) NOT NULL,
+  `order` smallint(3) NOT NULL,
+  `start` varchar(100) NOT NULL,
+  `end` varchar(100) NOT NULL,
+  PRIMARY KEY (`cycle_id`,`order`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_payment_cycles` (
+  `id` smallint(5) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_retentions` (
+  `crm_credential_id` int(10) unsigned NOT NULL,
+  `crm_campaign_id` int(10) unsigned NOT NULL,
+  `billing_cycle` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `affiliate_code` varchar(64) DEFAULT NULL,
+  `affiliate_name` varchar(64) DEFAULT NULL,
+  `original_sale_date` date NOT NULL,
+  `approvals` int(11) NOT NULL,
+  `cancelled` int(11) NOT NULL,
+  `chargebacks` int(11) NOT NULL,
+  `pending` int(11) unsigned NOT NULL,
+  `declines` int(11) NOT NULL,
+  `positive_revenue` decimal(10,2) NOT NULL,
+  `negative_revenue` decimal(10,2) NOT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`crm_credential_id`,`crm_campaign_id`,`affiliate_id`,`original_sale_date`,`billing_cycle`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_stat_access_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(11) NOT NULL,
+  `affiliate_id` int(11) DEFAULT NULL,
+  `type` enum('json','csv','pdf') NOT NULL,
+  `transaction_date` datetime NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `campaign_id` (`campaign_id`,`affiliate_id`,`transaction_date`),
+  KEY `created_by` (`created_by`)
+) ENGINE=InnoDB AUTO_INCREMENT=1355502 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `crm_stats` (
+  `crm_credential_id` int(10) unsigned NOT NULL,
+  `payment_cycle_id` tinyint(3) unsigned NOT NULL,
+  `payment_cycle_order` tinyint(3) unsigned NOT NULL,
+  `transaction_start` datetime NOT NULL,
+  `transaction_end` datetime NOT NULL,
+  `crm_credential_campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `affiliate_code` varchar(64) NOT NULL DEFAULT '',
+  `affiliate_name` varchar(64) NOT NULL DEFAULT '',
+  `partials` int(11) NOT NULL DEFAULT '0',
+  `sales` int(11) NOT NULL DEFAULT '0',
+  `declines` int(11) NOT NULL DEFAULT '0',
+  `chargebacks` int(11) NOT NULL DEFAULT '0',
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`crm_credential_id`,`payment_cycle_id`,`payment_cycle_order`,`transaction_start`,`transaction_end`,`crm_credential_campaign_id`,`affiliate_id`,`affiliate_code`,`affiliate_name`),
+  KEY `updated` (`updated`),
+  KEY `created` (`created`),
+  KEY `crm_credential_id` (`crm_credential_id`,`payment_cycle_id`,`transaction_start`,`affiliate_id`),
+  KEY `payment_cycle_id` (`affiliate_id`,`payment_cycle_id`,`transaction_start`,`transaction_end`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cron_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(127) NOT NULL,
+  `owner` enum('system','user') NOT NULL DEFAULT 'system',
+  `user_id` int(11) DEFAULT NULL,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime DEFAULT NULL,
+  `pid` int(11) NOT NULL,
+  `args` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_checks` (
+  `check_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `check_code` varchar(255) NOT NULL,
+  `check_name` varchar(255) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `information` varchar(255) NOT NULL,
+  `level` varchar(255) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  PRIMARY KEY (`check_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_landing_page_test_cases` (
+  `campaign_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL,
+  `test_case_id` int(10) unsigned NOT NULL,
+  `mapping_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`campaign_id`,`landing_page_id`,`test_case_id`,`mapping_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_mapping_steps` (
+  `step_id` int(10) unsigned NOT NULL,
+  `mapping_id` int(10) unsigned NOT NULL,
+  `step_order` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`mapping_id`,`step_id`,`step_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_mappings` (
+  `mapping_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `mapping_name` varchar(255) NOT NULL,
+  PRIMARY KEY (`mapping_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_steps` (
+  `step_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `step_type` varchar(255) NOT NULL,
+  `context` varchar(255) NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`step_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_test_cases` (
+  `test_case_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `case_name` varchar(255) NOT NULL,
+  PRIMARY KEY (`test_case_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_test_results` (
+  `test_result_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL,
+  `test_case_id` int(10) unsigned NOT NULL,
+  `result` tinyint(1) NOT NULL,
+  `status` enum('queued','running','completed','error') NOT NULL,
+  `date` datetime NOT NULL,
+  PRIMARY KEY (`test_result_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `ct_test_results_checks` (
+  `test_result_id` int(10) unsigned NOT NULL,
+  `check_id` int(10) unsigned NOT NULL,
+  `status` varchar(255) NOT NULL,
+  PRIMARY KEY (`test_result_id`,`check_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `dates` (
+  `year` int(4) unsigned NOT NULL,
+  `year_month` int(6) unsigned NOT NULL,
+  `year_week` int(6) unsigned NOT NULL,
+  `day` date NOT NULL,
+  `hour` datetime NOT NULL,
+  PRIMARY KEY (`year`,`year_month`,`year_week`,`day`,`hour`),
+  KEY `hour` (`hour`),
+  KEY `day` (`day`),
+  KEY `year_week` (`year_week`),
+  KEY `year_month` (`year_month`),
+  KEY `year` (`year`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `departments` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) NOT NULL,
+  `parent_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `departments_users` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `department` int(10) unsigned NOT NULL,
+  `user` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `department` (`department`,`user`)
+) ENGINE=InnoDB AUTO_INCREMENT=393 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `depreciated_campaign_crm` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) DEFAULT NULL,
   `advertiser_id` int(11) DEFAULT NULL,
@@ -380,9 +717,11 @@ CREATE TABLE IF NOT EXISTS `campaign_crm` (
   UNIQUE KEY `campaign_id` (`campaign_id`),
   UNIQUE KEY `advertiser_id` (`advertiser_id`),
   UNIQUE KEY `campaign_id_2` (`campaign_id`,`advertiser_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `campaign_crm_api` (
+) ENGINE=InnoDB AUTO_INCREMENT=417 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `depreciated_campaign_crm_api` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) DEFAULT NULL,
   `advertiser_id` int(11) DEFAULT NULL,
@@ -391,99 +730,12 @@ CREATE TABLE IF NOT EXISTS `campaign_crm_api` (
   `password` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `campaign_languages` (
-  `campaign_id` int(11) NOT NULL,
-  `language_id` int(11) NOT NULL,
-  UNIQUE KEY `idx_campaign_languages` (`campaign_id`,`language_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `campaign_metadata` (
-  `campaign_id` int(11) NOT NULL,
-  `vertical` enum('n/a','diet','skin','muscle','e-cig','pain management') NOT NULL DEFAULT 'n/a',
-  `offer_type` enum('n/a','full_sale','trial') NOT NULL DEFAULT 'n/a',
-  `step` int(2) NOT NULL DEFAULT '1',
-  `launch_date` datetime NOT NULL,
-  `mobile_optimized` enum('yes','no') NOT NULL DEFAULT 'no',
-  `mobile_responsive` enum('yes','no') NOT NULL DEFAULT 'no',
-  `initial_shipping_price` decimal(8,2) NOT NULL,
-  `local_processing` enum('yes','no') NOT NULL DEFAULT 'no',
-  `discounted_downsell` enum('yes','no') NOT NULL DEFAULT 'no',
-  `discount_code` varchar(40) DEFAULT NULL,
-  `one_click` enum('yes','no') NOT NULL DEFAULT 'no',
-  `subid_upsell_tracking` enum('yes','no') NOT NULL DEFAULT 'no' COMMENT 'Whether the sub ids \r\n\r\nare dynamically passed to the upsell',
-  `multiple_lps` enum('yes','no') NOT NULL DEFAULT 'no',
-  `cap_increase_available` enum('n/a','yes','no') NOT NULL DEFAULT 'n/a',
-  `payout_increase_available` enum('n/a','yes','no') NOT NULL DEFAULT 'n/a',
-  `tech_contact` text,
-  `updated` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `campaign_pairings` (
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `depreciated_crm_mapping` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `step1_campaign_id` int(11) NOT NULL,
-  `step2_campaign_id` int(11) NOT NULL,
-  `auto_redirect` enum('no','yes') NOT NULL,
-  `active` enum('yes','no') NOT NULL DEFAULT 'yes',
-  `deleted` datetime DEFAULT NULL,
-  `created` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `step1_campaign_id` (`step1_campaign_id`,`active`),
-  KEY `step2_campaign_id` (`step2_campaign_id`,`active`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_affiliate_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `crm_mapping_id` int(11) NOT NULL,
-  `affiliate_id` int(11) DEFAULT NULL,
-  `date` date NOT NULL,
-  `partials` int(5) DEFAULT NULL,
-  `orders` int(5) DEFAULT NULL,
-  `revenue` decimal(8,2) DEFAULT NULL,
-  `declines` int(5) DEFAULT NULL,
-  `decline_revenue` decimal(8,2) DEFAULT NULL,
-  `chargebacks` int(5) DEFAULT NULL,
-  `chargeback_amount` decimal(8,2) DEFAULT NULL,
-  `subscription_orders` int(5) DEFAULT NULL,
-  `subscription_revenue` decimal(8,2) DEFAULT NULL,
-  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `crm_mapping_id` (`crm_mapping_id`,`affiliate_id`,`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_exception_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `crm_mapping_id` int(11) NOT NULL,
-  `message` varchar(255) NOT NULL,
-  `file` varchar(255) NOT NULL,
-  `line` mediumint(9) NOT NULL,
-  `job` text NOT NULL,
-  `trace` text NOT NULL,
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `crm_mapping_id` int(11) NOT NULL,
-  `date` date NOT NULL,
-  `partials` int(5) DEFAULT NULL,
-  `orders` int(5) DEFAULT NULL,
-  `revenue` decimal(8,2) DEFAULT NULL,
-  `declines` int(5) DEFAULT NULL,
-  `decline_revenue` decimal(8,2) DEFAULT NULL,
-  `chargebacks` int(5) DEFAULT NULL,
-  `chargeback_amount` decimal(8,2) DEFAULT NULL,
-  `subscription_orders` int(5) DEFAULT NULL,
-  `subscription_revenue` decimal(8,2) DEFAULT NULL,
-  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `crm_mapping_id` (`crm_mapping_id`,`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_mapping` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `crm_credential_id` int(11) DEFAULT NULL,
   `hp_campaign_id` int(11) DEFAULT NULL,
   `child_name` varchar(50) DEFAULT NULL,
   `campaign_name` varchar(300) DEFAULT NULL,
@@ -497,96 +749,10 @@ CREATE TABLE IF NOT EXISTS `crm_mapping` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `hp_campaign_id` (`hp_campaign_id`,`child_name`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_payment_cycles` (
-  `id` smallint(5) NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,
-  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
-  `date_added` datetime NOT NULL,
-  `date_updated` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_payment_cycle_ranges` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `cycle_id` int(11) NOT NULL,
-  `order` smallint(3) NOT NULL,
-  `start` varchar(100) NOT NULL,
-  `end` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_weekly_affiliate_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `crm_mapping_id` int(11) NOT NULL,
-  `affiliate_id` int(11) DEFAULT NULL,
-  `payment_cycle_id` int(11) NOT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `partials` int(5) DEFAULT NULL,
-  `orders` int(5) DEFAULT NULL,
-  `revenue` decimal(8,2) DEFAULT NULL,
-  `declines` int(5) DEFAULT NULL,
-  `decline_revenue` decimal(8,2) DEFAULT NULL,
-  `chargebacks` int(5) DEFAULT NULL,
-  `chargeback_amount` decimal(8,2) DEFAULT NULL,
-  `subscription_orders` int(5) DEFAULT NULL,
-  `subscription_revenue` decimal(8,2) DEFAULT NULL,
-  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_set` (`crm_mapping_id`,`affiliate_id`,`payment_cycle_id`,`start_date`),
-  KEY `crm_mapping_id` (`crm_mapping_id`,`start_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `crm_weekly_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `crm_mapping_id` int(11) NOT NULL,
-  `payment_cycle_id` int(11) NOT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `partials` int(5) DEFAULT NULL,
-  `orders` int(5) DEFAULT NULL,
-  `revenue` decimal(8,2) DEFAULT NULL,
-  `declines` int(5) DEFAULT NULL,
-  `decline_revenue` decimal(8,2) DEFAULT NULL,
-  `chargebacks` int(5) DEFAULT NULL,
-  `chargeback_amount` decimal(8,2) DEFAULT NULL,
-  `subscription_orders` int(5) DEFAULT NULL,
-  `subscription_revenue` decimal(8,2) DEFAULT NULL,
-  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_set` (`crm_mapping_id`,`payment_cycle_id`,`start_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `cron_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(127) NOT NULL,
-  `owner` enum('system','user') NOT NULL DEFAULT 'system',
-  `user_id` int(11) DEFAULT NULL,
-  `start_date` datetime NOT NULL,
-  `end_date` datetime DEFAULT NULL,
-  `pid` int(11) NOT NULL,
-  `args` text NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `name` (`name`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `departments` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) NOT NULL,
-  `parent_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `departments_users` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `department` int(10) unsigned NOT NULL,
-  `user` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `department` (`department`,`user`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=595 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `file_manager_files` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -599,8 +765,10 @@ CREATE TABLE IF NOT EXISTS `file_manager_files` (
   PRIMARY KEY (`id`),
   KEY `filename` (`name`),
   KEY `parent_id` (`parent_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=11884 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `file_manager_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(10) unsigned NOT NULL,
@@ -612,8 +780,10 @@ CREATE TABLE IF NOT EXISTS `file_manager_log` (
   PRIMARY KEY (`id`),
   KEY `user` (`user`,`file`),
   KEY `parent` (`parent`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=6070 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `file_manager_permissions` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `department` int(10) unsigned DEFAULT NULL,
@@ -625,69 +795,25 @@ CREATE TABLE IF NOT EXISTS `file_manager_permissions` (
   UNIQUE KEY `unique_user` (`user`,`file`),
   UNIQUE KEY `unique_department` (`department`,`file`),
   KEY `department` (`department`,`user`,`file`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `finance_campaign_caps` (
-  `campaign_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `advertiser_id` int(10) unsigned NOT NULL,
-  `cap_volume` int(11) NOT NULL,
-  `old_cap_volume` int(11) DEFAULT NULL,
-  `contracted_cap` int(11) DEFAULT NULL,
-  `max_daily_cap` int(10) unsigned DEFAULT NULL,
-  `dynamic_cap_enabled` enum('no','yes') NOT NULL DEFAULT 'no',
+) ENGINE=InnoDB AUTO_INCREMENT=3485 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(11) unsigned NOT NULL,
+  `old_value` int(11) DEFAULT '0',
+  `new_value` int(11) NOT NULL DEFAULT '0',
   `notes` text,
-  `projection_slope` decimal(12,4) DEFAULT NULL,
-  `projection_offset` decimal(12,4) DEFAULT NULL,
   `created_by` int(11) NOT NULL,
   `created` datetime NOT NULL,
-  PRIMARY KEY (`campaign_id`),
-  UNIQUE KEY `advertiser_id` (`advertiser_id`,`campaign_id`),
-  KEY `campaign_id` (`campaign_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `finance_campaign_caps_before_insert`;
-DELIMITER //
-CREATE TRIGGER `finance_campaign_caps_before_insert` BEFORE INSERT ON `finance_campaign_caps`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `finance_campaign_caps_before_update`;
-DELIMITER //
-CREATE TRIGGER `finance_campaign_caps_before_update` BEFORE UPDATE ON `finance_campaign_caps`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `finance_campaign_caps_insert`;
-DELIMITER //
-CREATE TRIGGER `finance_campaign_caps_insert` AFTER INSERT ON `finance_campaign_caps`
- FOR EACH ROW BEGIN
-    CALL cap_history_insert(new.campaign_id, 0, new.cap_volume, new.notes, new.created_by, new.created);
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `finance_campaign_caps_update`;
-DELIMITER //
-CREATE TRIGGER `finance_campaign_caps_update` AFTER UPDATE ON `finance_campaign_caps`
- FOR EACH ROW BEGIN
-    DECLARE update_notes TEXT;
-
-    IF (old.notes = new.notes) THEN
-        SET update_notes := NULL;
-    ELSE
-        SET update_notes := new.notes;
-    END IF;
-
-    IF (old.cap_volume != new.cap_volume) THEN
-        CALL cap_history_insert(new.campaign_id, old.cap_volume, new.cap_volume, update_notes, new.created_by, new.created);
-    END IF;
-END
-//
-DELIMITER ;
-
-CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
+  PRIMARY KEY (`id`),
+  KEY `cap_id` (`campaign_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4270 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history_weekly_backup` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) unsigned NOT NULL,
   `old_value` int(11) NOT NULL DEFAULT '0',
@@ -697,8 +823,25 @@ CREATE TABLE IF NOT EXISTS `finance_campaign_cap_history` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `cap_id` (`campaign_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=2155 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `finance_campaign_caps` (
+  `campaign_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `advertiser_id` int(10) unsigned NOT NULL,
+  `contracted_cap` int(11) DEFAULT NULL,
+  `old_contracted_cap` int(10) unsigned DEFAULT NULL,
+  `notes` text,
+  `created_by` int(11) NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`campaign_id`),
+  UNIQUE KEY `advertiser_id` (`advertiser_id`,`campaign_id`),
+  KEY `campaign_id` (`campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `hitpath_advertisers` (
   `advertiser_id` int(11) unsigned NOT NULL,
   `company` varchar(80) DEFAULT NULL,
@@ -709,16 +852,18 @@ CREATE TABLE IF NOT EXISTS `hitpath_advertisers` (
   `phone` varchar(50) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `is_test` enum('no','yes') NOT NULL DEFAULT 'no',
   `active` enum('yes','no') NOT NULL DEFAULT 'no',
   `credit_limit_enabled` enum('yes','no') NOT NULL DEFAULT 'no',
-  `prepay_enabled` enum('yes','no') NOT NULL DEFAULT 'no',
   `created` datetime NOT NULL,
   `updated` datetime NOT NULL,
   PRIMARY KEY (`advertiser_id`),
   KEY `hitpath_manager_id` (`hitpath_manager_id`),
   KEY `active` (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `hitpath_affiliates` (
   `affiliate_id` int(11) NOT NULL,
   `company` varchar(80) DEFAULT NULL,
@@ -726,26 +871,126 @@ CREATE TABLE IF NOT EXISTS `hitpath_affiliates` (
   `last_name` varchar(60) DEFAULT NULL,
   `phone` varchar(50) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
+  `username` varchar(75) DEFAULT NULL,
+  `password` varchar(64) DEFAULT NULL,
+  `radius_enabled` enum('no','yes') NOT NULL DEFAULT 'no',
   `type` enum('external','internal') NOT NULL DEFAULT 'external',
   `approval_status` enum('submitted','evalid','pending','yes','no','incomplete','flagged','terminated') NOT NULL DEFAULT 'pending',
   `approval_date` datetime DEFAULT NULL,
   `hitpath_approved_by` int(11) DEFAULT NULL,
   `terminated` enum('yes','no') NOT NULL DEFAULT 'no',
   `hitpath_manager_id` int(11) DEFAULT NULL,
+  `is_test` enum('no','yes') NOT NULL DEFAULT 'no',
   `created` datetime NOT NULL,
   `updated` datetime NOT NULL,
   PRIMARY KEY (`affiliate_id`),
   KEY `hitpath_approved_by` (`hitpath_approved_by`),
-  KEY `hitpath_manager_id` (`hitpath_manager_id`)
+  KEY `hitpath_manager_id` (`hitpath_manager_id`),
+  KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_assets` (
+  `asset_id` int(11) unsigned NOT NULL,
+  `campaign_id` int(11) DEFAULT NULL,
+  `landing_page_id` int(11) DEFAULT NULL,
+  `name` varchar(128) DEFAULT NULL,
+  `image` varchar(1024) DEFAULT NULL,
+  `image_hash` varchar(64) DEFAULT NULL,
+  `width` int(6) DEFAULT NULL,
+  `height` int(6) DEFAULT NULL,
+  `updated` datetime DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`asset_id`),
+  KEY `created` (`created`),
+  KEY `updated` (`updated`),
+  KEY `campaign_lp_id` (`campaign_id`,`landing_page_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_browsers` (
+  `id` int(11) NOT NULL,
+  `name` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_campaign_approvals` (
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `requested_date` datetime NOT NULL,
+  `approval_date` datetime NOT NULL,
+  `hitpath_manager_id` int(10) unsigned DEFAULT NULL,
+  `active` enum('Yes','No','Pending','Hold','Terminated') NOT NULL DEFAULT 'No',
+  `deleted` datetime DEFAULT NULL,
+  `deleted_by` int(10) unsigned DEFAULT NULL,
+  `auto_approve_request` enum('yes','no') NOT NULL DEFAULT 'no',
+  `auto_approve_private` enum('yes','no') NOT NULL DEFAULT 'no',
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`campaign_id`,`affiliate_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_campaign_cap_history` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `cap_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
+  `redirect_campaign_id` int(11) NOT NULL,
+  `affiliate_id` int(11) NOT NULL DEFAULT '0',
+  `old_cap` int(11) NOT NULL,
+  `new_cap` int(11) NOT NULL,
+  `cap_type` enum('Hits','Sales') NOT NULL DEFAULT 'Sales',
+  `period` enum('Daily','Weekly','Monthly','Lifetime') NOT NULL DEFAULT 'Weekly',
+  `status` enum('Pending','Active','Cancelled','Expired','Paused') NOT NULL DEFAULT 'Pending',
+  `reason` varchar(128) NOT NULL,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime NOT NULL,
+  `created_by` int(5) NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=993051 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
+  `cap_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
+  `redirect_campaign_id` int(11) NOT NULL,
+  `affiliate_id` int(11) NOT NULL DEFAULT '0',
+  `cap` int(11) NOT NULL,
+  `cap_type` enum('Hits','Sales') NOT NULL DEFAULT 'Sales',
+  `period` enum('Daily','Weekly','Monthly','Lifetime') NOT NULL DEFAULT 'Weekly',
+  `status` enum('Pending','Active','Cancelled','Expired','Paused') NOT NULL DEFAULT 'Pending',
+  `reason` varchar(128) DEFAULT NULL,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime NOT NULL,
+  `created_by` int(5) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`cap_id`),
+  KEY `idx_hitpath_campaign_caps` (`campaign_id`,`affiliate_id`,`period`,`status`,`cap_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   `campaign_id` int(11) NOT NULL,
   `name` varchar(200) DEFAULT NULL,
   `external_name` varchar(200) DEFAULT NULL,
   `description` text,
   `notice` text,
+  `crm_credential_id` int(11) unsigned DEFAULT NULL,
   `advertiser_id` int(11) NOT NULL DEFAULT '1',
+  `max_daily_cap` int(10) unsigned DEFAULT NULL,
+  `dynamic_cap_percent` int(10) unsigned NOT NULL DEFAULT '125',
+  `dynamic_cap_enabled` enum('no','yes') NOT NULL DEFAULT 'no',
+  `projection_slope` decimal(12,4) NOT NULL DEFAULT '0.0000',
+  `projection_offset` decimal(12,4) NOT NULL DEFAULT '0.0000',
   `type` enum('autoapprove','request','private') NOT NULL DEFAULT 'private',
   `link` varchar(100) NOT NULL DEFAULT 'std',
   `redirect_action` enum('deadlink','altlink') NOT NULL DEFAULT 'deadlink',
@@ -754,6 +999,8 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   `cpa_out` decimal(10,2) NOT NULL DEFAULT '0.00',
   `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
   `charge_model` enum('per card issued','per app','per sale','per lead','per funded loan','per email submit','per zip submit','per action','per click') NOT NULL DEFAULT 'per card issued',
+  `global_pixel_type` enum('postback','html') DEFAULT 'html',
+  `global_pixel` text,
   `launch_date` datetime DEFAULT NULL,
   `status_notifications` set('pause','cancel','expiration','capped') DEFAULT NULL,
   `status` enum('setup','active','paused','cancelled') NOT NULL DEFAULT 'setup',
@@ -766,36 +1013,29 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaigns` (
   `pay_suspended_affiliates` enum('yes','no') NOT NULL DEFAULT 'no',
   `tech_contact` text,
   `hitpath_manager_id` int(11) NOT NULL DEFAULT '0',
+  `is_test` enum('no','yes') NOT NULL DEFAULT 'no',
   `requires_sync` enum('yes','no') NOT NULL DEFAULT 'no',
   `updated` datetime NOT NULL,
   PRIMARY KEY (`campaign_id`),
   KEY `manager_id` (`hitpath_manager_id`),
   KEY `requires_sync` (`requires_sync`),
   KEY `advertiser_campaign_id` (`advertiser_id`,`campaign_id`),
-  KEY `status` (`status`,`lifetime`,`expiration_date`)
+  KEY `status` (`status`,`lifetime`,`expiration_date`),
+  KEY `global_pixel_type` (`global_pixel_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `hitpath_campaigns_insert`;
-DELIMITER //
-CREATE TRIGGER `hitpath_campaigns_insert` AFTER INSERT ON `hitpath_campaigns`
- FOR EACH ROW BEGIN
-    INSERT IGNORE INTO campaign_metadata (campaign_id) VALUES (NEW.campaign_id);
-
-    INSERT IGNORE INTO finance_campaign_caps (campaign_id, cap_volume, old_cap_volume, created_by, created)
-    VALUES (new.campaign_id, 0, NULL, 33, now());
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_campaigns_update`;
-DELIMITER //
-CREATE TRIGGER `hitpath_campaigns_update` AFTER UPDATE ON `hitpath_campaigns`
- FOR EACH ROW BEGIN
-    UPDATE finance_campaign_caps SET advertiser_id = new.advertiser_id WHERE campaign_id = new.campaign_id;
-END
-//
-DELIMITER ;
-
-CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
-  `cap_id` int(11) NOT NULL,
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_devices` (
+  `id` int(11) NOT NULL,
+  `name` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_future_caps` (
   `campaign_id` int(11) NOT NULL,
   `redirect_campaign_id` int(11) NOT NULL,
   `affiliate_id` int(11) NOT NULL DEFAULT '0',
@@ -803,22 +1043,65 @@ CREATE TABLE IF NOT EXISTS `hitpath_campaign_caps` (
   `cap_type` enum('Hits','Sales') NOT NULL DEFAULT 'Sales',
   `period` enum('Daily','Weekly','Monthly','Lifetime') NOT NULL DEFAULT 'Weekly',
   `status` enum('Pending','Active','Cancelled','Expired','Paused') NOT NULL DEFAULT 'Pending',
+  `reason` varchar(128) DEFAULT NULL,
   `start_date` datetime NOT NULL,
   `end_date` datetime NOT NULL,
   `created_by` int(5) NOT NULL,
   `created` datetime NOT NULL,
   `updated` datetime NOT NULL,
-  PRIMARY KEY (`cap_id`),
-  KEY `idx_hitpath_campaign_caps` (`campaign_id`,`affiliate_id`,`period`,`status`,`cap_type`)
+  UNIQUE KEY `campaign_id` (`campaign_id`,`affiliate_id`,`cap_type`,`period`),
+  KEY `start_date` (`start_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `hit_date` datetime NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL,
   `cpa_out` decimal(10,2) DEFAULT NULL,
-  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `cpa_in` decimal(10,2) DEFAULT '0.00',
+  `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `ip` varchar(20) DEFAULT NULL,
+  `c1` varchar(700) DEFAULT NULL,
+  `c2` varchar(100) DEFAULT NULL,
+  `c3` varchar(100) DEFAULT NULL,
+  `useragent` varchar(256) DEFAULT NULL,
+  `referer` varchar(150) DEFAULT NULL,
+  `browser_id` tinyint(4) DEFAULT NULL,
+  `os_id` tinyint(4) DEFAULT NULL,
+  `device_id` tinyint(4) DEFAULT NULL,
+  `carrier_id` tinyint(4) DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`hit_id`),
+  KEY `hit_date` (`hit_date`,`campaign_id`,`affiliate_id`),
+  KEY `updated` (`updated`),
+  KEY `ip` (`ip`),
+  KEY `referer` (`referer`),
+  KEY `c1` (`c1`),
+  KEY `c2` (`c2`),
+  KEY `campaign_id` (`campaign_id`),
+  KEY `device_id` (`device_id`),
+  KEY `os_id` (`os_id`),
+  KEY `browser_id` (`browser_id`),
+  KEY `carrier_id` (`carrier_id`),
+  KEY `c3` (`c3`),
+  KEY `campaign_date` (`campaign_id`,`hit_date`),
+  KEY `campaign_affiliate_date` (`campaign_id`,`affiliate_id`,`hit_date`),
+  KEY `affiliate_date` (`affiliate_id`,`hit_date`),
+  KEY `hit_date_2` (`hit_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_hits_bak` (
+  `hit_id` bigint(20) unsigned NOT NULL,
+  `hit_date` datetime NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `cpa_out` decimal(10,2) DEFAULT NULL,
+  `cpa_in` decimal(10,2) DEFAULT '0.00',
   `landing_page_id` int(10) unsigned NOT NULL DEFAULT '0',
   `ip` varchar(20) DEFAULT NULL,
   `c1` varchar(700) DEFAULT NULL,
@@ -829,76 +1112,48 @@ CREATE TABLE IF NOT EXISTS `hitpath_hits` (
   `updated` datetime NOT NULL,
   PRIMARY KEY (`hit_id`),
   KEY `hit_date` (`hit_date`,`campaign_id`,`affiliate_id`),
-  KEY `updated` (`updated`)
+  KEY `updated` (`updated`),
+  KEY `ip` (`ip`),
+  KEY `referer` (`referer`),
+  KEY `c1` (`c1`),
+  KEY `c2` (`c2`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `hitpath_hits_cpa`;
-DELIMITER //
-CREATE TRIGGER `hitpath_hits_cpa` BEFORE INSERT ON `hitpath_hits`
- FOR EACH ROW BEGIN
-    DECLARE newCpaIn DECIMAL;
-    DECLARE newCpaOut DECIMAL;
-
-    SELECT IF (o.override_cpa_in = 'yes', o.cpa_in, c.cpa_in), IF (o.override_cpa_out = 'yes', o.cpa_out, c.cpa_out) INTO newCpaIn, newCpaOut
-      FROM hitpath_campaigns c
-      LEFT JOIN hitpath_overrides o ON c.campaign_id = o.campaign_id
-       AND o.affiliate_id = new.affiliate_id
-       AND (((o.expiration_date < new.hit_date OR o.expiration_date IS NULL) AND o.lifetime = 'expires') OR o.lifetime = 'indefinite')
-       AND o.effective_date <= new.hit_date
-       AND o.status = 'active'
-     WHERE c.campaign_id = new.campaign_id
-     ORDER BY o.effective_date DESC
-     LIMIT 1;
-
-    SET new.cpa_in = newCpaIn;
-    SET new.cpa_out = newCpaOut;
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_hits_delete`;
-DELIMITER //
-CREATE TRIGGER `hitpath_hits_delete` AFTER DELETE ON `hitpath_hits`
- FOR EACH ROW BEGIN
-    UPDATE `summary_hitpath_hourly`
-       SET hits = hits - 1, updated = NOW()
-     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d %H:00:00')
-       AND campaign_id = old.campaign_id
-       AND affiliate_id = old.affiliate_id
-       AND cpa_in = old.cpa_in
-       AND cpa_out = old.cpa_out
-       AND landing_page_id = old.landing_page_id;
-
-    UPDATE `summary_hitpath_daily`
-       SET hits = hits - 1, updated = NOW()
-     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
-       AND campaign_id = old.campaign_id
-       AND affiliate_id = old.affiliate_id
-       AND cpa_in = old.cpa_in
-       AND cpa_out = old.cpa_out
-       AND landing_page_id = old.landing_page_id;
-
-    UPDATE `summary_hitpath_daily_detail`
-       SET hits = hits - 1, updated = NOW()
-     WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
-       AND campaign_id = old.campaign_id
-       AND affiliate_id = old.affiliate_id
-       AND cpa_in = old.cpa_in
-       AND cpa_out = old.cpa_out
-       AND landing_page_id = old.landing_page_id
-       AND c1 = old.c1
-       AND c2 = old.c2
-       AND c3 = old.c3;
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_hits_insert`;
-DELIMITER //
-CREATE TRIGGER `hitpath_hits_insert` AFTER INSERT ON `hitpath_hits`
- FOR EACH ROW BEGIN
-    CALL summary_hits_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, new.cpa_out, new.cpa_in, new.c1, new.c2, new.c3);
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_landing_pages` (
+  `campaign_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `status` enum('active','paused') NOT NULL,
+  `redirect_to` int(10) unsigned DEFAULT NULL,
+  `redirect_url` varchar(255) DEFAULT NULL,
+  `rotator` enum('yes','no') NOT NULL,
+  `rotate_weight` int(11) NOT NULL DEFAULT '0',
+  `exclusive` enum('yes','no') NOT NULL,
+  `published` enum('yes','no') NOT NULL,
+  `traffic_source` enum('mobile','desktop','mixed') DEFAULT NULL,
+  `categorized` datetime DEFAULT NULL,
+  `categorized_by` int(10) unsigned DEFAULT NULL,
+  `deleted_by` int(10) unsigned DEFAULT NULL,
+  `updated_by` int(10) unsigned DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  `created_by` int(10) unsigned DEFAULT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`campaign_id`,`landing_page_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_operating_systems` (
+  `id` int(11) NOT NULL,
+  `name` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `hitpath_overrides` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `affiliate_id` varchar(20) DEFAULT NULL,
@@ -930,9 +1185,26 @@ CREATE TABLE IF NOT EXISTS `hitpath_overrides` (
   KEY `campaign_id` (`campaign_id`),
   KEY `user` (`user`),
   KEY `c1` (`c1`),
-  KEY `search_key` (`campaign_id`,`affiliate_id`,`lifetime`,`expiration_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+  KEY `search_key` (`campaign_id`,`affiliate_id`,`lifetime`,`expiration_date`),
+  KEY `c1_2` (`c1`),
+  KEY `affiliate_id_2` (`affiliate_id`,`campaign_id`,`effective_date`,`expiration_date`,`lifetime`,`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=71226 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `hitpath_sale_uploads` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `overage_id` int(11) unsigned NOT NULL,
+  `upload_id` int(11) unsigned NOT NULL,
+  `created_by` int(11) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `overage_id` (`overage_id`,`upload_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=597 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   `hit_id` bigint(20) unsigned NOT NULL,
   `sale_date` datetime NOT NULL,
@@ -953,65 +1225,205 @@ CREATE TABLE IF NOT EXISTS `hitpath_sales` (
   `reject_date` datetime DEFAULT NULL,
   `updated` datetime NOT NULL,
   PRIMARY KEY (`hit_id`),
-  KEY `sale_date` (`sale_date`,`campaign_id`,`affiliate_id`),
   KEY `rejected` (`rejected`,`reject_date`),
   KEY `upsell_hit_id` (`upsell_hit_id`),
   KEY `updated` (`updated`),
-  KEY `transaction_id` (`transaction_id`)
+  KEY `transaction_id` (`transaction_id`),
+  KEY `ip` (`ip`),
+  KEY `referer` (`referer`),
+  KEY `c1` (`c1`),
+  KEY `c2` (`c2`),
+  KEY `c3` (`c3`),
+  KEY `campaign_id` (`campaign_id`,`sale_date`),
+  KEY `affiliate_id` (`affiliate_id`,`sale_date`),
+  KEY `sale_date_2` (`sale_date`),
+  KEY `sale_date` (`campaign_id`,`affiliate_id`,`sale_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `hitpath_sales_delete`;
-DELIMITER //
-CREATE TRIGGER `hitpath_sales_delete` AFTER DELETE ON `hitpath_sales`
- FOR EACH ROW BEGIN
-    IF (old.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(old.campaign_id, old.sale_date, old.affiliate_id, old.landing_page_id, -1, (old.earned * -1), (old.paid * -1), old.c1, old.c2, old.c3);
-    END IF;
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_sales_insert`;
-DELIMITER //
-CREATE TRIGGER `hitpath_sales_insert` AFTER INSERT ON `hitpath_sales`
- FOR EACH ROW BEGIN
-    IF (new.rejected = 'no') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
-    ELSEIF (new.rejected = 'yes') THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 0, 0, 0, new.c1, new.c2, new.c3);
-    END IF;
-END
-//
-DELIMITER ;
-DROP TRIGGER IF EXISTS `hitpath_sales_update`;
-DELIMITER //
-CREATE TRIGGER `hitpath_sales_update` AFTER UPDATE ON `hitpath_sales`
- FOR EACH ROW BEGIN
-    DECLARE cpaChanged TINYINT(1);
-
-    SET cpaChanged = (old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no';
-
-    IF ((new.rejected != old.rejected AND new.rejected = 'yes') OR cpaChanged = 1) THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, -1, (old.earned * -1), (old.paid * -1), new.c1, new.c2, new.c3);
-    END IF;
-
-    IF ((new.rejected != old.rejected AND new.rejected = 'no') OR cpaChanged = 1) THEN
-        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
-    END IF;
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `key_value` (
   `key` varchar(255) NOT NULL,
   `value` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_bridge_optimizer` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `vertical_id` int(10) unsigned NOT NULL,
+  `country_id` int(10) unsigned NOT NULL,
+  `status` enum('active','inactive','deleted') NOT NULL DEFAULT 'active',
+  `updated_by` int(11) DEFAULT NULL,
+  `updated` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `affiliate_id` (`affiliate_id`,`vertical_id`,`country_id`),
+  KEY `created` (`created`)
+) ENGINE=InnoDB AUTO_INCREMENT=239 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_bridge_optimizer_campaigns` (
+  `mesh_bridge_optimizer_id` int(10) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `rank` int(10) unsigned NOT NULL,
+  `weight` int(10) unsigned NOT NULL DEFAULT '1',
+  PRIMARY KEY (`mesh_bridge_optimizer_id`,`campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_bridge_optimizer_sessions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `mesh_bridge_optimizer_id` int(10) unsigned NOT NULL,
+  `options` varchar(1024) DEFAULT NULL,
+  `strategy` varchar(32) DEFAULT NULL,
+  `guid` varchar(64) DEFAULT NULL,
+  `mlv` tinyint(4) DEFAULT NULL,
+  `step1_campaign_id` int(10) unsigned NOT NULL,
+  `step1_landing_page_id` int(10) unsigned DEFAULT NULL,
+  `step2_campaign_id` int(10) unsigned DEFAULT NULL,
+  `step2_landing_page_id` int(10) unsigned DEFAULT NULL,
+  `referer` varchar(256) DEFAULT NULL,
+  `ip` varbinary(16) NOT NULL,
+  `country_code` varchar(2) DEFAULT NULL,
+  `region` varchar(32) DEFAULT NULL,
+  `city` varchar(32) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `device` varchar(32) DEFAULT NULL,
+  `platform` varchar(32) DEFAULT NULL,
+  `platform_version` varchar(32) DEFAULT NULL,
+  `browser` varchar(32) DEFAULT NULL,
+  `browser_version` varchar(32) DEFAULT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '0',
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `country_code` (`country_code`),
+  KEY `created` (`created`),
+  KEY `updated` (`updated`),
+  KEY `device` (`device`),
+  KEY `device_2` (`device`),
+  KEY `platform` (`platform`),
+  KEY `optimizer` (`mesh_bridge_optimizer_id`,`created`),
+  KEY `optimizer_decision` (`mesh_bridge_optimizer_id`,`step1_campaign_id`,`step1_landing_page_id`),
+  KEY `affiliate_id` (`affiliate_id`,`mesh_bridge_optimizer_id`,`step1_campaign_id`,`step1_landing_page_id`),
+  KEY `referer` (`referer`),
+  KEY `strategy` (`strategy`,`guid`,`mlv`)
+) ENGINE=InnoDB AUTO_INCREMENT=20253269 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_bridge_optimizer_strategies` (
+  `mesh_bridge_optimizer_id` int(10) unsigned NOT NULL,
+  `strategy` enum('maximize','minimize','threshold','weighted','ml') NOT NULL,
+  `optimal_metric` varchar(32) DEFAULT NULL,
+  `suboptimal_metric` varchar(32) DEFAULT NULL,
+  `threshold` decimal(15,6) DEFAULT NULL,
+  `rank` int(10) unsigned NOT NULL,
+  `traffic_allocation` decimal(5,2) unsigned NOT NULL DEFAULT '100.00',
+  PRIMARY KEY (`mesh_bridge_optimizer_id`,`rank`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_campaign_optimizer` (
+  `campaign_id` int(10) unsigned NOT NULL,
+  `position_id` int(10) unsigned NOT NULL,
+  `option_id` int(10) unsigned NOT NULL,
+  `device` set('all','desktop','mobile','tablet') NOT NULL DEFAULT 'all',
+  `url` varchar(1024) NOT NULL,
+  PRIMARY KEY (`campaign_id`,`position_id`,`option_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_campaign_optimizer_sessions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `hit_id` bigint(20) unsigned NOT NULL,
+  `options` varchar(1024) DEFAULT NULL,
+  `strategy` varchar(32) DEFAULT NULL,
+  `guid` varchar(64) DEFAULT NULL,
+  `mlv` tinyint(4) DEFAULT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL,
+  `referer` varchar(256) DEFAULT NULL,
+  `ip` varbinary(16) NOT NULL,
+  `country_code` varchar(2) DEFAULT NULL,
+  `region` varchar(32) DEFAULT NULL,
+  `city` varchar(32) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `device` varchar(32) DEFAULT NULL,
+  `platform` varchar(32) DEFAULT NULL,
+  `platform_version` varchar(32) DEFAULT NULL,
+  `browser` varchar(32) DEFAULT NULL,
+  `browser_version` varchar(32) DEFAULT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '0',
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hit_id` (`hit_id`),
+  KEY `country_code` (`country_code`),
+  KEY `created` (`created`),
+  KEY `updated` (`updated`),
+  KEY `device` (`device`),
+  KEY `platform` (`platform`),
+  KEY `campaign` (`campaign_id`,`created`),
+  KEY `optimizer_decision` (`campaign_id`,`affiliate_id`,`landing_page_id`),
+  KEY `affiliate_id` (`affiliate_id`,`campaign_id`,`landing_page_id`),
+  KEY `referer` (`referer`),
+  KEY `strategy` (`strategy`,`guid`,`mlv`)
+) ENGINE=InnoDB AUTO_INCREMENT=6338 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_campaign_optimizer_sessions_bak` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `hit_id` int(11) DEFAULT NULL,
+  `campaign_id` varchar(32) NOT NULL,
+  `affiliate_id` int(11) NOT NULL,
+  `guid` varchar(64) DEFAULT NULL,
+  `type` varchar(32) NOT NULL,
+  `position_id` int(11) DEFAULT NULL,
+  `option_id` int(11) DEFAULT NULL,
+  `version` tinyint(4) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `guid` (`guid`,`type`,`hit_id`,`created`,`campaign_id`),
+  KEY `affiliate_id` (`affiliate_id`),
+  KEY `version` (`version`)
+) ENGINE=InnoDB AUTO_INCREMENT=101792 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_campaign_optimizer_strategies` (
+  `campaign_id` int(10) unsigned NOT NULL,
+  `strategy` enum('maximize','minimize','threshold','weighted','ml') NOT NULL,
+  `optimal_metric` varchar(32) DEFAULT NULL,
+  `suboptimal_metric` varchar(32) DEFAULT NULL,
+  `threshold` decimal(15,6) DEFAULT NULL,
+  `rank` int(10) unsigned NOT NULL,
+  `traffic_allocation` decimal(5,2) unsigned NOT NULL DEFAULT '100.00',
+  PRIMARY KEY (`campaign_id`,`rank`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `mesh_global_session_id` bigint(20) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
   `affiliate_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `landing_page_id` int(10) unsigned DEFAULT NULL,
   `hit_id` bigint(20) unsigned DEFAULT NULL,
   `ip` varbinary(16) NOT NULL,
   `country_code` varchar(2) DEFAULT NULL,
@@ -1028,6 +1440,7 @@ CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   `c3` varchar(100) DEFAULT NULL,
   `redirected_campaign_id` int(10) unsigned DEFAULT NULL,
   `previous_campaign_id` int(10) unsigned DEFAULT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '1',
   `updated` datetime NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
@@ -1037,19 +1450,15 @@ CREATE TABLE IF NOT EXISTS `mesh_campaign_sessions` (
   KEY `affiliate_id` (`affiliate_id`),
   KEY `campaign_id` (`campaign_id`),
   KEY `idx_advertiser` (`advertiser_id`,`campaign_id`,`affiliate_id`,`created`),
-  KEY `idx_affiliate` (`affiliate_id`,`advertiser_id`,`campaign_id`,`created`),
   KEY `created` (`created`),
-  KEY `updated` (`updated`)
+  KEY `updated` (`updated`),
+  KEY `campaign_id_2` (`campaign_id`,`landing_page_id`,`created`),
+  KEY `idx_affiliate` (`affiliate_id`,`campaign_id`,`landing_page_id`,`created`),
+  KEY `campaign_id_3` (`campaign_id`,`landing_page_id`,`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `mesh_campaign_sessions_insert`;
-DELIMITER //
-CREATE TRIGGER `mesh_campaign_sessions_insert` BEFORE INSERT ON `mesh_campaign_sessions`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `mesh_global_sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `ip` varbinary(16) NOT NULL,
@@ -1062,28 +1471,58 @@ CREATE TABLE IF NOT EXISTS `mesh_global_sessions` (
   `platform_version` varchar(32) DEFAULT NULL,
   `browser` varchar(32) DEFAULT NULL,
   `browser_version` varchar(32) DEFAULT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '0',
   `updated` datetime NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `country_code` (`country_code`),
   KEY `created` (`created`),
-  KEY `updated` (`updated`)
+  KEY `updated` (`updated`),
+  KEY `device` (`device`),
+  KEY `device_2` (`device`),
+  KEY `platform` (`platform`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `mesh_pixels` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `campaign_id` int(10) unsigned DEFAULT NULL,
-  `type` enum('custom','landing','options','checkout','upsell','downsell','thankyou') NOT NULL DEFAULT 'custom',
-  `custom_type` varchar(32) DEFAULT NULL,
-  `dependency_id` int(10) unsigned DEFAULT NULL,
-  `active` enum('yes','no') NOT NULL DEFAULT 'yes',
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_hits` (
+  `hit_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `mesh_bridge_optimizer_id` int(10) unsigned DEFAULT NULL,
+  `mesh_bridge_session_id` bigint(20) unsigned DEFAULT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL,
+  `ip` varbinary(16) NOT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '1',
   `updated` datetime NOT NULL,
   `created` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `campaign_id` (`campaign_id`,`type`,`custom_type`),
-  KEY `dependency_id` (`dependency_id`,`active`)
+  PRIMARY KEY (`hit_id`),
+  KEY `mesh_bridge_optimizer_id` (`mesh_bridge_optimizer_id`),
+  KEY `mesh_bridge_session_id` (`mesh_bridge_session_id`),
+  KEY `campaign_id` (`campaign_id`,`landing_page_id`),
+  KEY `created` (`created`),
+  KEY `campaign_id_2` (`campaign_id`,`landing_page_id`,`created`),
+  KEY `campaign_id_3` (`campaign_id`,`landing_page_id`,`created`),
+  KEY `ip` (`ip`),
+  KEY `affiliate_id` (`affiliate_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=927854390 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_impressions` (
+  `hit_id` varchar(32) NOT NULL,
+  `user_agent` varchar(1024) DEFAULT NULL,
+  `referer` varchar(1024) DEFAULT NULL,
+  `ip` varbinary(16) NOT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '1',
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`hit_id`),
+  KEY `ip` (`ip`,`updated`,`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `mesh_pixel_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `mesh_global_session_id` bigint(20) unsigned NOT NULL,
@@ -1099,29 +1538,22 @@ CREATE TABLE IF NOT EXISTS `mesh_pixel_log` (
   `country_code` varchar(2) DEFAULT NULL,
   `region` varchar(32) DEFAULT NULL,
   `city` varchar(32) DEFAULT NULL,
-  `impressions` int(10) unsigned DEFAULT '1',
   `previous_pixel_id` int(10) unsigned DEFAULT NULL,
   `updated` datetime NOT NULL,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_unique_session` (`mesh_campaign_session_id`,`campaign_id`,`affiliate_id`,`mesh_pixel_id`),
   KEY `created` (`created`),
   KEY `updated` (`updated`),
   KEY `idx_advertiser` (`advertiser_id`,`campaign_id`,`affiliate_id`,`created`),
-  KEY `idx_affiliate` (`affiliate_id`,`advertiser_id`,`campaign_id`,`created`),
   KEY `mesh_campaign_session_id` (`mesh_campaign_session_id`),
   KEY `mesh_global_session_id` (`mesh_global_session_id`),
-  KEY `hit_id` (`hit_id`)
+  KEY `hit_id` (`hit_id`),
+  KEY `idx_unique_session` (`campaign_id`,`affiliate_id`,`mesh_pixel_id`),
+  KEY `idx_affiliate` (`affiliate_id`,`campaign_id`,`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `mesh_pixel_log_insert`;
-DELIMITER //
-CREATE TRIGGER `mesh_pixel_log_insert` BEFORE INSERT ON `mesh_pixel_log`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `mesh_pixel_raw_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `mesh_global_session_id` bigint(20) unsigned NOT NULL,
@@ -1149,26 +1581,25 @@ CREATE TABLE IF NOT EXISTS `mesh_pixel_raw_log` (
   KEY `idx_affiliate` (`affiliate_id`,`advertiser_id`,`campaign_id`,`created`),
   KEY `mesh_campaign_session_id` (`mesh_campaign_session_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `mesh_pixel_raw_log_insert`;
-DELIMITER //
-CREATE TRIGGER `mesh_pixel_raw_log_insert` BEFORE INSERT ON `mesh_pixel_raw_log`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-
-CREATE TABLE IF NOT EXISTS `mesh_redirects` (
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_pixels` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `affiliate_id` int(10) unsigned NOT NULL,
-  `status` enum('active','inactive','deleted') NOT NULL DEFAULT 'active',
-  `updated_by` int(10) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned DEFAULT NULL,
+  `type` enum('custom','landing','options','checkout','upsell','downsell','thankyou') NOT NULL DEFAULT 'custom',
+  `custom_type` varchar(32) DEFAULT NULL,
+  `dependency_id` int(10) unsigned DEFAULT NULL,
+  `active` enum('yes','no') NOT NULL DEFAULT 'yes',
   `updated` datetime NOT NULL,
-  `created_by` int(10) unsigned NOT NULL,
   `created` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `campaign_id` (`campaign_id`,`type`,`custom_type`),
+  KEY `dependency_id` (`dependency_id`,`active`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `mesh_redirect_offers` (
   `redirect_id` int(10) unsigned NOT NULL,
   `campaign_id` int(10) unsigned NOT NULL,
@@ -1179,21 +1610,89 @@ CREATE TABLE IF NOT EXISTS `mesh_redirect_offers` (
   PRIMARY KEY (`redirect_id`,`campaign_id`,`order`),
   KEY `redirect_url` (`redirect_url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_redirects` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `status` enum('active','inactive','deleted') NOT NULL DEFAULT 'active',
+  `updated_by` int(10) unsigned NOT NULL,
+  `updated` datetime NOT NULL,
+  `created_by` int(10) unsigned NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `mesh_sales` (
+  `hit_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `mesh_bridge_optimizer_id` int(10) unsigned DEFAULT NULL,
+  `mesh_bridge_session_id` bigint(20) unsigned DEFAULT NULL,
+  `mesh_campaign_session_id` bigint(20) unsigned DEFAULT NULL,
+  `affiliate_id` int(11) unsigned NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `landing_page_id` int(10) unsigned NOT NULL,
+  `earned` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `paid` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `ip` varbinary(16) NOT NULL,
+  `impressions` int(10) unsigned NOT NULL DEFAULT '1',
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`hit_id`),
+  KEY `mesh_bridge_optimizer_id` (`mesh_bridge_optimizer_id`),
+  KEY `mesh_bridge_session_id` (`mesh_bridge_session_id`),
+  KEY `campaign_id` (`campaign_id`,`landing_page_id`),
+  KEY `affiliate_id` (`affiliate_id`),
+  KEY `created` (`created`),
+  KEY `campaign_id_2` (`campaign_id`,`landing_page_id`,`created`),
+  KEY `ip` (`ip`),
+  KEY `mesh_campaign_session_id` (`mesh_campaign_session_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=927854228 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `migration_versions` (
   `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `notification_metrics` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) NOT NULL,
   `formula` varchar(512) NOT NULL,
-  `group` enum('campaign','advertiser') NOT NULL DEFAULT 'campaign',
+  `group` enum('campaign','advertiser','byCampaigns','byPairings') NOT NULL DEFAULT 'campaign',
+  `type` enum('cap','hitpath') NOT NULL,
   PRIMARY KEY (`id`),
   KEY `group` (`group`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `notification_rule_alerts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `notification_id` int(11) NOT NULL,
+  `group_key_id` int(11) NOT NULL,
+  `threshold` decimal(10,2) NOT NULL,
+  `value` decimal(10,2) NOT NULL,
+  `date` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15175 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `notification_rule_recipients` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `notification_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `notification_rules` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_key_id` int(11) DEFAULT NULL,
@@ -1205,44 +1704,170 @@ CREATE TABLE IF NOT EXISTS `notification_rules` (
   `period` enum('hour','day','week') NOT NULL,
   `notification_user_group` enum('finance','campaign_team','me','biz_dev','campaign_manager','custom') NOT NULL,
   `parent_id` int(11) DEFAULT NULL,
+  `description` text,
   `status` enum('active','inactive') NOT NULL DEFAULT 'active',
   PRIMARY KEY (`id`),
   KEY `parent_id` (`parent_id`),
   KEY `metric_id` (`metric_id`,`metric_comparison_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `notification_rule_alerts` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `notification_id` int(11) NOT NULL,
-  `group_key_id` int(11) NOT NULL,
-  `threshold` decimal(10,2) NOT NULL,
-  `value` decimal(10,2) NOT NULL,
-  `date` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS `notification_rule_recipients` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `notification_id` int(11) NOT NULL,
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `overages` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `affiliate_id` int(10) unsigned NOT NULL,
+  `date` date NOT NULL,
+  `hp_sales` int(11) NOT NULL DEFAULT '0',
+  `crm_sales` int(11) NOT NULL DEFAULT '0',
+  `uploaded` int(11) NOT NULL DEFAULT '0',
+  `ignored` int(11) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `campaign_id` (`campaign_id`,`affiliate_id`,`date`)
+) ENGINE=InnoDB AUTO_INCREMENT=143405 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `session_id` varchar(32) NOT NULL,
+  `role` enum('employee','affiliate') NOT NULL,
   `user_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+  `password` varchar(64) NOT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`session_id`),
+  KEY `type` (`role`,`user_id`,`updated`,`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `setting_countries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` char(2) COLLATE utf8_unicode_ci NOT NULL,
   `name` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
   `iso3` char(3) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+) ENGINE=InnoDB AUTO_INCREMENT=242 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `setting_languages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(2) DEFAULT NULL,
   `name` varchar(80) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
-
+) ENGINE=InnoDB AUTO_INCREMENT=186 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `setting_verticals` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `vertical` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `stats` (
+  `hit_id` int(11) NOT NULL,
+  `hit_date` datetime NOT NULL,
+  `hits` int(11) NOT NULL,
+  `sale_date` datetime DEFAULT NULL,
+  `sales` int(11) DEFAULT NULL,
+  `time_to_sale` int(10) unsigned DEFAULT NULL,
+  `campaign` int(11) NOT NULL,
+  `affiliate` int(11) NOT NULL,
+  `vertical` varchar(20) NOT NULL,
+  `geo` varchar(3) NOT NULL,
+  `type` varchar(16) NOT NULL,
+  `landing_page` int(11) NOT NULL DEFAULT '0',
+  `cpa_in` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `cpa_out` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `system_margin` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `is_mobile_traffic` tinyint(1) NOT NULL DEFAULT '0',
+  `is_mobile_page` tinyint(1) NOT NULL DEFAULT '0',
+  `is_redirected` tinyint(1) NOT NULL DEFAULT '0',
+  `original_campaign_id` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`hit_id`),
+  KEY `sale_date` (`sale_date`),
+  KEY `hit_date_2` (`hit_date`,`campaign`,`affiliate`),
+  KEY `is_redirected` (`is_redirected`),
+  KEY `is_mobile_page` (`is_mobile_page`),
+  KEY `is_mobile_traffic` (`is_mobile_traffic`),
+  KEY `landing_page` (`landing_page`),
+  KEY `geo` (`geo`),
+  KEY `vertical` (`vertical`),
+  KEY `affiliate` (`affiliate`),
+  KEY `affiliate_2` (`affiliate`,`campaign`,`hit_date`),
+  KEY `campaign_2` (`campaign`,`affiliate`,`hit_date`),
+  KEY `original_campaign_id` (`original_campaign_id`),
+  KEY `type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `summary_cap` (
+  `transaction_date` date NOT NULL,
+  `campaign_id` int(10) unsigned NOT NULL,
+  `contracted_cap` int(10) unsigned DEFAULT NULL,
+  `effective_cap` int(10) unsigned DEFAULT NULL,
+  `redirect_campaign_id` int(10) unsigned DEFAULT NULL,
+  `type` enum('approved','disapproved','exception','unapproved','snapshot','rollback') NOT NULL DEFAULT 'unapproved',
+  `approved` datetime DEFAULT NULL,
+  `approved_by` int(10) unsigned DEFAULT NULL,
+  UNIQUE KEY `transaction_date` (`transaction_date`,`campaign_id`),
+  KEY `approved` (`approved`),
+  KEY `approved_by` (`approved_by`),
+  KEY `redirect_campaign_id` (`redirect_campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `summary_caps_reached` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `transaction_date` date NOT NULL,
+  `campaign_id` int(11) unsigned NOT NULL,
+  `affiliate_id` int(11) unsigned NOT NULL,
+  `cap_type` enum('Hits','Sales') NOT NULL DEFAULT 'Sales',
+  `period` enum('Daily','Weekly','Monthly','Lifetime') NOT NULL DEFAULT 'Weekly',
+  `cap` int(10) unsigned NOT NULL,
+  `notified` datetime DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `only_one` (`transaction_date`,`campaign_id`,`affiliate_id`,`cap_type`,`period`,`cap`),
+  KEY `created` (`created`),
+  KEY `updated` (`updated`),
+  KEY `notified` (`notified`),
+  KEY `affiliate` (`affiliate_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1743 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `summary_hitpath_campaign_cap` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `cap_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
+  `redirect_campaign_id` int(11) NOT NULL,
+  `affiliate_id` int(11) NOT NULL DEFAULT '0',
+  `cap` int(11) DEFAULT NULL,
+  `cap_type` enum('Hits','Sales') NOT NULL DEFAULT 'Sales',
+  `period` enum('Daily','Weekly','Monthly','Lifetime') NOT NULL DEFAULT 'Weekly',
+  `start_date` datetime NOT NULL,
+  `end_date` datetime NOT NULL,
+  `created_by` int(5) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cap_id` (`campaign_id`,`affiliate_id`,`period`,`cap_type`,`start_date`),
+  KEY `campaign_id` (`campaign_id`,`affiliate_id`,`cap_type`,`period`,`start_date`,`end_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=1357783783 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
@@ -1265,17 +1890,13 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily` (
   KEY `affiliate_hitpath_manager_id` (`affiliate_hitpath_manager_id`),
   KEY `updated` (`updated`),
   KEY `idx_summary_hitpath_daily` (`advertiser_id`,`transaction_date`,`affiliate_id`),
-  KEY `transaction_date` (`transaction_date`)
+  KEY `transaction_date` (`transaction_date`),
+  KEY `campaign_transaction` (`transaction_date`,`campaign_id`),
+  KEY `transaction_campaign` (`campaign_id`,`transaction_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `summary_hitpath_daily_insert`;
-DELIMITER //
-CREATE TRIGGER `summary_hitpath_daily_insert` BEFORE INSERT ON `summary_hitpath_daily`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `summary_hitpath_daily_detail` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
@@ -1306,7 +1927,9 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_daily_detail` (
   KEY `c2` (`c2`),
   KEY `c3` (`c3`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   `transaction_date` datetime NOT NULL,
   `advertiser_id` int(10) unsigned NOT NULL,
@@ -1331,29 +1954,9 @@ CREATE TABLE IF NOT EXISTS `summary_hitpath_hourly` (
   KEY `advertiser_id` (`advertiser_id`,`transaction_date`,`affiliate_id`),
   KEY `transaction_date` (`transaction_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-DROP TRIGGER IF EXISTS `summary_hitpath_hourly_insert`;
-DELIMITER //
-CREATE TRIGGER `summary_hitpath_hourly_insert` BEFORE INSERT ON `summary_hitpath_hourly`
- FOR EACH ROW BEGIN
-    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
-END
-//
-DELIMITER ;
-
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `email` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
-  `password` varchar(45) CHARACTER SET utf8 DEFAULT NULL,
-  `status` enum('active','inactive') CHARACTER SET utf8 DEFAULT 'active',
-  `token` varchar(200) CHARACTER SET utf8 DEFAULT NULL,
-  `token_date` datetime DEFAULT NULL,
-  `updated` datetime DEFAULT NULL,
-  `created` datetime DEFAULT NULL,
-  `hash` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `last_ip` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_call_log` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -1369,8 +1972,10 @@ CREATE TABLE IF NOT EXISTS `user_call_log` (
   `transaction_date` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `Unique` (`user_id`,`from`,`to`,`extension`,`transaction_date`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=2394488 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_list_views` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(10) unsigned NOT NULL,
@@ -1378,8 +1983,10 @@ CREATE TABLE IF NOT EXISTS `user_list_views` (
   `columns` text COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_list` (`user_id`,`list_name`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(10) unsigned NOT NULL,
@@ -1387,8 +1994,10 @@ CREATE TABLE IF NOT EXISTS `user_log` (
   `status` enum('in','out') NOT NULL DEFAULT 'out',
   `added` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
-
+) ENGINE=InnoDB AUTO_INCREMENT=16173 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_permissions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role_id` int(11) DEFAULT NULL,
@@ -1396,8 +2005,10 @@ CREATE TABLE IF NOT EXISTS `user_permissions` (
   `user_id` int(11) DEFAULT NULL,
   `permission` enum('allow','deny') CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+) ENGINE=InnoDB AUTO_INCREMENT=707 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_profiles` (
   `user_id` int(11) NOT NULL,
   `role_id` int(11) NOT NULL,
@@ -1423,26 +2034,1056 @@ CREATE TABLE IF NOT EXISTS `user_profiles` (
   UNIQUE KEY `hitpath_user_id` (`hitpath_user_id`),
   KEY `role_id` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_resources` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `resource` varchar(128) CHARACTER SET utf8 NOT NULL,
   `type` enum('access','action') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'access',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+) ENGINE=InnoDB AUTO_INCREMENT=96 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `user_roles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role` varchar(40) CHARACTER SET utf8 NOT NULL,
   `status` enum('active','inactive') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'active',
   `parent_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
+  `password` varchar(45) CHARACTER SET utf8 DEFAULT NULL,
+  `status` enum('active','inactive') CHARACTER SET utf8 DEFAULT 'active',
+  `token` varchar(200) CHARACTER SET utf8 DEFAULT NULL,
+  `token_date` datetime DEFAULT NULL,
+  `updated` datetime DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `hash` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `last_ip` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `values` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) DEFAULT NULL,
   `description` text,
   `current` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- MySQL dump 10.13  Distrib 5.6.33, for debian-linux-gnu (x86_64)
+--
+-- Host: jb-db-master-aurora-cluster.cluster-ro-cbuof78eddep.us-east-1.rds.amazonaws.com    Database: jbx
+-- ------------------------------------------------------
+-- Server version	5.6.10-log
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER advertiser_credit_insert
+AFTER INSERT ON advertiser_credit
+FOR EACH ROW 
+BEGIN
+    CALL credit_history_insert(new.advertiser_id, 0, new.credit, new.created_by, new.created);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER advertiser_credit_update
+AFTER UPDATE ON advertiser_credit 
+FOR EACH ROW 
+BEGIN
+    IF (old.credit != new.credit) THEN
+        CALL credit_history_insert(old.advertiser_id, old.credit, new.credit, new.created_by, new.created);
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER advertiser_prepay_insert
+AFTER INSERT ON advertiser_prepay
+FOR EACH ROW 
+BEGIN
+    CALL prepay_history_insert(new.advertiser_id, 0, new.prepay, new.created_by, new.created);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER advertiser_prepay_update
+AFTER UPDATE ON advertiser_prepay
+FOR EACH ROW 
+BEGIN
+    IF (old.prepay != new.prepay) THEN
+        CALL prepay_history_insert(old.advertiser_id, old.prepay, new.prepay, new.created_by, new.created);
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `cap_allocation_affiliate_insert` AFTER INSERT ON `cap_allocation_affiliate`
+                FOR EACH ROW BEGIN
+                    INSERT INTO `cap_allocation_affiliate_history` (`campaign_id`, `affiliate_id`, `transaction_date`, `old_cap_amount`, `new_cap_amount`, `cap_type`, `created_by`, `created`)
+                    VALUES (new.campaign_id, new.affiliate_id, new.transaction_date, 0, new.cap_amount, new.cap_type, new.created_by, NOW());
+                END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `cap_allocation_affiliate_update` AFTER UPDATE ON `cap_allocation_affiliate` FOR EACH ROW BEGIN
+
+	if(( old.cap_amount != new.cap_amount ) or (old.cap_type != new.cap_type)) then
+		INSERT INTO `cap_allocation_affiliate_history` (`campaign_id`, `affiliate_id`, `transaction_date`, `old_cap_amount`, `new_cap_amount`, `cap_type`, `created_by`, `created`)
+                    VALUES (new.campaign_id, new.affiliate_id, new.transaction_date, old.cap_amount, new.cap_amount, new.cap_type, new.modified_by, new.modified);
+    end if ;             
+                
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `cap_allocation_manager_insert` AFTER INSERT ON `cap_allocation_manager`
+                FOR EACH ROW BEGIN
+                    INSERT INTO `cap_allocation_manager_history` (`campaign_id`, `manager_id`, `transaction_date`, `old_cap_amount`, `new_cap_amount`, `created_by`, `created`)
+                    VALUES (new.campaign_id, new.manager_id, new.transaction_date, 0, new.cap_amount, new.created_by, NOW());
+                END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `cap_allocation_manager_update` AFTER UPDATE ON `cap_allocation_manager` FOR EACH ROW BEGIN
+
+	if( old.cap_amount != new.cap_amount ) then
+                    INSERT INTO `cap_allocation_manager_history` (`campaign_id`, `manager_id`, `transaction_date`, `old_cap_amount`, `new_cap_amount`, `created_by`, `created`)
+                    VALUES (new.campaign_id, new.manager_id, new.transaction_date, old.cap_amount, new.cap_amount, new.modified_by, new.modified);
+	end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `crm_credentials_insert` AFTER INSERT ON `crm_credentials`
+            FOR EACH ROW BEGIN
+                INSERT INTO `crm_credential_history` (`crm_credential_id`, `login_url`, `username`, `password`, `api_username`, `api_password`, `api_token`, `notes`, `created_by`, `created`)
+                VALUES (new.id, new.login_url, new.username, new.password, new.api_username, new.api_password, new.api_token, new.notes, new.created_by, new.created);
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `crm_credentials_update` BEFORE UPDATE ON `crm_credentials`
+            FOR EACH ROW BEGIN
+                IF (new.login_url != old.login_url OR
+                    new.username != old.username OR
+                    new.password != old.password OR
+                    new.api_username != old.api_username OR
+                    new.api_password != old.api_password OR
+                    new.api_token != old.api_token OR
+                    new.notes != old.notes) THEN
+                        INSERT INTO `crm_credential_history` (`crm_credential_id`, `login_url`, `username`, `password`,`api_username`, `api_password`, `api_token`, `notes`, `created_by`, `created`)
+                        VALUES (new.id, new.login_url, new.username, new.password, new.api_username, new.api_password, new.api_token, new.notes, new.created_by, new.updated);
+                END IF;
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER finance_campaign_caps_before_insert
+BEFORE INSERT ON finance_campaign_caps
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER finance_campaign_caps_insert
+            AFTER INSERT ON finance_campaign_caps
+            FOR EACH ROW
+            BEGIN
+                CALL cap_history_insert(new.campaign_id, null, new.contracted_cap, new.notes, new.created_by, new.created);
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER finance_campaign_caps_before_update
+BEFORE UPDATE ON finance_campaign_caps
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER finance_campaign_caps_update
+            AFTER UPDATE ON finance_campaign_caps
+            FOR EACH ROW
+            BEGIN
+                DECLARE update_notes TEXT;
+            
+                IF (old.notes = new.notes) THEN
+                    SET update_notes := NULL;
+                ELSE
+                    SET update_notes := new.notes;
+                END IF;
+            
+                IF (old.contracted_cap != new.contracted_cap) THEN
+                    CALL cap_history_insert(new.campaign_id, old.contracted_cap, new.contracted_cap, update_notes, new.created_by, new.created);
+                END IF;
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_campaign_caps_insert` AFTER INSERT ON `hitpath_campaign_caps` FOR EACH ROW BEGIN
+                INSERT INTO `hitpath_campaign_cap_history` (`cap_id`, `campaign_id`, `redirect_campaign_id`, `affiliate_id`, `old_cap`, `new_cap`, `cap_type`, `period`, `status`, `reason`, `start_date`, `end_date`, `created_by`, `created`)
+                VALUES (new.cap_id, new.campaign_id, new.redirect_campaign_id, new.affiliate_id, 0, new.cap, new.cap_type, new.period, new.status, new.reason, new.start_date, new.end_date, new.created_by, new.updated);
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_campaign_caps_update` AFTER UPDATE ON `hitpath_campaign_caps`
+            FOR EACH ROW
+            BEGIN
+                IF (old.cap != new.cap OR old.status != new.status OR old.start_date != new.start_date OR old.end_date != new.end_date OR old.redirect_campaign_id != new.redirect_campaign_id) THEN
+                INSERT INTO `hitpath_campaign_cap_history` (`cap_id`, `campaign_id`, `redirect_campaign_id`, `affiliate_id`, `old_cap`, `new_cap`, `cap_type`, `period`, `status`, `reason`, `start_date`, `end_date`, `created_by`, `created`)
+                    VALUES (new.cap_id, new.campaign_id, new.redirect_campaign_id, new.affiliate_id, old.cap, new.cap, new.cap_type, new.period, new.status, new.reason, new.start_date, new.end_date, new.created_by, new.updated);
+                END IF;
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = '' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_campaigns_insert` AFTER INSERT ON `hitpath_campaigns` FOR EACH ROW BEGIN 
+                    INSERT IGNORE INTO campaign_metadata( campaign_id ) 
+                    VALUES (
+                        NEW.campaign_id
+                    );
+                    
+                    INSERT IGNORE INTO finance_campaign_caps( campaign_id, contracted_cap, old_contracted_cap, created_by, created ) 
+                    VALUES (
+                        new.campaign_id, 0, NULL , 33, NOW( )
+                    );
+                    
+                    INSERT INTO campaign_pairings( step1_campaign_id, auto_redirect, active, deleted, created ) 
+                    VALUES (
+                        new.campaign_id,  'yes',  'yes', NULL , NOW( )
+                    );
+                    
+                    INSERT IGNORE INTO mesh_campaign_optimizer_strategies ( campaign_id, strategy, optimal_metric, suboptimal_metric, threshold, rank, traffic_allocation)
+                    VALUES ( 
+                        new.campaign_id, 'weighted', 'weight', null, null, 2, 100.00
+                    );
+                END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = '' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_campaigns_update` AFTER UPDATE ON `hitpath_campaigns` FOR EACH ROW BEGIN
+    UPDATE finance_campaign_caps SET advertiser_id = new.advertiser_id WHERE campaign_id = new.campaign_id;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_hits_cpa` BEFORE INSERT ON `hitpath_hits`
+             FOR EACH ROW BEGIN
+                DECLARE newCpaIn DECIMAL;
+                DECLARE newCpaOut DECIMAL;
+            
+                SELECT IF (o.override_cpa_in = 'yes', o.cpa_in, c.cpa_in), IF (o.override_cpa_out = 'yes', o.cpa_out, c.cpa_out) INTO newCpaIn, newCpaOut
+                  FROM hitpath_campaigns c
+                  LEFT JOIN hitpath_overrides o ON c.campaign_id = o.campaign_id
+                   AND o.affiliate_id = new.affiliate_id
+                   AND (((o.expiration_date < new.hit_date OR o.expiration_date IS NULL) AND o.lifetime = 'expires') OR o.lifetime = 'indefinite')
+                   AND o.effective_date <= new.hit_date
+                   AND o.status = 'active'
+                 WHERE c.campaign_id = new.campaign_id
+                 ORDER BY o.effective_date DESC
+                 LIMIT 1;
+            
+                SET new.cpa_in = newCpaIn;
+                SET new.cpa_out = newCpaOut;
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_hits_insert` AFTER INSERT ON `hitpath_hits`
+             FOR EACH ROW BEGIN
+                CALL summary_hits_insert_update(new.campaign_id, new.hit_date, new.affiliate_id, new.landing_page_id, new.cpa_out, new.cpa_in, new.c1, new.c2, new.c3);
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `hitpath_hits_delete` AFTER DELETE ON `hitpath_hits`
+             FOR EACH ROW BEGIN
+                UPDATE `summary_hitpath_hourly`
+                   SET hits = hits - 1, updated = NOW()
+                 WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d %H:00:00')
+                   AND campaign_id = old.campaign_id
+                   AND affiliate_id = old.affiliate_id
+                   AND cpa_in = old.cpa_in
+                   AND cpa_out = old.cpa_out
+                   AND landing_page_id = old.landing_page_id;
+            
+                UPDATE `summary_hitpath_daily`
+                   SET hits = hits - 1, updated = NOW()
+                 WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
+                   AND campaign_id = old.campaign_id
+                   AND affiliate_id = old.affiliate_id
+                   AND cpa_in = old.cpa_in
+                   AND cpa_out = old.cpa_out
+                   AND landing_page_id = old.landing_page_id;
+            
+                UPDATE `summary_hitpath_daily_detail`
+                   SET hits = hits - 1, updated = NOW()
+                 WHERE transaction_date = DATE_FORMAT(old.hit_date, '%Y-%m-%d')
+                   AND campaign_id = old.campaign_id
+                   AND affiliate_id = old.affiliate_id
+                   AND cpa_in = old.cpa_in
+                   AND cpa_out = old.cpa_out
+                   AND landing_page_id = old.landing_page_id
+                   AND c1 = old.c1
+                   AND c2 = old.c2
+                   AND c3 = old.c3;
+            END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER hitpath_sales_insert
+AFTER INSERT ON hitpath_sales
+FOR EACH ROW
+BEGIN
+    IF (new.rejected = 'no') THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
+    ELSEIF (new.rejected = 'yes') THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 0, 0, 0, new.c1, new.c2, new.c3);
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER hitpath_sales_update
+AFTER UPDATE ON hitpath_sales
+FOR EACH ROW
+BEGIN
+    DECLARE cpaChanged TINYINT(1);
+
+    SET cpaChanged = (old.earned != new.earned OR old.paid != new.paid) AND new.rejected = 'no';
+     
+    IF ((new.rejected != old.rejected AND new.rejected = 'yes') OR cpaChanged = 1) THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, -1, (old.earned * -1), (old.paid * -1), new.c1, new.c2, new.c3);
+    END IF;
+
+    IF ((new.rejected != old.rejected AND new.rejected = 'no') OR cpaChanged = 1) THEN
+        CALL hitpath_sales_summary_insert_update(new.campaign_id, new.sale_date, new.affiliate_id, new.landing_page_id, 1, new.earned, new.paid, new.c1, new.c2, new.c3);
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER hitpath_sales_delete
+AFTER DELETE ON hitpath_sales
+FOR EACH ROW
+BEGIN
+    IF (old.rejected = 'no') THEN
+        CALL hitpath_sales_summary_insert_update(old.campaign_id, old.sale_date, old.affiliate_id, old.landing_page_id, -1, (old.earned * -1), (old.paid * -1), old.c1, old.c2, old.c3);
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER mesh_campaign_sessions_insert
+BEFORE INSERT ON mesh_campaign_sessions
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER mesh_pixel_log_insert
+BEFORE INSERT ON mesh_pixel_log
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER mesh_pixel_raw_log_insert
+BEFORE INSERT ON mesh_pixel_raw_log
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER summary_hitpath_daily_insert
+BEFORE INSERT ON summary_hitpath_daily
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER summary_hitpath_hourly_insert
+BEFORE INSERT ON summary_hitpath_hourly
+FOR EACH ROW
+BEGIN
+    SET new.advertiser_id = (SELECT advertiser_id FROM hitpath_campaigns WHERE campaign_id = new.campaign_id);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Dumping routines for database 'jbx'
+--
+/*!50003 DROP PROCEDURE IF EXISTS `cap_history_insert` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `cap_history_insert`(IN campaign_id int(10),
+IN old_value INT (11),
+IN new_value INT(11),
+IN notes TEXT,
+IN created_by int(11),
+IN created DATETIME)
+BEGIN
+    INSERT INTO finance_campaign_cap_history (campaign_id, old_value, new_value, notes, created_by, created)
+    VALUES (campaign_id, old_value, new_value, notes, created_by, created);
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `credit_history_insert` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `credit_history_insert`(IN advertiser_id INT(11),
+IN old_value DECIMAL(10, 2), 
+IN new_value DECIMAL(10, 2), 
+IN created_by INT(11), 
+IN created DATETIME)
+BEGIN
+    INSERT INTO advertiser_credit_history (advertiser_id, old_value, new_value, created_by, created)
+    VALUES (advertiser_id, old_value, new_value, created_by, created);
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `hitpath_sales_summary_insert_update` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `hitpath_sales_summary_insert_update`(IN campaignId INT(11),
+IN saleDate DATETIME,
+IN affiliateId INT(11),
+IN landingPageId INT(11),
+IN rejected INT(8),
+IN newEarned DECIMAL(10, 2),
+IN newPaid DECIMAL(10, 2),
+IN _c1 VARCHAR(700),
+IN _c2 VARCHAR(100),
+IN _c3 VARCHAR(100))
+BEGIN
+    DECLARE advertiserId INT;
+    DECLARE hourlyDate DATETIME;
+    DECLARE dailyDate DATETIME;
+    DECLARE updateRows INT;
+    DECLARE advertiserManagerId INT;
+    DECLARE campaignManagerId INT;
+    DECLARE affiliateManagerId INT;
+
+    -- Get advertiser ID
+    SELECT advertiser_id INTO advertiserId
+      FROM hitpath_campaigns
+     WHERE campaign_id = campaignId;
+
+    -- Format dates
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
+    SELECT DATE_FORMAT(saleDate, '%Y-%m-%d') INTO dailyDate;
+
+    -- Update hourly log
+    UPDATE `summary_hitpath_hourly`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE campaign_id = campaignId
+       AND transaction_date = hourlyDate
+       AND affiliate_id = affiliateId
+       AND landing_page_id = landingPageId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid;
+
+    SET updateRows = ROW_COUNT();
+    
+    IF (updateRows = 0) THEN
+        -- Get hitpath manager IDs
+        SELECT hitpath_manager_id INTO advertiserManagerId
+          FROM hitpath_advertisers
+         WHERE advertiser_id = advertiserId;
+
+        SELECT hitpath_manager_id INTO campaignManagerId
+          FROM hitpath_campaigns
+         WHERE campaign_id = campaignId;
+
+        SELECT hitpath_manager_id INTO affiliateManagerId
+          FROM hitpath_affiliates
+         WHERE affiliate_id = affiliateId;
+
+        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, rejected, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
+
+    -- Update daily log
+    UPDATE `summary_hitpath_daily`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE campaign_id = campaignId
+       AND transaction_date = dailyDate
+       AND affiliate_id = affiliateId
+       AND landing_page_id = landingPageId
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid;
+
+    SET updateRows = ROW_COUNT();
+    
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, rejected, newEarned, newPaid, ABS(newEarned), ABS(newPaid), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
+
+    -- Update daily detail log
+    UPDATE `summary_hitpath_daily_detail`
+       SET earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW()
+     WHERE campaign_id = campaignId
+       AND transaction_date = dailyDate
+       AND affiliate_id = affiliateId
+       AND landing_page_id = landingPageId
+       AND c1 = _c1
+       AND c2 = _c2
+       AND c3 = _c3
+       AND cpa_in = newEarned
+       AND cpa_out = newPaid;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 0, rejected, newEarned, newPaid, ABS(newEarned), ABS(newPaid), IFNULL(_c1, ''), IFNULL(_c2, ''), IFNULL(_c3, ''), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE earned = earned + newEarned, paid = paid + newPaid, sales = sales + rejected, updated = NOW();
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `prepay_history_insert` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `prepay_history_insert`(IN advertiser_id INT(11),
+IN old_value DECIMAL(10, 2),
+IN new_value DECIMAL(10, 2),
+IN created_by INT(11),
+IN created DATETIME)
+BEGIN
+    INSERT INTO advertiser_prepay_history (advertiser_id, old_value, new_value, created_by, created)
+    VALUES (advertiser_id, old_value, new_value, created_by, created);
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `summary_hits_insert_update` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `summary_hits_insert_update`(IN campaignId INT(11),
+IN hitDate DATETIME,
+IN affiliateId INT(11),
+IN landingPageId INT(11),
+IN cpaOut DECIMAL,
+IN cpaIn DECIMAL,
+IN _c1 VARCHAR(700),
+IN _c2 VARCHAR(100),
+IN _c3 VARCHAR(100))
+BEGIN
+    DECLARE advertiserId INT;
+    DECLARE hourlyDate DATETIME;
+    DECLARE dailyDate DATETIME;
+    DECLARE updateRows INT;
+    DECLARE advertiserManagerId INT;
+    DECLARE campaignManagerId INT;
+    DECLARE affiliateManagerId INT;
+
+    -- Get advertiser ID
+    SELECT advertiser_id INTO advertiserId
+      FROM hitpath_campaigns
+     WHERE campaign_id = campaignId;
+
+    -- Format dates
+    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d %H:00:00') INTO hourlyDate;
+    SELECT DATE_FORMAT(hitDate, '%Y-%m-%d') INTO dailyDate;
+
+    -- Update hourly log
+    UPDATE `summary_hitpath_hourly`
+       SET hits = hits + 1, updated = NOW()
+     WHERE campaign_id = campaignId
+       AND transaction_date = hourlyDate
+       AND affiliate_id = affiliateId
+       AND landing_page_id = landingPageId
+       AND cpa_in = cpaIn
+       AND cpa_out = cpaOut;
+
+    SET updateRows = ROW_COUNT();
+    
+    IF (updateRows = 0) THEN
+        -- Get hitpath manager IDs
+        SELECT hitpath_manager_id INTO advertiserManagerId
+          FROM hitpath_advertisers
+         WHERE advertiser_id = advertiserId;
+
+        SELECT hitpath_manager_id INTO campaignManagerId
+          FROM hitpath_campaigns
+         WHERE campaign_id = campaignId;
+
+        SELECT hitpath_manager_id INTO affiliateManagerId
+          FROM hitpath_affiliates
+         WHERE affiliate_id = affiliateId;
+
+        INSERT INTO `summary_hitpath_hourly` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (hourlyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
+    END IF;
+
+    -- Update daily log
+    UPDATE `summary_hitpath_daily`
+       SET hits = hits + 1, updated = NOW()
+     WHERE campaign_id = campaignId
+       AND transaction_date = dailyDate
+       AND affiliate_id = affiliateId
+       AND landing_page_id = landingPageId
+       AND cpa_in = cpaIn
+       AND cpa_out = cpaOut;
+       
+    SET updateRows = ROW_COUNT();
+    
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
+    END IF;
+
+    -- Update daily detail
+    UPDATE `summary_hitpath_daily_detail`
+       SET hits = hits + 1, updated = NOW()
+     WHERE campaign_id = campaignId
+       AND transaction_date = dailyDate
+       AND affiliate_id = affiliateId
+       AND landing_page_id = landingPageId
+       AND c1 = _c1
+       AND c2 = _c2
+       AND c3 = _c3
+       AND cpa_in = cpaIn
+       AND cpa_out = cpaOut;
+
+    SET updateRows = ROW_COUNT();
+
+    IF (updateRows = 0) THEN
+
+        INSERT INTO `summary_hitpath_daily_detail` (transaction_date, advertiser_id, campaign_id, affiliate_id, landing_page_id, hits, sales, earned, paid, cpa_in, cpa_out, c1, c2, c3, advertiser_hitpath_manager_id, campaign_hitpath_manager_id, affiliate_hitpath_manager_id, updated)
+        VALUES (dailyDate, advertiserId, campaignId, affiliateId, landingPageId, 1, 0, 0.00, 0.00, cpaIn, cpaOut, IFNULL(_c1, ''), IFNULL(_c2, ''), IFNULL(_c3, ''), advertiserManagerId, campaignManagerId, affiliateManagerId, NOW())
+            ON DUPLICATE KEY UPDATE hits = hits + 1, updated = NOW();
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

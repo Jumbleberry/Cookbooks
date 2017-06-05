@@ -119,7 +119,12 @@ end
 include_recipe 'swarm-nginx::download'
 
 service "nginx" do 
-    provider Chef::Provider::Service::Upstart
+    case node['platform']
+    when 'ubuntu'
+      if node['lsb']['codename'] == 'trusty'
+        provider Chef::Provider::Service::Upstart
+      end
+    end
     ignore_failure true
     supports :restart=>true, :status=>true, :reload=>true, :start=>true, :stop=>true
     action :reload

@@ -4,7 +4,7 @@ include_recipe "apt"
 apt_repository 'php-ppa' do
   uri           'ppa:ondrej/php'
   distribution  'trusty'
-  components    ['main', 'stable']
+  components    ['main']
 end
 
 # Update apt
@@ -37,9 +37,9 @@ end
 
 #Register Php service
 service 'php7.0-fpm' do
-  case node["platform"]
-  when "ubuntu"
-    if node["platform_version"].to_f >= 14.04
+  case node['platform']
+  when 'ubuntu'
+    if node['lsb']['codename'] == 'trusty'
       provider Chef::Provider::Service::Upstart
     end
   end

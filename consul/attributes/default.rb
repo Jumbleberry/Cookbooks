@@ -79,7 +79,7 @@ default['consul']['bootstrap_expect'] = 3
 default['consul']['data_dir'] = '/var/lib/consul'
 default['consul']['config_dir'] = '/etc/consul.d'
 default['consul']['logfile'] = '/var/log/consul.log'
-default['consul']['init_style'] = 'init'   # 'init', 'runit', 'systemd'
+default['consul']['init_style'] = node['lsb']['release'].to_f >= 16? 'systemd': 'init'   # 'init', 'runit', 'systemd'
 case node['platform_family']
 when 'windows'
   default['consul']['install_method'] = 'windows'
