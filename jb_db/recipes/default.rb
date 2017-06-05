@@ -59,28 +59,43 @@ end
 include_recipe "nginx"
 include_recipe "php"
 
-# Install phpmyadmin
-execute 'phpmyadmin' do
-    command <<-EOH
-echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
-apt-get -y install phpmyadmin
-true
-    EOH
-    user 'root'
+home = node['jb_db']['home']
+
+directory home do
+	owner 'www-data'
+	group 'www-data'
+	mode 00755
+	recursive true
+	action :create
 end
 
-# Copy phpmyadmin config file
-cookbook_file "/etc/phpmyadmin/config.inc.php" do
-    source "phpmyadmin/etc-config.inc.php"
-    owner "root"
-    group "root"
-    mode "0644"
+# Download the selected PHPMyAdmin archive
+remote_file "#{Chef::Config['file_cache_path']}/phpMyAdmin-#{node['jb_db']['version']}-all-languages.tar.gz" do
+  owner user
+  group group
+  mode 00644
+	retries 5
+	retry_delay 2
+  action :create
+  source "#{node['jb_db']['mirror']}/#{node['jb_db']['version']}/phpMyAdmin-#{node['jb_db']['version']}-all-languages.tar.gz"
+  checksum node['jb_db']['checksum']
+end
+
+bash 'extract-php-myadmin' do
+	user user
+	group group
+	cwd home
+	code <<-EOH
+		rm -fr *
+		tar xzf #{Chef::Config['file_cache_path']}/phpMyAdmin-#{node['jb_db']['version']}-all-languages.tar.gz
+		mv phpMyAdmin-#{node['jb_db']['version']}-all-languages/* #{home}/
+		rm -fr phpMyAdmin-#{node['jb_db']['version']}-all-languages
+	EOH
+	not_if { ::File.exists?("#{home}/RELEASE-DATE-#{node['jb_db']['version']}")}
 end
 
 # I don't know why phpmyadmin has so many different configs in so many different directories
-cookbook_file "/var/lib/phpmyadmin/config.inc.php" do
+cookbook_file "/var/www/phpmyadmin/config.inc.php" do
     source "phpmyadmin/var-config.inc.php"
     owner "www-data"
     group "www-data"
@@ -100,16 +115,6 @@ execute "phpmyadmin" do
     command "mysql -u root -p#{root_password} < /tmp/create_tables.sql"
 end
 
-# Symlink myadmin to somewhere sensible
-link "/var/www/phpmyadmin" do
-    to "/usr/share/phpmyadmin"
-    action :create
-end
-
-# Copy myadmin config
-template "/var/www/phpmyadmin/config.inc.php" do
-  source  "phpmyadmin/config.inc.php.erb"
-end
 
 # Create nginx config file
 template "/etc/nginx/sites-available/phpmyadmin" do
@@ -123,8 +128,8 @@ end
 
 # Reload nginx
 service "nginx" do
-    supports :status => true, :restart => true, :start => true, :stop => true
-    action :restart
+    supports :status => true, :restart => true, :start => true, :stop => true, :reload => true
+    action :reload
 end
 
 # Install awscli

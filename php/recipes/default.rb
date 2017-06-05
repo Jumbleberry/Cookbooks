@@ -18,8 +18,7 @@ phpmodules.each do |pkg|
     action :install
     version pkg["version"]
     # Ignore configuration changes - necessary because of nginx updates
-    options '--force-yes'
-    options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+    options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes'
   end
 end
 
