@@ -21,6 +21,8 @@ when 'debian'
     mime-support
     automake
     libtool
+    pkg-config
+    libssl-dev
   )
 when 'rhel'
   %w(
@@ -48,7 +50,6 @@ end
 
 s3fs_version = node[:s3fs_fuse][:version]
 source_url   = "https://s3.amazonaws.com/miscfile-staging/s3fs-#{s3fs_version}.zip"
-
 remote_file "/tmp/s3fs-#{s3fs_version}.zip" do
   source source_url
   action :create_if_missing
@@ -65,8 +66,8 @@ end
 bash "compile_and_install_s3fs" do
   cwd '/tmp'
   code <<-EOH
-    unzip s3fs-#{s3fs_version}.zip
-    cd s3fs-fuse-#{s3fs_version}
+    unzip -o s3fs-#{s3fs_version}.zip
+    cd ./s3fs-fuse-master
     #{'export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig' if node.platform_family == 'rhel'}
     ./autogen.sh
     ./configure --prefix=/usr/local

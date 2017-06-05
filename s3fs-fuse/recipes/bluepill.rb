@@ -2,7 +2,12 @@ include_recipe "bluepill"
 
 if(File.exists?('/etc/init/s3fs-fuse.conf'))
   service "s3fs-fuse" do
-    provider Chef::Provider::Service::Upstart
+    case node['platform']
+    when 'ubuntu'
+      if node['lsb']['codename'] == 'trusty'
+        provider Chef::Provider::Service::Upstart
+      end
+    end
     action :stop
   end
 

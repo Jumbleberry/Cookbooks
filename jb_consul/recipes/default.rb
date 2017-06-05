@@ -31,6 +31,14 @@ end
 
 # Turn off the existing consul service
 service "consul" do
+  case node['platform']
+  when 'ubuntu'
+    if node['consul']['init_style'] == 'systemd'
+      provider Chef::Provider::Service::Systemd
+    elsif node['lsb']['codename'] == 'trusty'
+      provider Chef::Provider::Service::Upstart
+    end
+  end
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :stop
 end

@@ -60,7 +60,7 @@ fi
 
 # Copy the file from S3
 file_name="${type}_${day}.sql.gz";
-home_dir="/home/vagrant"
+home_dir="/tmp"
 rm "${home_dir}/${file_name}" > /dev/null 2&>1
 aws s3 cp "${base_url}/${file_name}" "${home_dir}/${file_name}";
 

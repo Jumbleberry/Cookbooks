@@ -47,7 +47,12 @@ redis_instances.each do |current_server|
   	end
   elsif job_control == 'upstart'
   	service "redis#{server_name}" do
-	  provider Chef::Provider::Service::Upstart
+	  case node['platform']
+      when 'ubuntu'
+        if node['lsb']['codename'] == 'trusty'
+          provider Chef::Provider::Service::Upstart
+        end
+      end
       start_command "start redis#{server_name}"
       stop_command "stop redis#{server_name}"
       restart_command "restart redis#{server_name}"
