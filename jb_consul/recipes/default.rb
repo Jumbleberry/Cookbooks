@@ -2,6 +2,7 @@ include_recipe "aws"
 include_recipe "awscli"
 include_recipe "tags"
 include_recipe "web-server"
+include_recipe "php"
 
 # Create lib directory for consul
 directory node['consul']['lib_dir'] do
