@@ -14,7 +14,7 @@ execute "apt-get-update-periodic-php" do
 end
 
 # Installs php package and modules
-phpmodules = node['php']['packages']
+phpmodules = node['swarm_php']['packages']
 phpmodules.each do |pkg|
   package "#{pkg['name']}" do
     action :install
@@ -48,7 +48,7 @@ service 'php7.0-fpm' do
 end
 
 #Check if we need to change the php include path
-include_path = node['php']['fpm']['include_path']
+include_path = node['swarm_php']['fpm']['include_path']
 
 directory '/var/log/php/' do
     owner 'www-data'
@@ -65,7 +65,7 @@ end
 template '/etc/php/7.0/fpm/php.ini' do
   source 'fpm/php.ini.erb'
   variables({
-    'display_errors' => node['php']['fpm']['display_errors'],
+    'display_errors' => node['swarm_php']['fpm']['display_errors'],
     'include_path' => include_path
   })
   notifies :restart, "service[php7.0-fpm]", :delayed
@@ -74,12 +74,12 @@ end
 template '/etc/php/7.0/fpm/pool.d/www.conf' do
   source 'fpm/www.conf.erb'
   variables({
-    'listen' => node['php']['fpm']['listen'],
-    'pm' => node['php']['fpm']['pm'],
-    'max_children' => node['php']['fpm']['max_children'],
-    'start_servers' => node['php']['fpm']['start_servers'],
-    'min_spare_servers' => node['php']['fpm']['min_spare_servers'],
-    'max_spare_servers' => node['php']['fpm']['max_spare_servers']
+    'listen' => node['swarm_php']['fpm']['listen'],
+    'pm' => node['swarm_php']['fpm']['pm'],
+    'max_children' => node['swarm_php']['fpm']['max_children'],
+    'start_servers' => node['swarm_php']['fpm']['start_servers'],
+    'min_spare_servers' => node['swarm_php']['fpm']['min_spare_servers'],
+    'max_spare_servers' => node['swarm_php']['fpm']['max_spare_servers']
   })
   notifies :restart, "service[php7.0-fpm]", :delayed
 end
@@ -88,13 +88,13 @@ end
 template '/etc/php/7.0/cli/php.ini' do
   source 'cli/php.ini.erb'
   variables({
-    'display_errors' => node['php']['fpm']['display_errors'],
+    'display_errors' => node['swarm_php']['fpm']['display_errors'],
     'include_path' => include_path
   })
 end
 
 #Install composer
-composer_download_path = node['php']['composer_download_path']
+composer_download_path = node['swarm_php']['composer_download_path']
 if composer_download_path
   remote_file composer_download_path do
     source 'https://getcomposer.org/installer'
