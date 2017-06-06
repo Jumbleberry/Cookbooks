@@ -18,8 +18,8 @@
 # Parameters to pass to gearmand.
 PARAMS="-q mysql \
     --mysql-host="<%= node['gearman']['mysql']['host'] %>" \
-    --mysql-user=<%= node['gearman']['mysql']['user'] %> \
-    --mysql-password=<%= node['gearman']['mysql']['password'] %> \
+    --mysql-user="<%= node['gearman']['mysql']['user'] %>" \
+    --mysql-password="<%= node['gearman']['mysql']['password'] %>" \
     --mysql-db=<%= node['gearman']['mysql']['db'] %> \
     --mysql-table=<%= node['gearman']['mysql']['table'] %> \
     --mysql-port=<%= node['gearman']['mysql']['port'] %> \

@@ -1,3 +1,4 @@
+include_recipe "web_server"
 include_recipe "apt"
 
 # Update apt
