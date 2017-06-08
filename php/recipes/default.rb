@@ -72,6 +72,12 @@ end
 
 # Remove 5.6 service if it exists
 service 'php5.6-fpm' do
+  case node['platform']
+  when 'ubuntu'
+    if node['lsb']['codename'] == 'trusty'
+      provider Chef::Provider::Service::Upstart
+    end
+  end
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :stop
   ignore_failure true
@@ -81,6 +87,12 @@ end
 
 #Register Php service
 service 'php5-fpm' do
+  case node['platform']
+  when 'ubuntu'
+    if node['lsb']['codename'] == 'trusty'
+      provider Chef::Provider::Service::Upstart
+    end
+  end
   supports :status => true, :restart => true, :reload => true, :stop => true
   action :restart
 end

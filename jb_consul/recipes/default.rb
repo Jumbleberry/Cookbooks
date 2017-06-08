@@ -73,6 +73,15 @@ if ( node.attribute?('ec2') && node[:ec2].attribute?('instance_id') && /(i|snap|
     end
 end
 
+if node['environment'] == 'development'
+    # Configuration for gearman service
+    template "#{cron_path}/gearman.json" do
+        source "gearman.json.erb"
+        owner "root"
+        group "root"
+    end
+end
+
 # Turn consul back on
 service "consul" do
   action :start
