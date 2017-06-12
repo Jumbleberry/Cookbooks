@@ -34,7 +34,7 @@ node['php']['fpm']['conf_dirs'].each do |conf_dir|
     node['php']['fpm']['conf_dirs_alias'].each do |conf_dirs_alias|
         link "#{conf_dirs_alias}/20-#{node['php']['fpm']['conf_file']}" do
           to "#{conf_dir}/#{node['php']['fpm']['conf_file']}"
-          notifies :restart, "service[php7.1-fpm]", :delayed
+          notifies :reload, "service[php7.1-fpm]", :delayed
         end
     end
 end
@@ -72,7 +72,7 @@ template '/etc/php/7.1/fpm/php.ini' do
     'display_errors' => node['php']['fpm']['display_errors'],
     'include_path' => include_path
   })
-  notifies :restart, "service[php7.1-fpm]", :delayed
+  notifies :reload, "service[php7.1-fpm]", :delayed
 end
 
 template '/etc/php/7.1/fpm/pool.d/www.conf' do
@@ -85,7 +85,7 @@ template '/etc/php/7.1/fpm/pool.d/www.conf' do
     'min_spare_servers' => node['php']['fpm']['min_spare_servers'],
     'max_spare_servers' => node['php']['fpm']['max_spare_servers']
   })
-  notifies :restart, "service[php7.1-fpm]", :delayed
+  notifies :reload, "service[php7.1-fpm]", :delayed
 end
 
 #Cli Configurations
