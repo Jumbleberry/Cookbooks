@@ -44,7 +44,7 @@ service 'php7.0-fpm' do
     end
   end
   supports :restart=>true, :status=>true, :reload=>true, :start=>true, :stop=>true
-  action :nothing
+  action :start
 end
 
 #Check if we need to change the php include path
