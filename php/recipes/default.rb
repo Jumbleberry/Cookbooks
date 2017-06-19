@@ -19,6 +19,9 @@ phpmodules.each do |pkg|
     version pkg["version"]
     # Ignore configuration changes - necessary because of nginx updates
     options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes'
+    if pkg['name'] =~ /^php.*?-fpm$/
+        notifies :start, "service[php7.1-fpm]", :immediately
+    end
   end
 end
 
@@ -43,12 +46,14 @@ end
 service 'php7.1-fpm' do
   case node['platform']
   when 'ubuntu'
-    if node['lsb']['codename'] == 'trusty'
+    if node['lsb']['release'].to_f > 16
+        provider Chef::Provider::Service::Systemd
+    elsif node['lsb']['codename'] == 'trusty'
       provider Chef::Provider::Service::Upstart
     end
   end
   supports :status => true, :restart => true, :reload => true, :stop => true
-  action :start
+  action :nothing
 end
 
 #Check if we need to change the php include path
