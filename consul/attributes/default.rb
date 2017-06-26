@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-default['consul']['base_url']       = "https://s3.amazonaws.com/miscfile-staging/consul/0.5.2/%{version}.zip"
-default['consul']['version']        = '0.5.2'
+default['consul']['base_url']       = "https://s3.amazonaws.com/miscfile-staging/consul/%{release}/%{version}.zip"
+default['consul']['version']        = '0.8.4'
 if node['platform_family'] == 'windows'
   default['consul']['version']      = '0.5.0'
 end
@@ -66,6 +66,11 @@ default['consul']['checksums'] = {
   '0.5.2_linux_amd64'  => '171cf4074bfca3b1e46112105738985783f19c47f4408377241b868affa9d445',
   '0.5.2_windows_386'  => '2e866812de16f1a6138a0fd1eebc76143f1314826e3b52597a55ac510ae94be6',
   '0.5.2_web_ui'       => 'ad883aa52e1c0136ab1492bbcedad1210235f26d59719fb6de3ef6464f1ff3b1',
+  
+  '0.8.4_darwin_amd64' => '913f0e5b2af39f09c6579035d0bb7f002589377bd86e2e886df37f1ecbc25906',
+  '0.8.4_linux_386'    => 'e58abbfedc4bebb66476448ec0fccda37be1c911c05017d7cd597db6384cd531',
+  '0.8.4_linux_amd64'  => 'c8859a0a34c50115cdff147f998b2b63226f5f052e50f342209142420d1c2668',
+  '0.8.4_web_ui'       => '7a49924a872205002b2bf72af8c82d5560d4a7f4a58b2f65ee284dd254ebd063',
 }
 default['consul']['source_revision'] = 'master'
 default['consul']['use_packagecloud_repo'] = true

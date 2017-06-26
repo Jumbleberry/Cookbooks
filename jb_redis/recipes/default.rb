@@ -30,7 +30,7 @@ template "#{redis_path}/redis_cron.php" do
 end
 
 # Get the ip of the interface on the consul attributes
-local_ip = node["network"]["interfaces"][node['consul']['bind_interface']]["addresses"].detect{|k,v| v[:family] == "inet"}.first
+local_ip = node["network"]["interfaces"][node[:network_interface]]["addresses"].detect{|k,v| v[:family] == "inet"}.first
 
 if servers.kind_of?(Array) && !servers.empty?
     servers.each do |server|

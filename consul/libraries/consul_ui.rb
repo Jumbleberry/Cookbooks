@@ -43,7 +43,7 @@ class Chef
       end
 
       def remote_url(node)
-        node['consul']['base_url'] % { version: remote_filename(node) }
+        node['consul']['base_url'] % { release: node['consul']['version'], version: remote_filename(node) }
       end
     end
   end

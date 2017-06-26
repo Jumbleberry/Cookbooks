@@ -26,7 +26,7 @@ servers = node['redisio']['servers'];
 # -------------------
 
 # Get the ip of the interface on the consul attributes
-local_ip = node["network"]["interfaces"][node['consul']['bind_interface']]["addresses"].detect{|k,v| v[:family] == "inet"}.first
+local_ip = node["network"]["interfaces"][node[:network_interface]]["addresses"].detect{|k,v| v[:family] == "inet"}.first
 
 # Delete the redis service files
 execute "sudo rm -rf #{consul_path}/redis*.json" do
