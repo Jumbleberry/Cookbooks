@@ -54,12 +54,9 @@ template credentials_file do
       "hitpath_aws_bucket"      => node['jbx']['credentials']['hitpath']['aws_bucket'],
       "hitpath_api_key"         => node['jbx']['credentials']['hitpath']['api_key'],
 
-      "redis_read_host"         => node['jbx']['credentials']['redis_read']['host'],
-      "redis_read_port"         => node['jbx']['credentials']['redis_read']['port'],
-      "redis_read_index"        => node['jbx']['core']['redis_db'],
-      "redis_write_host"        => node['jbx']['credentials']['redis_write']['host'],
-      "redis_write_port"        => node['jbx']['credentials']['redis_write']['port'],
-      "redis_write_index"       => node['jbx']['core']['redis_db'],
+      "redis_host"              => node['jbx']['credentials']['redis']['host'],
+      "redis_port"              => node['jbx']['credentials']['redis']['port'],
+      "redis_index"             => node['jbx']['core']['redis_db'],
       
       "domains"                 => node['jbx']['credentials']['domains'].to_json,
       "mail"                    => node['jbx']['credentials']['mail'].to_json,
