@@ -65,6 +65,7 @@ directory '/var/log/php/' do
 end
 
 file '/var/log/php/error.log' do
+    mode '0777'
     owner 'www-data'
     group 'www-data'
     action :create_if_missing
