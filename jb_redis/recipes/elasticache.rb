@@ -29,7 +29,8 @@ if servers.kind_of?(Array) && !servers.empty?
             variables ({
                 "port" => server.port,
                 # Doesn't play well when address is 0.0.0.0, use real ip instead
-                "currentip" => server.server == "0.0.0.0"? local_ip: server.server,
+                "address" => server.server == "0.0.0.0"? nil: server.server,
+                "current_ip" => server.server == "0.0.0.0"? local_ip: server.server,
                 "consul_path" => consul_path,
                 "tag" => :slave
             })
