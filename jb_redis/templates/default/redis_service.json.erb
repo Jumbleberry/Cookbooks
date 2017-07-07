@@ -3,6 +3,7 @@
         "id": "redis<%= @port %>",
         "name": "redis",
         "port": <%= @port %>,
+        "address": "<%= @currentip || '' %>",
         "tags": [
             "redis",
             "<%= @tag %>"
@@ -10,6 +11,7 @@
         "check": {
             "script": "<%= @consul_path %>/redis_check.php <%= @currentip %> <%= @port %>",
             "interval": "5s"
-        }
+        },
+        "enableTagOverride": true
     }
 }
