@@ -27,6 +27,7 @@ if servers.kind_of?(Array) && !servers.empty?
             group "cluster"
             mode "0664"
             variables ({
+                "name" => "elasticache",
                 "port" => server.port,
                 # Doesn't play well when address is 0.0.0.0, use real ip instead
                 "address" => server.server == "0.0.0.0"? nil: server.server,

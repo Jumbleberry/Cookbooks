@@ -1,11 +1,11 @@
 {
     "service": {
-        "id": "redis<%= @port %>",
-        "name": "redis",
+        "id": "<%= @name || 'redis' %><%= @port %>",
+        "name": "<%= @name || 'redis' %>",
         "port": <%= @port %>,
         "address": "<%= @address || '' %>",
         "tags": [
-            "redis",
+            "<%= @name || 'redis' %>",
             "<%= @tag %>"
         ],
         "check": {
