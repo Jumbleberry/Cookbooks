@@ -8,5 +8,4 @@ version          '0.1.0'
 
 depends "timezone-ii"
 depends "ssh_known_hosts"
-depends "php"
 depends "opsworks_stack_state_sync"

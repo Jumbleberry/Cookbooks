@@ -22,18 +22,33 @@ execute "chown-data-www" do
   action :run
 end
 
-# Delete the config script if it isnt a symlink to processing
-file "/etc/gearman-manager/config.ini" do
-    action :delete
-    not_if { File.symlink?("/etc/gearman-manager/config.ini") }
-end
-
-# Symlink our config script
-link "/etc/gearman-manager/config.ini" do
-    to "#{node['jbx']['processing']['path']}/config/config.ini"
-    action :create
-    owner "www-data"
-    group "www-data"
+if node['environment'] == 'development'
+    # Delete the config script if it is a symlink
+    link "/etc/gearman-manager/config.ini" do
+        action :delete
+        only_if { File.symlink?("/etc/gearman-manager/config.ini") }
+    end
+    
+    template '/etc/gearman-manager/config.ini' do
+        source 'config.ini.erb'
+        owner 'www-data'
+        group 'www-data'
+        mode '0644'
+    end
+else
+    # Delete the config script if it isnt a symlink to processing
+    file "/etc/gearman-manager/config.ini" do
+        action :delete
+        not_if { File.symlink?("/etc/gearman-manager/config.ini") }
+    end
+    
+    # Symlink our config script
+    link "/etc/gearman-manager/config.ini" do
+        to "#{node['jbx']['processing']['path']}/config/config.ini"
+        action :create
+        owner "www-data"
+        group "www-data"
+    end
 end
 
 # Start the service

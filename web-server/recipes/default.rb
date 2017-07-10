@@ -84,4 +84,3 @@ else
 end
 
 ssh_known_hosts_entry 'github.com'
-include_recipe "php"

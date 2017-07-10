@@ -1,4 +1,4 @@
-name             'php'
+name             'swarm-php'
 maintainer       'Pablo Canales'
 maintainer_email 'pablo@jumbleberry.com'
 license          'All rights reserved'

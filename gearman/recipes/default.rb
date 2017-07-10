@@ -1,3 +1,4 @@
+include_recipe "web-server"
 include_recipe "apt"
 
 # Update apt
@@ -28,10 +29,10 @@ execute "build gearman" do
                 apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install libboost-all-dev libevent-dev uuid-dev -y  &&
                 apt-get install gperf -y &&
                 cd /tmp &&
-                wget https://github.com/gearman/gearmand/releases/download/#{node['gearman']['source']['version']}/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
+                wget  -O gearmand-#{node['gearman']['source']['version']}.tar.gz https://github.com/gearman/gearmand/releases/download/#{node['gearman']['source']['version']}/gearmand-#{node['gearman']['source']['version']}.tar.gz && 
                 tar -xvzf gearmand-#{node['gearman']['source']['version']}.tar.gz &&
                 cd gearmand-#{node['gearman']['source']['version']} && 
-                ./configure && make && make install;
+                ./configure --with-mysql=yes && make && make install;
                 service gearman-job-server stop;
                 pkill -9 -u `id -u gearman`;
                 cp gearmand/gearmand /usr/sbin/ && cp gearmand/gearmand /usr/local/sbin/
@@ -46,6 +47,27 @@ template '/etc/init/gearman-job-server.conf' do
     owner 'root'
     group 'root'
     mode '0644'
+end
+
+if node['lsb']['release'].to_f > 16
+    template '/etc/systemd/system/gearman-job-server.service' do
+      source 'gearman-job-server.service.erb'
+      mode 0644
+      notifies :restart, 'service[gearman-job-server]', :delayed
+    end
+end
+
+service 'gearman-job-server' do
+    case node['platform']
+    when 'ubuntu'
+      if node['lsb']['release'].to_f > 16
+        provider provider Chef::Provider::Service::Systemd
+      elsif node['lsb']['codename'] == 'trusty'
+        provider Chef::Provider::Service::Upstart
+      end
+    end
+    supports status: true, restart: true, reload: true, start: true
+    action [:enable]
 end
 
 execute "pkill -9 -u `id -u gearman`" do

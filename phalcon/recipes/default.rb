@@ -1,5 +1,6 @@
 # Phalcon installation
 include_recipe "web-server"
+include_recipe "php"
 include_recipe "apt"
 
 service 'php7.1-fpm' do

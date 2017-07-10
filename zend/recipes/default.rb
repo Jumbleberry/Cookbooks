@@ -1,3 +1,5 @@
+include_recipe "php"
+
 # Make sure directory exists
 directory "/var/www/lib/zf1" do
   owner node["user"]

@@ -2,6 +2,7 @@ include_recipe "aws"
 include_recipe "awscli"
 include_recipe "tags"
 include_recipe "web-server"
+include_recipe "php"
 
 # Create lib directory for consul
 directory node['consul']['lib_dir'] do
@@ -69,6 +70,15 @@ if ( node.attribute?('ec2') && node[:ec2].attribute?('instance_id') && /(i|snap|
             "consul" => "bootstrap"
         })
         action :update
+    end
+end
+
+if node['environment'] == 'development'
+    # Configuration for gearman service
+    template "#{cron_path}/gearman.json" do
+        source "gearman.json.erb"
+        owner "root"
+        group "root"
     end
 end
 

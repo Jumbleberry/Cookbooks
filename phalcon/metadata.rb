@@ -7,5 +7,6 @@ long_description 'Installs/Configures phalcon framework for JB applications'
 version          '0.1.0'
 
 depends "web-server"
+depends "php"
 depends "git"
 depends "apt"
