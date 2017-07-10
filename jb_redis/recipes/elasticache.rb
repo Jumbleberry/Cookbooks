@@ -10,7 +10,7 @@ package "redis-tools" do
 end
 
 # Delete the redis service files
-execute "sudo rm -rf #{consul_path}/redis*.json" do
+execute "sudo rm -rf #{consul_path}/elasticache*.json" do
     user 'root'
 end
 
@@ -21,7 +21,7 @@ if servers.kind_of?(Array) && !servers.empty?
     servers.each do |server|
         
         #Creates the service configuration file
-        template "#{consul_path}/redis#{server.port}.json" do
+        template "#{consul_path}/elasticache#{server.port}.json" do
             source "redis_service.json.erb"
             owner "root"
             group "cluster"
@@ -31,7 +31,7 @@ if servers.kind_of?(Array) && !servers.empty?
                 "port" => server.port,
                 # Doesn't play well when address is 0.0.0.0, use real ip instead
                 "address" => server.server == "0.0.0.0"? nil: server.server,
-                "current_ip" => server.server == "0.0.0.0"? local_ip: server.server,
+                "currentip" => server.server == "0.0.0.0"? local_ip: server.server,
                 "consul_path" => consul_path,
                 "tag" => :slave
             })
