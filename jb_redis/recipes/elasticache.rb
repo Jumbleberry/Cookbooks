@@ -33,7 +33,7 @@ if servers.kind_of?(Array) && !servers.empty?
                 "address" => server.server == "0.0.0.0"? nil: server.server,
                 "currentip" => server.server == "0.0.0.0"? local_ip: server.server,
                 "consul_path" => consul_path,
-                "tag" => :slave + '","' + :master
+                "tag" => 'slave","master'
             })
         end
     end
