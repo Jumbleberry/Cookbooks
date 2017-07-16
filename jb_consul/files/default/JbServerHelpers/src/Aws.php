@@ -96,7 +96,7 @@ class Aws {
      * @return array
      */
     public function getInstancesByTag($tag_name, $tag_value){
-        $filters = array("tag:" . $tag_name => $tag_value);
+        $filters = array("tag:" . $tag_name => $tag_value, 'instance-state-name' => 'pending,running');
         $result = $this->runCommand('describe-instances', array(), $filters);
         return @$result['response']['Reservations'] ?: array();
     }
