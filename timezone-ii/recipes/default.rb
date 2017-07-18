@@ -15,11 +15,6 @@ package value_for_platform_family(
   'default' => 'tzdata'
 )
 
-case node[:platform_family]
-when 'debian', 'fedora'
-  include_recipe "timezone-ii::#{node[:platform_family]}"
-end
-
 if node[:os] == "linux" || (node['platform'] == 'ubuntu' && node['lsb']['release'].to_f > 16)
   # Load the generic Linux recipe if there's no better known way to change the
   # timezone.  Log a warning (unless this is known to be the best way on a
@@ -39,6 +34,11 @@ else
   log message do
     level :error
   end
+end
+
+case node[:platform_family]
+when 'debian', 'fedora'
+  include_recipe "timezone-ii::#{node[:platform_family]}"
 end
 
 
