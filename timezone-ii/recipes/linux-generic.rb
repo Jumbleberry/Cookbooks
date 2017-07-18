@@ -21,26 +21,25 @@ ruby_block "confirm timezone" do
   }
 end
 
-if node[:timezone][:use_symlink]
-  link localtime_path do
-    to timezone_data_file
-    owner 'root'
-    group 'root'
-    mode 0644
-  end
 
-else
-  file localtime_path do
-    content File.open(timezone_data_file, 'rb').read
-    owner 'root'
-    group 'root'
-    mode 0644
-    not_if {
-      File.symlink?(localtime_path) and
-        Chef::Log.error "You must remove symbolic link at #{localtime_path}" +
-                        " or set attribute ['timezone']['use_symlink']=true"
-    }
-  end
-end  # if/else node.timezone.use_symlink
+link localtime_path do
+  to timezone_data_file
+  owner 'root'
+  group 'root'
+  mode 0644
+  only_if { File.symlink?(timezone_data_file) }
+end
+
+file localtime_path do
+  content File.open(timezone_data_file, 'rb').read
+  owner 'root'
+  group 'root'
+  mode 0644
+  not_if {
+    File.symlink?(localtime_path) and
+      Chef::Log.error "You must remove symbolic link at #{localtime_path}" +
+                      " or set attribute ['timezone']['use_symlink']=true"
+  }
+end
 
 # vim:ts=2:sw=2:
