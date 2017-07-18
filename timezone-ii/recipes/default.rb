@@ -18,30 +18,28 @@ package value_for_platform_family(
 case node[:platform_family]
 when 'debian', 'fedora'
   include_recipe "timezone-ii::#{node[:platform_family]}"
+end
+
+if node[:os] == "linux" || (node['platform'] == 'ubuntu' && node['lsb']['release'].to_f > 16)
+  # Load the generic Linux recipe if there's no better known way to change the
+  # timezone.  Log a warning (unless this is known to be the best way on a
+  # particular platform).
+  message = "Linux platform '#{node[:platform]}' is unknown to this recipe; " +
+            "using generic Linux method"
+  log message do
+    level :warn
+    not_if { %w( centos gentoo rhel ).include? node[:platform_family] }
+  end
+
+  include_recipe 'timezone-ii::linux-generic'
 
 else
-  if node.os == "linux"
-    # Load the generic Linux recipe if there's no better known way to change the
-    # timezone.  Log a warning (unless this is known to be the best way on a
-    # particular platform).
-    message = "Linux platform '#{node[:platform]}' is unknown to this recipe; " +
-              "using generic Linux method"
-    log message do
-      level :warn
-      not_if { %w( centos gentoo rhel ).include? node[:platform_family] }
-    end
+  message = "Don't know how to configure timezone for " +
+            "'#{node[:platform_family]}'!"
+  log message do
+    level :error
+  end
+end
 
-    include_recipe 'timezone-ii::linux-generic'
-
-  else
-    message = "Don't know how to configure timezone for " +
-              "'#{node[:platform_family]}'!"
-    log message do
-      level :error
-    end
-
-  end  # if/else node.os
-
-end  # case node.platform_family
 
 # vim:ts=2:sw=2:
