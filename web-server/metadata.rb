@@ -9,3 +9,4 @@ version          '0.1.0'
 depends "timezone-ii"
 depends "ssh_known_hosts"
 depends "opsworks_stack_state_sync"
+depends "aws_deploy"
