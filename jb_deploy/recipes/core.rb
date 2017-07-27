@@ -68,6 +68,7 @@ template credentials_file do
       
       "aws_access_key"          => node['jbx']['credentials']['aws']['access_key'],
       "aws_secret_key"          => node['jbx']['credentials']['aws']['secret_key'],
+      "aws_region"              => node['jbx']['credentials']['aws']['region'],
                                 
       "datadog_api_key"         =>  node['datadog']['api_key'],
       "datadog_app_key"         =>  node['datadog']['application_key'],
