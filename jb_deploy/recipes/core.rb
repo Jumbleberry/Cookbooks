@@ -93,17 +93,17 @@ template "#{node['jbx']['core']['path']}/config/modules.json" do
     not_if { node[:user] == 'vagrant' && ::File.exist?("#{node['jbx']['core']['path']}/config/modules.json") }
 end
 
-# Run the deploy script
-execute "/bin/bash deploy.sh" do
-    cwd "#{node['jbx']['core']['path']}"
-    user "root"
-end
-
 # Run database migrations
 execute 'Database migrations' do
   cwd "#{node['jbx']['core']['path']}/application/cli"
   command "php cli.php migrations:migrate --no-interaction"
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
+end
+
+# Run the deploy script
+execute "/bin/bash deploy.sh" do
+    cwd "#{node['jbx']['core']['path']}"
+    user "root"
 end
 
 # Add at allow file
