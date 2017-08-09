@@ -16,7 +16,7 @@
 #
 
 default['consul']['base_url']       = "https://s3.amazonaws.com/miscfile-staging/consul/%{release}/%{version}.zip"
-default['consul']['version']        = '0.8.4'
+default['consul']['version']        = '0.9.0'
 if node['platform_family'] == 'windows'
   default['consul']['version']      = '0.5.0'
 end
