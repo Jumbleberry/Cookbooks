@@ -5,3 +5,4 @@
 Berksfile.lock
 .DS_Store
 /web-server/files/default/rootCA.crt
+/web-server/files/default/betwixtCA.crt
