@@ -31,7 +31,11 @@ class Chef
       end
 
       def latest_dist(node)
-        File.join(install_path(node), 'dist')
+          if Gem::Version.new(node['consul']['version']) <= Gem::Version.new('0.5.4')
+            return File.join(install_path(node), 'dist')
+          else
+            return install_path(node)
+          end
       end
 
       def remote_filename(node)
@@ -43,7 +47,7 @@ class Chef
       end
 
       def remote_url(node)
-        node['consul']['base_url'] % { version: remote_filename(node) }
+        node['consul']['base_url'] % { release: node['consul']['version'], version: remote_filename(node) }
       end
     end
   end

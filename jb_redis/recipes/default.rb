@@ -30,7 +30,12 @@ template "#{redis_path}/redis_cron.php" do
 end
 
 # Get the ip of the interface on the consul attributes
-local_ip = node["network"]["interfaces"][node['consul']['bind_interface']]["addresses"].detect{|k,v| v[:family] == "inet"}.first
+local_ip = node["network"]["interfaces"][node[:network_interface]]["addresses"].detect{|k,v| v[:family] == "inet"}.first
+
+# Delete the redis service files
+execute "sudo rm -rf #{consul_path}/redis*.json" do
+    user 'root'
+end
 
 if servers.kind_of?(Array) && !servers.empty?
     servers.each do |server|
@@ -69,11 +74,6 @@ if servers.kind_of?(Array) && !servers.empty?
                 mode  "0644"
             end
         end
-    end
-else
-    # Delete the redis cron file
-    execute "sudo rm -rf #{consul_path}/redis*.json" do
-        user 'root'
     end
 end
 

@@ -4,3 +4,4 @@
 /nginx/files/default/ssl/*.pem
 Berksfile.lock
 .DS_Store
+/web-server/files/default/rootCA.crt

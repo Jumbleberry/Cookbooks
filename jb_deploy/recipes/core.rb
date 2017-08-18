@@ -54,12 +54,9 @@ template credentials_file do
       "hitpath_aws_bucket"      => node['jbx']['credentials']['hitpath']['aws_bucket'],
       "hitpath_api_key"         => node['jbx']['credentials']['hitpath']['api_key'],
 
-      "redis_read_host"         => node['jbx']['credentials']['redis_read']['host'],
-      "redis_read_port"         => node['jbx']['credentials']['redis_read']['port'],
-      "redis_read_index"        => node['jbx']['core']['redis_db'],
-      "redis_write_host"        => node['jbx']['credentials']['redis_write']['host'],
-      "redis_write_port"        => node['jbx']['credentials']['redis_write']['port'],
-      "redis_write_index"       => node['jbx']['core']['redis_db'],
+      "redis_host"              => node['jbx']['credentials']['redis']['host'],
+      "redis_port"              => node['jbx']['credentials']['redis']['port'],
+      "redis_index"             => node['jbx']['core']['redis_db'],
       
       "domains"                 => node['jbx']['credentials']['domains'].to_json,
       "mail"                    => node['jbx']['credentials']['mail'].to_json,
@@ -71,6 +68,7 @@ template credentials_file do
       
       "aws_access_key"          => node['jbx']['credentials']['aws']['access_key'],
       "aws_secret_key"          => node['jbx']['credentials']['aws']['secret_key'],
+      "aws_region"              => node['jbx']['credentials']['aws']['region'],
                                 
       "datadog_api_key"         =>  node['datadog']['api_key'],
       "datadog_app_key"         =>  node['datadog']['application_key'],
@@ -104,7 +102,7 @@ end
 # Run database migrations
 execute 'Database migrations' do
   cwd "#{node['jbx']['core']['path']}/application/cli"
-  command "php cli.php migrations:migrate --no-interaction && php ./../library/ClearAppCache.php"
+  command "php cli.php migrations:migrate --no-interaction"
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
 end
 

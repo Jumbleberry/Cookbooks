@@ -43,7 +43,7 @@ default['redisio']['version'] = '2.8.24'
 default['redisio']['base_piddir'] = '/var/run/redis'
 
 # Custom installation directory
-default['redisio']['install_dir'] = "/tmp/redis"
+default['redisio']['install_dir'] = "/etc/redis"
 
 # Job control related options (initd or upstart)
 default['redisio']['job_control'] = 'initd'

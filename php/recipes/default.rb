@@ -19,82 +19,41 @@ phpmodules.each do |pkg|
     version pkg["version"]
     # Ignore configuration changes - necessary because of nginx updates
     options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes'
+    if pkg['name'] =~ /^php.*?-fpm$/
+        notifies :start, "service[php7.1-fpm]", :immediately
+    end
   end
 end
 
-directory '/etc/php5' do
-  owner 'root'
-  group 'root'
-  mode '0755'
-  action :create
-end
-
-# Symlink our config script
-['fpm', 'mods-available', 'cli'].each do |dir|
-    directory "/etc/php5/" + dir do
-        action :delete
-        recursive true
-        not_if { File.symlink?("/etc/php5/" + dir) || !::Dir.exists?("/etc/php/5.6/" + dir) }
-    end
-        
-    link "/etc/php5/" + dir do
-        to "/etc/php/5.6/" + dir
-        action :create
+# Creates symlinks for the configurations files
+node['php']['fpm']['conf_dirs'].each do |conf_dir|
+    cookbook_file "#{conf_dir}/#{node['php']['fpm']['conf_file']}" do
+        source "redis.ini"
         owner "root"
         group "root"
-        not_if { ::Dir.exists?("/etc/php5/" + dir) || !::Dir.exists?("/etc/php/5.6/" + dir) }
+        mode 0644
+    end
+
+    node['php']['fpm']['conf_dirs_alias'].each do |conf_dirs_alias|
+        link "#{conf_dirs_alias}/20-#{node['php']['fpm']['conf_file']}" do
+          to "#{conf_dir}/#{node['php']['fpm']['conf_file']}"
+          notifies :reload, "service[php7.1-fpm]", :delayed
+        end
     end
 end
-
-execute 'php5.6-rename' do
-    command <<-EOH
-      cp /etc/init.d/php5.6-fpm /etc/init.d/php5-fpm
-      update-rc.d -f php5.6-fpm remove
-      rm -f /etc/init.d/php5.6-fpm
-      mv /etc/init/php5.6-fpm.conf /etc/init/php5-fpm.conf
-      update-rc.d php5-fpm defaults
-    EOH
-    only_if { ::File.exists?("/etc/init.d/php5.6-fpm")}
-end
-
-file '/usr/bin/php5' do
-  action :delete
-  not_if { File.symlink?('/usr/bin/php5') }
-end
-
-link "/usr/bin/php5" do
-    to "/usr/bin/php5.6"
-    action :create
-    owner "root"
-    group "root"
-    not_if { File.symlink?('/usr/bin/php5') }
-end
-
-# Remove 5.6 service if it exists
-service 'php5.6-fpm' do
-  case node['platform']
-  when 'ubuntu'
-    if node['lsb']['codename'] == 'trusty'
-      provider Chef::Provider::Service::Upstart
-    end
-  end
-  supports :status => true, :restart => true, :reload => true, :stop => true
-  action :stop
-  ignore_failure true
-  notifies :run, 'execute[php5.6-rename]', :immediately
-end
-
 
 #Register Php service
-service 'php5-fpm' do
+service 'php7.1-fpm' do
   case node['platform']
   when 'ubuntu'
-    if node['lsb']['codename'] == 'trusty'
+    if node['lsb']['release'].to_f > 16
+        provider Chef::Provider::Service::Systemd
+    elsif node['lsb']['codename'] == 'trusty'
       provider Chef::Provider::Service::Upstart
     end
   end
   supports :status => true, :restart => true, :reload => true, :stop => true
-  action :restart
+  action :nothing
 end
 
 #Check if we need to change the php include path
@@ -106,22 +65,23 @@ directory '/var/log/php/' do
 end
 
 file '/var/log/php/error.log' do
+    mode '0777'
     owner 'www-data'
     group 'www-data'
     action :create_if_missing
 end
 
 #Fpm configurations
-template '/etc/php5/fpm/php.ini' do
+template '/etc/php/7.1/fpm/php.ini' do
   source 'fpm/php.ini.erb'
   variables({
     'display_errors' => node['php']['fpm']['display_errors'],
     'include_path' => include_path
   })
-  notifies :reload, "service[php5-fpm]", :delayed
+  notifies :reload, "service[php7.1-fpm]", :delayed
 end
 
-template '/etc/php5/fpm/pool.d/www.conf' do
+template '/etc/php/7.1/fpm/pool.d/www.conf' do
   source 'fpm/www.conf.erb'
   variables({
     'listen' => node['php']['fpm']['listen'],
@@ -131,11 +91,11 @@ template '/etc/php5/fpm/pool.d/www.conf' do
     'min_spare_servers' => node['php']['fpm']['min_spare_servers'],
     'max_spare_servers' => node['php']['fpm']['max_spare_servers']
   })
-  notifies :reload, "service[php5-fpm]", :delayed
+  notifies :reload, "service[php7.1-fpm]", :delayed
 end
 
 #Cli Configurations
-template '/etc/php5/cli/php.ini' do
+template '/etc/php/7.1/cli/php.ini' do
   source 'cli/php.ini.erb'
   variables({
     'display_errors' => node['php']['fpm']['display_errors'],
@@ -146,7 +106,7 @@ end
 #Install composer
 composer_download_path = node['php']['composer_download_path']
 if composer_download_path
-  remote_file '/tmp/composer-install.php' do
+  remote_file composer_download_path do
     source 'https://getcomposer.org/installer'
     not_if { ::File.exists?("/usr/local/bin/composer")}
   end

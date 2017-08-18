@@ -137,7 +137,7 @@ if node['consul']['serve_ui']
   service_config['client_addr'] = node['consul']['client_addr']
 end
 
-additional_options = ['recursor', 'statsd_addr', 'leave_on_terminate', 'rejoin_after_leave', 'disable_remote_exec', 'acl_datacenter', 'acl_token', 'acl_default_policy', 'acl_down_policy', 'acl_master_token']
+additional_options = ['leave_on_terminate', 'rejoin_after_leave', 'disable_remote_exec', 'acl_datacenter', 'acl_token', 'acl_default_policy', 'acl_down_policy', 'acl_master_token']
 
 additional_options.each do |option|
   if node['consul'][option]
@@ -146,7 +146,7 @@ additional_options.each do |option|
 end
 
 copy_params = [
-  :bind_addr, :datacenter, :domain, :log_level, :node_name, :advertise_addr, :ports, :enable_syslog, :statsd_addr
+  :bind_addr, :datacenter, :domain, :log_level, :node_name, :advertise_addr, :ports, :enable_syslog, :statsd_addr, :recursor, :recursors, :enable_script_checks
 ]
 copy_params.each do |key|
   if node['consul'][key]

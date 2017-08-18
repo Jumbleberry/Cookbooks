@@ -84,3 +84,8 @@ else
 end
 
 ssh_known_hosts_entry 'github.com'
+
+# Install root certs on non-production
+if node['environment'] != 'production'
+    include_recipe 'web-server::ca'
+end

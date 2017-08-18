@@ -34,7 +34,7 @@ default['swarm_php']['packages'] = [
     "version" => "7.*"
   },
   {
-    "name" => "php7.0-dev",
+    "name" => "php7.0",
     "version" => "7.*"
   },
   {
