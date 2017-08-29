@@ -18,6 +18,7 @@ node['nginx']['certs'].each do | cert |
             group "root"
             mode "0664"
             ignore_failure true
+            notifies :reload, 'service[nginx]', :delayed
         end
     
         if node.attribute?('aws_deploy_key')

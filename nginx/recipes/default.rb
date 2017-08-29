@@ -1,23 +1,52 @@
+# Install nginx
 service 'nginx' do
-  supports :status => true, :restart => true, :reload => true, :stop => true
-  action :nothing
+    supports status: true, restart: true, reload: true, enable: true
+    action :nothing
 end
-
-#Nginx package
 apt_repository 'nginx-stable' do
   uri           'ppa:nginx/stable'
   distribution  node['lsb']['codename']
   components    ['main']
-  notifies :stop, "service[nginx]", :immediately
+end
+execute 'install-nginx' do
+  command <<-EOH
+    sudo apt-get update
+    sudo RUNLEVEL=1 apt-get install nginx -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
+    EOH
+  action :run
+  only_if { !File.exists?('/usr/sbin/nginx') }
 end
 
-include_recipe "apt"
-
-# Install latest nginx
-package 'nginx' do
-  action :upgrade
-  options '--force-yes'
-  options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+# Install openresty
+service 'openresty' do
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :nothing
+end
+execute 'install-openresty' do
+  command <<-EOH
+    wget -qO - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
+    sudo apt-get -y install software-properties-common
+    sudo add-apt-repository -y "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main"
+    sudo apt-get update
+    sudo RUNLEVEL=1 apt-get install openresty -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
+    EOH
+  action :run
+  notifies :stop, 'service[openresty]', :immediately
+  only_if { !File.exists?('/usr/bin/openresty') }
+end
+remote_file '/etc/nginx/openresty' do
+    source 'https://github.com/Jumbleberry/NginxSwarm/blob/master/openresty?raw=true'
+    action :create
+    mode '0755'
+    notifies :run, 'execute[copy-openresty]', :immediate
+end
+execute 'copy-openresty' do
+    command <<-EOH
+        ln -s /etc/nginx/openresty /usr/bin/openresty-new && mv -Tf /usr/bin/openresty-new /usr/sbin/nginx
+    EOH
+    action :nothing
+    notifies :enable, 'service[nginx]', :delayed
+    notifies :restart, 'service[nginx]', :delayed
 end
 
 #Removes the default virtual host if exists
@@ -40,6 +69,7 @@ template '/etc/nginx/nginx.conf' do
     "worker_processes" => node['nginx']['worker_processes'],
     "worker_connections" => node['nginx']['worker_connections']
   })
+  notifies :reload, 'service[nginx]', :delayed
 end
 
 virtualhost         = '/etc/nginx/sites-available/default'
@@ -51,12 +81,7 @@ end
 
 link virtualhost_link do
   to virtualhost
+  notifies :reload, 'service[nginx]', :delayed
 end
 
 include_recipe "nginx::certs"
-
-#Force the restart of the nginx service
-execute "reload nginx service" do
-  command "service nginx reload || service nginx restart"
-  user 'root'
-end
