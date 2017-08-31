@@ -145,6 +145,7 @@ execute 'openresty' do
 --without-mail_pop3_module \
 --without-mail_imap_module \
 --without-mail_smtp_module \
+--with-ipv6 \
 --with-http_addition_module \
 --with-http_auth_request_module \
 --with-http_secure_link_module \
