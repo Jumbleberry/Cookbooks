@@ -1,5 +1,19 @@
 include_recipe "github-auth"
 
+#Register Php service
+service 'php7.1-fpm' do
+  case node['platform']
+  when 'ubuntu'
+    if node['lsb']['release'].to_f > 16
+        provider Chef::Provider::Service::Systemd
+    elsif node['lsb']['codename'] == 'trusty'
+      provider Chef::Provider::Service::Upstart
+    end
+  end
+  supports :status => true, :restart => true, :reload => true, :stop => true
+  action :nothing
+end
+
 # Make sure directory exists
 # Use the same user defined for the admin application
 directory node['admin']['path'] do
@@ -16,6 +30,7 @@ branch = ENV['JB_ADMIN_BRANCH'] || node['admin']['branch']
       revision branch
       user 'root'
       action action
+      notifies :reload, "service[php7.1-fpm]", :delayed
       only_if { should }
     end
 end
