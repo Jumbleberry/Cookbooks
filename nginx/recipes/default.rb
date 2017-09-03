@@ -12,6 +12,7 @@ execute 'install-nginx' do
   command <<-EOH
     sudo apt-get update
     sudo RUNLEVEL=1 apt-get install nginx -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
+    systemctl enable nginx.service
     EOH
   action :run
   only_if { !File.exists?('/usr/sbin/nginx') }
@@ -29,6 +30,7 @@ execute 'install-openresty' do
     sudo add-apt-repository -y "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main"
     sudo apt-get update
     sudo RUNLEVEL=1 apt-get install openresty -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
+    systemctl disable openresty.service
     EOH
   action :run
   notifies :stop, 'service[openresty]', :immediately
