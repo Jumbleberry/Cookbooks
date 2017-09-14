@@ -1,3 +1,11 @@
+cron "Processing - Enforce Prohibited Traffic Types" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/set_campaign_restrictions.php"
+  hour '*'
+  minute '2-59/15'
+  user 'www-data'
+  action :create
+end
+
 cron "Processing - Detect CRM Features" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/detect_features.php"
   hour '2-23/6'
