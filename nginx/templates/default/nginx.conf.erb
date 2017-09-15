@@ -1,31 +1,39 @@
 user www-data;
 worker_processes auto;
+worker_rlimit_nofile 32768;
 pid /run/nginx.pid;
 
 events {
-    worker_connections <%= @worker_connections %>;
-    use epoll;
-    multi_accept on;
+    worker_connections  <%= @worker_connections %>;
+    use                 epoll;
+    multi_accept        on;
 }
 
 http {
 
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 70;
-    types_hash_max_size 2048;
-    fastcgi_read_timeout 600;
-    fastcgi_buffers 128 16k;
-    fastcgi_buffer_size 16k;
+    sendfile                on;
+    tcp_nopush              on;
+    tcp_nodelay             on;
+
+    keepalive_timeout       70;
+    types_hash_max_size     2048;
+    fastcgi_read_timeout    600;
+    fastcgi_buffers         128 16k;
+    fastcgi_buffer_size     16k;
     
-    server_tokens off;
+    open_file_cache         max=10000;
+    open_file_cache_min_uses 2;
+    open_file_cache_errors  on;
+    
+    server_tokens           off;
+    
+    resolver                208.67.222.222             208.67.220.220
+                            8.8.8.8                    8.8.4.4
+                            [2001:4860:4860::8888]     [2001:4860:4860::8844]
+                            valid=30s                  ipv6=off;
     
     # Show server host name as header
     add_header X-Backend-Server $hostname;
-    
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
     
     ##
     # Logging Settings
@@ -35,23 +43,81 @@ http {
                       '"$http_user_agent" "$http_x_forwarded_for" '
                       '$request_time $upstream_response_time $pipe';
     
-    access_log /var/log/nginx/access.log main buffer=4k flush=1m;
-    error_log /var/log/nginx/error.log warn;
+    access_log              /var/log/nginx/access.log main buffer=64k flush=1m;
+    error_log               /var/log/nginx/error.log warn;
+    
+    map $request_uri $loggable {
+        ~*^/thisthingisnotathing 0;
+        default                  1;
+    }
+    
+    ##
+    # Private Address Space (AWS/Internal)
+    ##
+    set_real_ip_from        10.0.0.0/8;
+    set_real_ip_from        127.0.0.1/32;
+    set_real_ip_from        172.16.0.0/12;
+    set_real_ip_from        192.168.0.0/16;
+    set_real_ip_from        fd00::/8;
+    
+    ##
+    # CloudFlare
+    ##
+    set_real_ip_from        103.21.244.0/22;
+    set_real_ip_from        103.22.200.0/22;
+    set_real_ip_from        103.31.4.0/22;
+    set_real_ip_from        104.16.0.0/12;
+    set_real_ip_from        108.162.192.0/18;
+    set_real_ip_from        131.0.72.0/22;
+    set_real_ip_from        141.101.64.0/18;
+    set_real_ip_from        162.158.0.0/15;
+    set_real_ip_from        172.64.0.0/13;
+    set_real_ip_from        173.245.48.0/20;
+    set_real_ip_from        188.114.96.0/20;
+    set_real_ip_from        190.93.240.0/20;
+    set_real_ip_from        197.234.240.0/22;
+    set_real_ip_from        198.41.128.0/17;
+    set_real_ip_from        2400:cb00::/32;
+    set_real_ip_from        2405:8100::/32;
+    set_real_ip_from        2405:b500::/32;
+    set_real_ip_from        2606:4700::/32;
+    set_real_ip_from        2803:f800::/32;
+    set_real_ip_from        2c0f:f248::/32;
+    set_real_ip_from        2a06:98c0::/29;
+    
+    real_ip_header          X-Forwarded-For;
+    real_ip_recursive       on;
+    
+    ##
+    # Scheme Detection
+    ##
+    map $http_x_forwarded_proto $real_scheme {
+        ''                  $scheme;
+        default             $scheme;
+        https               https;
+        http                http;
+    }
+    
+    map $real_scheme $is_https {
+        default             '';
+        https               on;
+    }
     
     ##
     # Gzip Settings
     ##
-    
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private auth;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml;
-    gzip_disable "MSIE [1-6]\.";
+    gzip_vary               off;
+    gzip_min_length         1024;
+    gzip_proxied            expired no-cache no-store private auth;
+    gzip_types              text/plain text/css text/xml text/javascript application/x-javascript application/xml;
+    gzip_disable            "MSIE [1-6]\.";
     
     ##
     # Virtual Host Configs
     ##
+    include                 /etc/nginx/mime.types;
+    default_type            text/plain;
     
-    include /etc/nginx/conf.d/*.conf;
-    include /etc/nginx/sites-enabled/*;
+    include                 /etc/nginx/conf.d/*.conf;
+    include                 /etc/nginx/sites-enabled/*;
 }

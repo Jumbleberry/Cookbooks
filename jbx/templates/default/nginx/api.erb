@@ -1,9 +1,4 @@
 <% ssl = File.file?("/etc/nginx/ssl/#{node['jbx']['api']['hostname']}.pem") %>
-# Find the real scheme of the request
-map $http_x_forwarded_proto $real_scheme {
-    default $http_x_forwarded_proto;
-    ''      $scheme;
-}
 
 server {
     listen 80;
