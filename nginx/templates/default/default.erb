@@ -5,6 +5,9 @@ server {
     access_log off;
     error_log off;
     
+    set $real_x_forwarded_for $http_x_forwarded_for;
+    set $upstream '';
+    
     location = / {
         return 204;
     }

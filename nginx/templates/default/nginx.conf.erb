@@ -15,8 +15,13 @@ http {
     tcp_nopush              on;
     tcp_nodelay             on;
 
-    keepalive_timeout       70;
+    client_body_timeout     15s;
+    client_header_timeout   15s;
+    
+    keepalive_timeout       300;
+    keepalive_requests      1000;
     types_hash_max_size     2048;
+    
     fastcgi_read_timeout    600;
     fastcgi_buffers         128 16k;
     fastcgi_buffer_size     16k;
@@ -38,12 +43,13 @@ http {
     ##
     # Logging Settings
     ##
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for" '
-                      '$request_time $upstream_response_time $pipe';
+    log_format  main        '$remote_addr - $remote_user [$time_local] '
+                            '"$request" "$http_accept" '
+                            '$status $body_bytes_sent "$http_referer" '
+                            '"$http_user_agent" "$http_x_forwarded_for" '
+                            '$request_time $upstream_response_time $pipe';
     
-    access_log              /var/log/nginx/access.log main buffer=64k flush=1m;
+    access_log              /var/log/nginx/access.log main buffer=64k flush=5m;
     error_log               /var/log/nginx/error.log warn;
     
     map $request_uri $loggable {
@@ -89,6 +95,15 @@ http {
     real_ip_recursive       on;
     
     ##
+    # Zones
+    ##
+    limit_conn_zone         $binary_remote_addr$real_x_forwarded_for$host$uri$arg_hid$arg_sid$arg_transid$arg_redirects$arg_retries 
+                                zone=conn_limit_per_ip:50m;
+    limit_conn_zone         $upstream zone=conn_limit_per_upstream:1m;
+    limit_req_zone          $binary_remote_addr$real_x_forwarded_for$host$uri$arg_hid$arg_sid$arg_transid$arg_redirects$arg_retries 
+                                zone=force_cookie_reuse:50m rate=12r/m;
+    
+    ##
     # Scheme Detection
     ##
     map $http_x_forwarded_proto $real_scheme {
@@ -111,6 +126,14 @@ http {
     gzip_proxied            expired no-cache no-store private auth;
     gzip_types              text/plain text/css text/xml text/javascript application/x-javascript application/xml;
     gzip_disable            "MSIE [1-6]\.";
+    
+    ##
+    # Banned user agents
+    ##
+    map $http_user_agent $block_ua {
+        default             0;
+        '~*Jorgee'          1;
+    }
     
     ##
     # Virtual Host Configs

@@ -1,0 +1,567 @@
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    
+    server_name                     ~^(?<domain>[^\.]+\.[^\.]+)$
+                                    ~^(?<subdomain>.*?)\.(?<domain>[^\.]+\.[^\.]+)$;
+    
+    merge_slashes                   off;
+    access_log                      off;
+    
+    # Default upstream server
+    set                             $upstream mesh-hp-cf;
+    
+    # Whether or not request is encrypted
+    set                             $encrypted_uri "";
+    set                             $original_args "";
+    set                             $decrypted_args "";
+    
+    # Fix X-Forwarded-For to strip out the proxy addresses
+    set_by_lua_block $real_x_forwarded_for { 
+        local ip            = ngx.var.remote_addr
+        local x_forwarded   = ngx.var.http_x_forwarded_for or ""
+        
+        -- Find the LAST occurrence of the true IP inside the x-forwarded header
+        local regex         = "^(.*)" .. ip:gsub("%W","%%%0") .. ".-$"
+        local x_forwarded   = x_forwarded:gsub(regex, "%1"):gsub(",?%s*$", "") or ""
+        
+        -- No x-forwarded-for header, nothing to do
+        if x_forwarded:len() == 0 then
+            return ip
+        end
+        
+        -- Set real_x_forwarded_for header
+        return x_forwarded .. "," .. ip
+    }
+    
+    # Show server host name as header
+    more_set_headers                'Server: Hydra';
+    more_set_headers                'X-Content-Type-Options: nosniff';
+    more_set_headers                'X-XSS-Protection: 0';
+    more_set_headers                'Referrer-Policy: never, no-referrer';
+    more_set_headers                'Cache-Control: no-cache, no-store, must-revalidate';
+    more_set_headers                'Pragma: no-cache';
+    expires                         epoch;
+    
+    # Debugging headers
+    more_set_headers                "X-Backend-Connect-Time: $upstream_connect_time";
+    more_set_headers                "X-Backend-Response-Time: $upstream_header_time";
+    more_set_headers                "X-Backend-Status: $upstream_status";
+    more_set_headers                "X-Backend-Uri: $uri";
+    more_set_headers                "X-Backend-Args: $args";
+    
+    location = /favicon.ico { 
+        return                      204;
+    }
+    
+    location = /robots.txt {
+        add_header                  Content-Type text/plain;
+        return                      200 "User-agent: *\nDisallow: /\n";
+    }
+    
+    location = /hsts {
+        add_header                  Content-Type application/javascript;
+        return                      204;
+    }
+    
+    location = / {
+        return                      204;
+    }
+    
+    # Explicity define this route or it gets picked up as an encrypted link
+    location = /thisthingisnotathing {
+        try_files                   @proxy @proxy;
+    }
+    
+    location = /status {
+        allow                       127.0.0.1;
+        deny                        all;
+        
+        check_status;
+    }
+    
+    location = /nginx {
+        allow                       127.0.0.1;
+        deny                        all;
+        
+        stub_status                 on;
+    }
+    
+    location ~ /fpm(-ping)?$ {
+        allow                       127.0.0.1;
+        deny                        all;
+        
+        fastcgi_pass                mesh;
+        fastcgi_param               SCRIPT_FILENAME $uri;
+        include                     fastcgi_params;
+    }
+    
+    location ^~ /v1/ {
+        allow                       10.0.0.0/8;
+        allow                       127.0.0.1/32;
+        allow                       172.16.0.0/12;
+        allow                       192.168.0.0/16;
+        allow                       fd00::/8;
+        deny                        all;
+        
+        proxy_pass                  http://127.0.0.1:8500;
+    }
+    
+    # Rotator routes - HP does not know how to handle these
+    location ~* ^/(campaign|affiliate|script)/ {
+        set                         $upstream mesh-cf;
+        
+        try_files                   @proxy @proxy;
+    }
+    
+    # Catch errors caused by stripping ~ characters from special-base64 encoded urls
+    rewrite "^(/(?:[A-Za-z0-9-_]{4}){4,}(?:[A-Za-z0-9-_]{2}))(/.*)?$"  $1~~$2  last;
+    rewrite "^(/(?:[A-Za-z0-9-_]{4}){4,}(?:[A-Za-z0-9-_]{2}~))(/.*)?$" $1~$2   last;
+    
+    # Decrypt redirect URLs
+    location ~ "^/([A-Za-z0-9-_]{4}){4,}([A-Za-z0-9-_]{2}~~|[A-Za-z0-9-_]{3}~)?(/|$)" {
+        
+        # Keep the original encrypted URL in case we need to 3xx - we don't want to leak the real one
+        set $encrypted_uri $uri;
+        set $original_args $args;
+        
+        rewrite_by_lua_block {
+            local aes       = require "resty.aes"
+            local str       = require "resty.string"
+            local cjson     = require "cjson.safe"
+            local ngx_re    = require "ngx.re"
+            
+            local rd        = "/rd/r.php"
+            local uri       = ngx.var.uri
+            local args      = ngx.req.get_uri_args()
+            
+            -- Split the request uri /<encrypted_string>[/<c1>/<c2>/<c3>[/...]]
+            local vars      = {}
+            local index     = 2
+            local len       = uri:len() + 1
+            
+            while index < len do
+                local next      = uri:find("/", index) or len
+                vars[#vars + 1] = uri:sub(index, next - 1)
+                index           = next + 1
+            end
+            
+            -- Encryption key, md5 of HitPath's key
+            local encryption_key = "f3a51b6c2d80757485b82fed8b7e69de"
+            
+            -- HitPath's specified IV a base64 encoded binary value
+            local iv = {iv = ngx.decode_base64("/6X1qWqcchVbzFy7EEQQ8Q==")}
+            
+            -- Encryption service
+            local aes_256_cbc = aes:new(encryption_key, nil, aes.cipher(256, "cbc"), iv)
+            
+            -- Swap unsafe URL characters for their correct version, and decode
+            uri = vars[1]:gsub(".", {["-"] = "+", ["_"] = "/", ["~"] = "="}) or "";
+            uri = ngx.decode_base64(uri) or ""
+            
+            -- Decrypt and decode the JSON payload if possible
+            local decrypted = aes_256_cbc:decrypt(uri) or "{}"
+            local decoded   = cjson.decode(decrypted) or {}
+            
+            -- save decoded args for later user
+            ngx.var.decrypted_args = ngx.encode_args(decoded)
+            
+            -- Merge encrypted args into passed ones
+            local mapping = { ["agentid"] = "pub", ["progid"] = "sid", ["ctype"] = nil, ["cid"] = nil }
+            for k,v in pairs(decoded) do
+                args[mapping[k] or k] = args[mapping[k] or k] or v 
+            end
+            
+            -- Add c vars
+            args["c1"]    = args["c1"] or vars[2]
+            args["c2"]    = args["c2"] or vars[3]
+            args["c3"]    = args["c3"] or vars[4]
+            
+            -- If _url is encrypted as a param, restore it as the path & delete from args
+            if args["_url"] ~= nil then
+                rd              = args["_url"]
+                args["_url"]    = nil
+            end
+            
+            -- Update request to _url or /rd/r.php (default) format and rewrite
+            ngx.req.set_uri_args(args)
+            ngx.req.set_uri(rd, true)
+        }
+    }
+    
+    # Rate limiting sensitive endpoints
+    location ~* ^/rd/(r|o|px|ipx|hs) {
+        rewrite_by_lua_block {
+            -- Dont allow unencrypted routes on non-hp links
+            if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
+                ngx.exec("@redirect_encrypted_only")
+            end
+        }
+        
+        error_page                  503 @redirect_exponential_backoff;
+        
+        # Only allow 1 concurrent request
+        limit_conn                  conn_limit_per_ip 1;
+        limit_conn_status           503;
+        
+        # 5 seconds between requests
+        limit_req                   zone=force_cookie_reuse nodelay;
+        limit_req_status            503;
+        
+        # Continue normal processing
+        try_files                   @proxy @proxy;
+    }
+    
+    # Block direct access to pixels - HTML
+    location ~* ^/rd/ {
+        rewrite_by_lua_block {
+            -- Dont allow unencrypted routes on non-hp links
+            if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
+                ngx.exec("@redirect_encrypted_only")
+            end
+        }
+        
+        # Continue normal processing
+        try_files                   @proxy @proxy;
+    }
+    
+    # Error reporting when unencrypted redirect urls are detected
+    location @redirect_encrypted_only {
+        add_header                  Content-Type text/plain;
+        return                      403 "Sorry, this server only accepts encrypted URLs.\nPlease find updated links.\n";
+    }
+    
+    # 302 base rate limiting to force the re-use of cookies under race conditions
+    location @redirect_exponential_backoff {
+        content_by_lua_block {
+            
+            local uri  = ngx.var.uri
+            local args = ngx.req.get_uri_args() or {}
+            
+            -- Default back to the original encrypted URL & query string if one exists
+            if ngx.var.encrypted_uri ~= nil and ngx.var.encrypted_uri:len() > 0 then
+                uri     = ngx.var.encrypted_uri
+                args    = ngx.decode_args(ngx.var.original_args) or {}
+            end
+            
+            -- function to validate whether a parameter is a natural number
+            local not_natural = function(n)
+                return (n == nil) or (math.floor(n) ~= n) or (n < 0)
+            end
+            
+            -- validate initial value
+            if args.retries == nil or not_natural(tonumber(args.retries)) then
+                args.retries = 0
+            end
+            
+            local retries = tonumber(args.retries)
+            args.retries  = retries + 1
+            
+            -- don't allow endless retries
+            if args.retries > 5 then
+                ngx.status = 409
+                ngx.say("Sorry, you've exceeded the simultaneous request limit. Please try again shortly.")
+                ngx.exit(409)
+            end
+            
+            -- exponential backoff & then try again
+            ngx.sleep((retries * (retries + 1)) / 2)
+            ngx.status = 302
+            ngx.redirect(uri .. "?" .. ngx.encode_args(args), 302)
+            ngx.exit(302)
+        }
+    }
+    
+    # Catch all
+    location / {
+        try_files                   @proxy @proxy;
+    }
+    
+    location @proxy {
+        if ($block_ua) {
+            return 444;
+        }
+        
+        # A few final tasks before proxying
+        rewrite_by_lua_block {
+            -- Discard request body - only GET to upstream!
+            ngx.req.read_body()
+            ngx.req.set_body_data("")
+            
+            -- Further processing on encrypted/decrypted arguments for safety
+            local args              = ngx.req.get_uri_args()
+            local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
+            local restricted        = { "_url", "rhid", "rsid", "referer", "cookie", "accept" }
+            
+            -- If rhid is set it's not safe to forward on to HP or we could get duplicates
+            if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
+                ngx.var.upstream = "mesh-cf"
+            end
+            
+            -- Force restricted arguments back to their value from the encrypted URL, or delete them
+            for k,v in pairs(restricted) do
+                if args[v] ~= nil then
+                    args[v] = encrypted[v] or nil
+                end
+            end
+            
+            -- persist the safe arguments back to args
+            ngx.req.set_uri_args(args)
+        }
+        
+        # Connection limits to prevent abuse
+        limit_conn                  conn_limit_per_ip 25;
+        limit_conn                  conn_limit_per_upstream 1000;
+        
+        proxy_set_header            X-Real-IP $remote_addr;
+        proxy_set_header            X-Forwarded-For $real_x_forwarded_for;
+        proxy_set_header            X-Forwarded-Proto $real_scheme;
+        proxy_set_header            Accept-Encoding "";
+        proxy_set_header            Content-Type "";
+        
+        # Mask CF's involvement in upstream
+        proxy_set_header            Cf-Connecting-Ip "";
+        proxy_set_header            Cf-IpCountry "";
+        proxy_set_header            Cf-Visitor "";
+        proxy_set_header            CF-RAY "";
+        proxy_set_header            Server "";
+        
+        # Hide CF Headers from response
+        proxy_hide_header           CF-RAY;
+        proxy_hide_header           Server;
+        proxy_hide_header           Connection;
+        
+        proxy_connect_timeout       1;
+        proxy_read_timeout          15;
+        proxy_send_timeout          15;
+        
+        proxy_request_buffering     off;
+        proxy_ignore_client_abort   off;
+        
+        # Safe to upstream all requests, as all requests are forced to be GET
+        proxy_intercept_errors      on;
+        proxy_next_upstream         non_idempotent timeout http_500 http_502 http_503 http_504 http_404 http_403;
+        proxy_next_upstream_timeout 30;
+        proxy_next_upstream_tries   2;
+        
+        proxy_method                GET;
+        proxy_set_header            Host $host;
+        proxy_pass                  http://$upstream;
+        
+        proxy_cookie_domain         ~^.*?$ .$domain;
+        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicktrker\.com)(?::\d+)?(/.+)$ https://$host$2;
+        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicklb\.com)(?::\d+)?(/.+)$ https://$host$2;
+    }
+    
+    # Log stats to datadog
+    log_by_lua_block {
+        local ngx_re            = require "ngx.re"
+        local resty_dogstatsd   = require "resty_dogstatsd"
+        
+        local headers           = ngx.resp.get_headers()
+        local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|fpm(-ping)?|v1)(/|$)")
+        
+        -- Methods are not required for logging (no errors, didn't go upstream)
+        if (ngx.status < 300 or ngx.status == 444) and (ngx.var.upstream_header_time == nil or internal_route) then
+            return
+        end
+        
+        -- Async processing function
+        local function post_process(premature, response_time, tags)
+            -- Initialize
+            local dogstatsd = resty_dogstatsd.new({
+                statsd = {
+                    host        = "127.0.0.1",
+                    port        = 8125,
+                    namespace   = "ngx"
+                },
+                tags = {}
+            })
+            
+            -- Send metrics
+            dogstatsd:increment("hydra.request", 1, 1, tags)
+            dogstatsd:timer("hydra.upstream.time", response_time, tags)
+            dogstatsd:histogram("hydra.upstream.histogram", response_time, tags)
+        end
+        
+        -- Key reporting variables
+        local response_times    = ngx_re.split(ngx.var.upstream_header_time or ngx.var.request_time, ", ") or {}
+        local response_time     = (tonumber(response_times[#response_times]) or 0) * 1000
+        
+        local upstream_statuses = ngx_re.split(ngx.var.upstream_status or ngx.status, ", ") or {}
+        
+        local tags              = {
+            "upstream:"         .. (ngx.var.upstream or "internal"),
+            "upstream_hops:"    .. (#response_times or 1),
+            "host:"             .. (ngx.var.hostname or ""),
+            "domain:"           .. (ngx.var.domain or ngx.var.host or ""),
+            "subdomain:"        .. (ngx.var.subdomain or ""),
+            "uri:"              .. (ngx.var.uri or ""),
+            "upstream_status:"  .. (upstream_statuses[#upstream_statuses] or ""),
+            "http_accept:"      .. (headers["Accept"] or headers["accept"] or "")
+        }
+        
+        for k,v in pairs(ngx.req.get_uri_args()) do
+            table.insert(tags, k .. ':' .. v)
+        end
+        
+        ngx.timer.at(0, post_process, response_time, tags)
+    }
+}
+
+upstream mesh-hp-cf {
+    zone                                mesh-hp-cf 64k;
+    keepalive                           60;
+    
+    server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
+    server                              127.0.0.1:8002 weight=1 max_fails=0;
+    server                              127.0.0.1:8003 backup max_fails=0;
+    
+    check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
+    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
+    check_http_expect_alive             http_2xx;
+}
+
+upstream mesh-cf {
+    zone                                mesh-cf 64k;
+    keepalive                           60;
+    
+    server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
+    server                              127.0.0.1:8003 backup max_fails=0;
+    
+    check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
+    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
+    check_http_expect_alive             http_2xx;
+}
+
+upstream mesh {
+    zone                                mesh 64k;
+    keepalive                           60;
+    
+    server                              unix:/var/run/php5-fpm.sock max_fails=0;
+}
+
+upstream hp {
+    zone                                hp 64k;
+    keepalive                           20;
+    
+    server                              mediaclicklb.com resolve max_fails=0;
+}
+
+upstream cf {
+    zone                                cf 64k;
+    keepalive                           20;
+    
+    server                              cloudfront.com resolve max_fails=0;
+}
+
+server {
+    listen                              8001 default_server;
+    
+    more_set_headers                    "X-Backend-Server: $hostname";
+    set                                 $upstream mesh;
+    
+    access_log                          /var/log/nginx/mesh.log main buffer=64k flush=5m if=$loggable;
+    
+    root                                <%= @path %>;
+    try_files                           $uri/ /index.php?_url=$uri&$args;
+    
+    location = /nginx {
+        allow                           127.0.0.1;
+        deny                            all;
+        
+        access_log                      off;
+        stub_status                     on;
+    }
+    
+    location = /index.php {
+        fastcgi_keep_conn               on;
+        
+        fastcgi_connect_timeout         10;
+        fastcgi_read_timeout            15;
+        fastcgi_send_timeout            15;
+        fastcgi_request_buffering       off;
+        fastcgi_ignore_client_abort     off;
+        
+        include                         fastcgi_params;
+        fastcgi_index                   index.php;
+        fastcgi_split_path_info         ^(.+\.php)(.*)$;
+        fastcgi_param HTTP_HOST         $host;
+        fastcgi_param PATH_INFO         $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED   $document_root$fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME   $document_root$fastcgi_script_name;
+        fastcgi_param REQUEST_SCHEME    $real_scheme;
+        fastcgi_param HTTPS             $is_https if_not_empty;
+        
+        fastcgi_pass_request_headers    on;
+        fastcgi_param REQUEST_METHOD    GET;
+        fastcgi_pass                    $upstream;
+    }
+}
+
+server {
+    listen                              8002 default_server;
+    
+    more_set_headers                    "X-Backend-Server: hitpath";
+    set                                 $upstream hp;
+    
+    access_log                          /var/log/nginx/hp.log main buffer=64k flush=5m if=$loggable;
+    
+    location = /nginx {
+        allow                           127.0.0.1;
+        deny                            all;
+        
+        access_log                      off;
+        stub_status                     on;
+    }
+    
+    location / {
+        proxy_http_version              1.1;
+        proxy_set_header                Connection "";
+        
+        proxy_connect_timeout           10;
+        proxy_read_timeout              15;
+        proxy_send_timeout              15;
+        proxy_request_buffering         off;
+        
+        # HP can't be trusted to wrap-up aborted connections
+        proxy_ignore_client_abort       on;
+        
+        proxy_pass_request_headers      on;
+        proxy_method                    GET;
+        proxy_set_header                Host www.mediaclicktrker.com;
+        proxy_pass                      http://$upstream;
+    }
+}
+
+server {
+    listen                              8003 default_server;
+    
+    more_set_headers                    "X-Backend-Server: cloudfront";
+    set                                 $upstream cf;
+    
+    access_log                          /var/log/nginx/cf.log main buffer=64k flush=5m if=$loggable;
+    
+    location = /nginx {
+        allow                           127.0.0.1;
+        deny                            all;
+        
+        access_log                      off;
+        stub_status                     on;
+    }
+    
+    location / {
+        proxy_http_version              1.1;
+        proxy_set_header                Connection "";
+        
+        proxy_connect_timeout           10;
+        proxy_read_timeout              15;
+        proxy_send_timeout              15;
+        proxy_request_buffering         off;
+        proxy_ignore_client_abort       off;
+        
+        proxy_pass_request_headers      on;
+        proxy_method                    GET;
+        proxy_pass                      http://$upstream;
+    }
+}

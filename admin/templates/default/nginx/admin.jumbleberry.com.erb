@@ -1,14 +1,10 @@
 <% ssl = File.file?("/etc/nginx/ssl/#{node['admin']['hostname']}.pem") %>
-# Find the real scheme of the request
-map $http_x_forwarded_proto $real_scheme {
-    default $http_x_forwarded_proto;
-    ''      $scheme;
-}
-
 server {
     listen 80;
     server_name <%= node['admin']['hostname'] %> www.<%= node['admin']['hostname'] %>;
     root <%= node['admin']['path'] %>/public;
+    
+    keepalive_timeout 70;
     
     <% if (ssl) %>
     listen 443 ssl;

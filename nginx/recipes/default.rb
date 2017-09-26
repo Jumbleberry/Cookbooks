@@ -51,6 +51,24 @@ execute 'copy-openresty' do
     notifies :restart, 'service[nginx]', :delayed
 end
 
+# Install lua-rocks
+execute 'install-luarocks' do
+    command <<-EOH
+        wget http://luarocks.github.io/luarocks/releases/luarocks-2.4.3.tar.gz \
+             && tar -xvf luarocks-2.4.3.tar.gz \
+             && cd luarocks-* \
+             && ./configure --prefix=/usr/local/openresty/luajit \
+                    --with-lua=/usr/local/openresty/luajit/ \
+                    --lua-suffix=jit \
+                    --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
+             && make build \
+             && make install
+    EOH
+    action :run
+    cwd '/tmp'
+    only_if { !File.exists?('/usr/bin/luarocks') }
+end
+
 #Removes the default virtual host if exists
 ['default.dpkg-dist'].each do | file |
     if (File.file?('/etc/nginx/sites-enabled/' + file))
