@@ -20,6 +20,9 @@ server {
     server_name <%= @hostname %> www.<%= @hostname %> ~^(.*)\.<%= @hostname %>$;
     root <%= @path %>;
     
+    # Show server host name as header
+    add_header X-Backend-Server $hostname;
+    
     keepalive_timeout 0;
     gzip off;
     

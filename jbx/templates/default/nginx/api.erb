@@ -4,6 +4,9 @@ server {
     server_name <%= @hostname %> www.<%= @hostname %>;
     root <%= @path %>;
     
+    # Show server host name as header
+    add_header X-Backend-Server $hostname;
+    
     <% if (ssl) %>
     listen 443 ssl;
     

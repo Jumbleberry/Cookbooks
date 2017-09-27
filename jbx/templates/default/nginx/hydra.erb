@@ -189,15 +189,28 @@ server {
         }
     }
     
-    # Rate limiting sensitive endpoints
-    location ~* ^/rd/(r|o|px|ipx|hs) {
+    # Rate limit redirects to 1 per ip, 1 per 5sec
+    location ~* ^/rd/(r|o) {
         rewrite_by_lua_block {
             -- Dont allow unencrypted routes on non-hp links
             if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
                 ngx.exec("@redirect_encrypted_only")
             end
+            
+            -- Create a MD5 hash of affiliate vars
+            local args          = ngx.req.get_uri_args()
+            args["md5"]         = ngx.md5(
+                (args["pub"] or "") ..
+                (args["bps"] or "") ..
+                (args["c1"] or "") .. 
+                (args["c2"] or "") .. 
+                (args["c3"] or "")
+            )
+            
+            ngx.req.set_uri_args(args)
         }
         
+        error_page                  404 =403 @redirect_encrypted_only;
         error_page                  503 @redirect_exponential_backoff;
         
         # Only allow 1 concurrent request
@@ -212,8 +225,8 @@ server {
         try_files                   @proxy @proxy;
     }
     
-    # Block direct access to pixels - HTML
-    location ~* ^/rd/ {
+    # Restrict simultaneous pixel fires
+    location ~* ^/rd/(px|ipx|hs) {
         rewrite_by_lua_block {
             -- Dont allow unencrypted routes on non-hp links
             if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
@@ -221,7 +234,19 @@ server {
             end
         }
         
+        error_page                  404 =403 @redirect_encrypted_only;
+        error_page                  503 @redirect_exponential_backoff;
+        
+        # Only allow 1 concurrent request
+        limit_conn                  conn_limit_per_ip 1;
+        limit_conn_status           503;
+        
         # Continue normal processing
+        try_files                   @proxy @proxy;
+    }
+    
+    # All other Redirect / Pixel types have no guard
+    location ~* ^/rd/ {
         try_files                   @proxy @proxy;
     }
     
@@ -291,7 +316,7 @@ server {
             -- Further processing on encrypted/decrypted arguments for safety
             local args              = ngx.req.get_uri_args()
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
-            local restricted        = { "_url", "rhid", "rsid", "referer", "cookie", "accept" }
+            local restricted        = { "_url", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
             
             -- If rhid is set it's not safe to forward on to HP or we could get duplicates
             if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then

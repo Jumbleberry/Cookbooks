@@ -37,13 +37,10 @@ http {
                             [2001:4860:4860::8888]     [2001:4860:4860::8844]
                             valid=30s                  ipv6=off;
     
-    # Show server host name as header
-    add_header X-Backend-Server $hostname;
-    
     ##
     # Logging Settings
     ##
-    log_format  main        '$remote_addr - $remote_user [$time_local] '
+    log_format  main        '"$upstream" $remote_addr - $remote_user [$time_local] '
                             '"$request" "$http_accept" '
                             '$status $body_bytes_sent "$http_referer" '
                             '"$http_user_agent" "$http_x_forwarded_for" '
@@ -97,10 +94,10 @@ http {
     ##
     # Zones
     ##
-    limit_conn_zone         $binary_remote_addr$real_x_forwarded_for$host$uri$arg_hid$arg_sid$arg_transid$arg_redirects$arg_retries 
+    limit_conn_zone         $binary_remote_addr$real_x_forwarded_for$host$uri$arg_sid$arg_hid$arg_transid$arg_md5
                                 zone=conn_limit_per_ip:50m;
     limit_conn_zone         $upstream zone=conn_limit_per_upstream:1m;
-    limit_req_zone          $binary_remote_addr$real_x_forwarded_for$host$uri$arg_hid$arg_sid$arg_transid$arg_redirects$arg_retries 
+    limit_req_zone          $binary_remote_addr$real_x_forwarded_for$host$uri$arg_sid$arg_hid$arg_transid$arg_md5$arg_redirects$arg_retries 
                                 zone=force_cookie_reuse:50m rate=12r/m;
     
     ##

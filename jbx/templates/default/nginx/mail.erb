@@ -2,7 +2,10 @@ server {
     listen 80;
     server_name <%= @hostname %> www.<%= @hostname %>;
     root <%= @path %>;
-
+    
+    # Show server host name as header
+    add_header X-Backend-Server $hostname;
+    
     index index.php;
     try_files $uri $uri/ /index.php?_url=$uri&$args;
     
