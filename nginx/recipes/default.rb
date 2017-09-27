@@ -66,7 +66,7 @@ execute 'install-luarocks' do
     EOH
     action :run
     cwd '/tmp'
-    only_if { !File.exists?('/usr/bin/luarocks') }
+    only_if { !File.exists?('/usr/local/openresty/luajit/bin/luarocks') }
 end
 
 #Removes the default virtual host if exists
