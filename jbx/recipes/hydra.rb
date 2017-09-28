@@ -1,5 +1,5 @@
 include_recipe "jbx::core"
-include_recipe "jb_deploy::mesh"
+include_recipe "jb_deploy::hydra"
 
 # Creates the nginx virtual host
 virtualhost         = '/etc/nginx/sites-available/default'
@@ -24,4 +24,6 @@ link virtualhost_link do
 end
 
 # install dog-statsd dependency
-execute '/usr/local/openresty/luajit/bin/luarocks install lua-resty-dogstatsd'
+execute '/usr/local/openresty/luajit/bin/luarocks install lua-resty-dogstatsd' do
+    notifies :reload, "service[nginx]", :delayed
+end
