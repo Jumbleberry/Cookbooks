@@ -63,10 +63,6 @@ default['php']['packages'] = [
     "version" => "*"
   },
   {
-    "name" => "php7.1-gearman",
-    "version" => "*"
-  },
-  {
     "name" => "php7.1-curl",
     "version" => "*"
   },
