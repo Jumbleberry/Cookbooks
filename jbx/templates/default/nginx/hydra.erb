@@ -217,7 +217,7 @@ server {
         limit_conn                  conn_limit_per_ip 1;
         limit_conn_status           503;
         
-        # 5 seconds between requests
+        # 5 seconds between duplicate requests
         limit_req                   zone=force_cookie_reuse nodelay;
         limit_req_status            503;
         
@@ -285,7 +285,7 @@ server {
             -- don't allow endless retries
             if args.retries > 5 then
                 ngx.status = 409
-                ngx.say("Sorry, you've exceeded the simultaneous request limit. Please try again shortly.")
+                ngx.say("Sorry, you've exceeded the simultaneous request limit.\nPlease try again shortly.\n")
                 ngx.exit(409)
             end
             
@@ -313,8 +313,17 @@ server {
             ngx.req.read_body()
             ngx.req.set_body_data("")
             
-            -- Further processing on encrypted/decrypted arguments for safety
             local args              = ngx.req.get_uri_args()
+            
+            -- Block potentially harmful retry/redirect loops
+            if (args.retries ~= nil and tonumber(args.retries) > 5) or
+                    (args.redirects ~= nil and tonumber(args.redirects) > 3) then
+                ngx.status = 409
+                ngx.say("Sorry, it seems like you're stuck in a redirect loop.\nPlease try again shortly.\n")
+                ngx.exit(409)
+            end
+            
+            -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
             local restricted        = { "_url", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
             
