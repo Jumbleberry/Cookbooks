@@ -128,7 +128,7 @@ end
 cron "Consul cron" do
   command "/usr/bin/php #{cron_path}/consul_cron.php"
   user "root"
-  action :create
+  action :delete
 end
 
 # Run the cron
