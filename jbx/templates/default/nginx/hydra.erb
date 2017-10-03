@@ -419,27 +419,31 @@ server {
         end
         
         -- Key reporting variables
+        local upstreams         = ngx_re.split(ngx.var.upstream_addr or ngx.var.server_addr, ", ") or {}
         local response_times    = ngx_re.split(ngx.var.upstream_header_time or ngx.var.request_time, ", ") or {}
-        local response_time     = (tonumber(response_times[#response_times]) or 0) * 1000
-        
         local upstream_statuses = ngx_re.split(ngx.var.upstream_status or ngx.status, ", ") or {}
         
-        local tags              = {
-            "upstream:"         .. (ngx.var.upstream or "internal"),
-            "upstream_hops:"    .. (#response_times or 1),
-            "host:"             .. (ngx.var.hostname or ""),
-            "domain:"           .. (ngx.var.domain or ngx.var.host or ""),
-            "subdomain:"        .. (ngx.var.subdomain or ""),
-            "uri:"              .. (ngx.var.uri or ""),
-            "upstream_status:"  .. (upstream_statuses[#upstream_statuses] or ""),
-            "http_accept:"      .. (headers["Accept"] or headers["accept"] or "")
-        }
+        local upstream_names    = { ["127.0.0.1:8001"] = "mesh", ["127.0.0.1:8002"] = "hp", ["127.0.0.1:8003"] = "cf" }
         
-        for k,v in pairs(ngx.req.get_uri_args()) do
-            table.insert(tags, k .. ':' .. v)
+        for k,v in pairs(upstreams) do
+            local response_time     = (tonumber(response_times[k]) or 0) * 1000
+            local tags              = {
+                "upstream:"         .. (upstream_names[v] or "internal"),
+                "upstream_hops:"    .. (k or 1),
+                "host:"             .. (ngx.var.hostname or ""),
+                "domain:"           .. (ngx.var.domain or ngx.var.host or ""),
+                "subdomain:"        .. (ngx.var.subdomain or ""),
+                "uri:"              .. (ngx.var.uri or ""),
+                "upstream_status:"  .. (upstream_statuses[k] or ""),
+                "http_accept:"      .. (headers["Accept"] or headers["accept"] or "")
+            }
+            
+            for k,v in pairs(ngx.req.get_uri_args()) do
+                table.insert(tags, k .. ':' .. v)
+            end
+            
+            ngx.timer.at(0, post_process, response_time, tags)
         end
-        
-        ngx.timer.at(0, post_process, response_time, tags)
     }
 }
 
