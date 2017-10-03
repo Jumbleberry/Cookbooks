@@ -396,7 +396,7 @@ server {
         local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|fpm(-ping)?|v1)(/|$)")
         
         -- Methods are not required for logging (no errors, didn't go upstream)
-        if (ngx.status < 300 or ngx.status == 444) and (ngx.var.upstream_header_time == nil or internal_route) then
+        if (ngx.status < 300 or (ngx.status - 400) < 100) and (ngx.var.upstream_header_time == nil or internal_route) then
             return
         end
         
