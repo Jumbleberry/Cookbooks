@@ -73,6 +73,12 @@ server {
         try_files                   @proxy @proxy;
     }
     
+    # HP Status Endpoint
+    location = /status.php {
+        set                         $upstream hp;
+        try_files                   @proxy @proxy;
+    }
+    
     location = /status {
         allow                       127.0.0.1;
         deny                        all;
