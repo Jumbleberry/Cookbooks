@@ -435,7 +435,9 @@ server {
                 "subdomain:"        .. (ngx.var.subdomain or ""),
                 "uri:"              .. (ngx.var.uri or ""),
                 "upstream_status:"  .. (upstream_statuses[k] or ""),
-                "http_accept:"      .. (headers["Accept"] or headers["accept"] or "")
+                "http_accept:"      .. (headers["Accept"] or headers["accept"] or ""),
+                "ip:"               .. ($remote_addr or ""),
+                "x_forwarded_for:"  .. ($real_x_forwarded_for or "")
             }
             
             for k,v in pairs(ngx.req.get_uri_args()) do
