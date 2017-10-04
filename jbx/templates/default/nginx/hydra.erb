@@ -1,11 +1,15 @@
 # Optimize loading process
 init_by_lua_block {
-    -- Unwrap nested tables to ensure a key is a single string
+    -- Flatten table of arguments into a 2d map
     local function safe_url_args(args)
         if type(args) == "table" then
             for k,v in pairs(args) do
+                -- Grab the last value from any table
                 if type(v) == "table" then
-                    args[k] = v[#v]
+                    args[k] = tostring(safe_url_args(v)[#v] or nil)
+                -- Force to empty string if it's boolean
+                elseif type(v) ~= "string" then
+                    args[k] = ""
                 end
             end
         end
@@ -285,13 +289,16 @@ server {
     location @redirect_exponential_backoff {
         content_by_lua_block {
             
-            local uri  = ngx.var.uri
-            local args = safe_url_args(ngx.req.get_uri_args() or {})
+            local uri   = ngx.var.uri
+            local args  = safe_url_args(ngx.req.get_uri_args() or {})
+            
+            -- Remove md5 arg
+            args["md5"] = nil
             
             -- Default back to the original encrypted URL & query string if one exists
             if ngx.var.encrypted_uri ~= nil and ngx.var.encrypted_uri:len() > 0 then
                 uri     = ngx.var.encrypted_uri
-                args    = ngx.decode_args(ngx.var.original_args) or {}
+                args    = safe_url_args(ngx.decode_args(ngx.var.original_args) or {})
             end
             
             -- function to validate whether a parameter is a natural number
@@ -454,7 +461,7 @@ server {
             local response_time     = (tonumber(response_times[k]) or 0) * 1000
             local tags              = {
                 "upstream:"         .. (upstream_names[v] or "internal"),
-                "upstream_hops:"    .. (k or 1),
+                "upstream_hops:"    .. (k or "1"),
                 "host:"             .. (ngx.var.hostname or ""),
                 "domain:"           .. (ngx.var.domain or ngx.var.host or ""),
                 "subdomain:"        .. (ngx.var.subdomain or ""),
