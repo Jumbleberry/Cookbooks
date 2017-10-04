@@ -462,7 +462,7 @@ server {
             local tags              = {
                 "upstream:"         .. (upstream_names[v] or "internal"),
                 "upstream_hops:"    .. (k or "1"),
-                "host:"             .. (ngx.var.hostname or ""),
+                "hostname:"         .. (ngx.var.hostname or ""),
                 "domain:"           .. (ngx.var.domain or ngx.var.host or ""),
                 "subdomain:"        .. (ngx.var.subdomain or ""),
                 "uri:"              .. (ngx.var.uri or ""),
