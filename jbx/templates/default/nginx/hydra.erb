@@ -17,7 +17,51 @@ init_by_lua_block {
         return args
     end
     
-    _G.safe_url_args = safe_url_args
+    -- Get a delimited list of table keys as a string
+    local function table_keys(table, sep)
+        local n     = 0
+        local str   = ""
+        sep         = sep or ","
+        
+        for k,v in pairs(table) do
+            str = str .. (str:len() > 0 and sep or "") .. k
+        end
+        
+        return str
+    end
+    
+    -- Turn POST to GET
+    local function post_to_get()
+        if ngx.var.request_method == "POST" then
+            ngx.req.read_body()
+            
+            -- Get both GET and POST args
+            local args      = safe_url_args(ngx.req.get_uri_args() or {})
+            local post_args = safe_url_args(ngx.req.get_post_args() or {})
+            local post_count=0
+            
+            -- Merge POST into GET, but GET takes precedence
+            for k,v in pairs(post_args) do
+                args[k]     = args[k] or v
+                post_count  = post_count + 1
+            end
+            
+            -- Record the fact that this conversion took place
+            if post_count > 0 then
+                args["post_to_get"] = table_keys(post_args) or ""
+            end
+            
+            -- Place args back
+            ngx.req.set_uri_args(args)
+            
+            -- Discard request body - only GET to upstream!
+            ngx.req.set_body_data("")
+        end
+    end
+    
+    _G.safe_url_args    = safe_url_args
+    _G.table_keys       = table_keys
+    _G.post_to_get      = post_to_get
 }
 
 server {
@@ -155,6 +199,8 @@ server {
         set $original_args $args;
         
         rewrite_by_lua_block {
+            post_to_get()
+            
             local aes       = require "resty.aes"
             local str       = require "resty.string"
             local cjson     = require "cjson.safe"
@@ -221,6 +267,8 @@ server {
     # Rate limit redirects to 1 per ip, 1 per 5sec
     location ~* ^/rd/(r|o) {
         rewrite_by_lua_block {
+            post_to_get()
+            
             -- Dont allow unencrypted routes on non-hp links
             if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
                 --ngx.exec("@redirect_encrypted_only")
@@ -257,6 +305,8 @@ server {
     # Restrict simultaneous pixel fires
     location ~* ^/rd/(px|ipx|hs) {
         rewrite_by_lua_block {
+            post_to_get()
+            
             -- Dont allow unencrypted routes on non-hp links
             if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
                 --ngx.exec("@redirect_encrypted_only")
@@ -288,7 +338,6 @@ server {
     # 302 base rate limiting to force the re-use of cookies under race conditions
     location @redirect_exponential_backoff {
         content_by_lua_block {
-            
             local uri   = ngx.var.uri
             local args  = safe_url_args(ngx.req.get_uri_args() or {})
             
@@ -341,9 +390,7 @@ server {
         
         # A few final tasks before proxying
         rewrite_by_lua_block {
-            -- Discard request body - only GET to upstream!
-            ngx.req.read_body()
-            ngx.req.set_body_data("")
+            post_to_get()
             
             local args              = safe_url_args(ngx.req.get_uri_args() or {})
             
