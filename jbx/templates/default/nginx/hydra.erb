@@ -223,7 +223,7 @@ server {
         rewrite_by_lua_block {
             -- Dont allow unencrypted routes on non-hp links
             if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
-                ngx.exec("@redirect_encrypted_only")
+                --ngx.exec("@redirect_encrypted_only")
             end
             
             -- Create a MD5 hash of affiliate vars
@@ -259,7 +259,7 @@ server {
         rewrite_by_lua_block {
             -- Dont allow unencrypted routes on non-hp links
             if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
-                ngx.exec("@redirect_encrypted_only")
+                --ngx.exec("@redirect_encrypted_only")
             end
         }
         
