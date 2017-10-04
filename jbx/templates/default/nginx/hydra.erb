@@ -463,7 +463,7 @@ server {
                 "upstream:"         .. (upstream_names[v] or "internal"),
                 "upstream_hops:"    .. (k or "1"),
                 "hostname:"         .. (ngx.var.hostname or ""),
-                "domain:"           .. (ngx.var.domain or ngx.var.host or ""),
+                "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or ""),
                 "subdomain:"        .. (ngx.var.subdomain or ""),
                 "uri:"              .. (ngx.var.uri or ""),
                 "upstream_status:"  .. (upstream_statuses[k] or ""),
