@@ -1,3 +1,21 @@
+# Optimize loading process
+init_by_lua_block {
+    -- Unwrap nested tables to ensure a key is a single string
+    local function safe_url_args(args)
+        if type(args) == "table" then
+            for k,v in pairs(args) do
+                if type(v) == "table" then
+                    args[k] = v[#v]
+                end
+            end
+        end
+        
+        return args
+    end
+    
+    _G.safe_url_args = safe_url_args
+}
+
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -122,6 +140,7 @@ server {
     
     # Catch errors caused by stripping ~ characters from special-base64 encoded urls
     rewrite "^(/(?:[A-Za-z0-9-_]{4}){4,}(?:[A-Za-z0-9-_]{2}))(/.*)?$"  $1~~$2  last;
+    rewrite "^(/(?:[A-Za-z0-9-_]{4}){4,}(?:[A-Za-z0-9-_]{3}))(/.*)?$"  $1~$2   last;
     rewrite "^(/(?:[A-Za-z0-9-_]{4}){4,}(?:[A-Za-z0-9-_]{2}~))(/.*)?$" $1~$2   last;
     
     # Decrypt redirect URLs
@@ -139,7 +158,7 @@ server {
             
             local rd        = "/rd/r.php"
             local uri       = ngx.var.uri
-            local args      = ngx.req.get_uri_args()
+            local args      = safe_url_args(ngx.req.get_uri_args() or {})
             
             -- Split the request uri /<encrypted_string>[/<c1>/<c2>/<c3>[/...]]
             local vars      = {}
@@ -204,7 +223,7 @@ server {
             end
             
             -- Create a MD5 hash of affiliate vars
-            local args          = ngx.req.get_uri_args()
+            local args          = safe_url_args(ngx.req.get_uri_args() or {})
             args["md5"]         = ngx.md5(
                 (args["pub"] or "") ..
                 (args["bps"] or "") ..
@@ -267,7 +286,7 @@ server {
         content_by_lua_block {
             
             local uri  = ngx.var.uri
-            local args = ngx.req.get_uri_args() or {}
+            local args = safe_url_args(ngx.req.get_uri_args() or {})
             
             -- Default back to the original encrypted URL & query string if one exists
             if ngx.var.encrypted_uri ~= nil and ngx.var.encrypted_uri:len() > 0 then
@@ -319,7 +338,7 @@ server {
             ngx.req.read_body()
             ngx.req.set_body_data("")
             
-            local args              = ngx.req.get_uri_args()
+            local args              = safe_url_args(ngx.req.get_uri_args() or {})
             
             -- Block potentially harmful retry/redirect loops
             if (args.retries ~= nil and tonumber(args.retries) > 5) or
@@ -446,7 +465,7 @@ server {
                 "x_forwarded_for:"  .. (ngx.var.real_x_forwarded_for or "")
             }
             
-            for k,v in pairs(ngx.req.get_uri_args()) do
+            for k,v in pairs(safe_url_args(ngx.req.get_uri_args() or {})) do
                 table.insert(tags, k .. ':' .. v)
             end
             
