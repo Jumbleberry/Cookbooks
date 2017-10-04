@@ -130,6 +130,8 @@ http {
     map $http_user_agent $block_ua {
         default             0;
         '~*Jorgee'          1;
+        'Mozilla/5.0'       1;
+        'Mozilla/4.0 (compatible; Synapse)' 1;
     }
     
     ##
