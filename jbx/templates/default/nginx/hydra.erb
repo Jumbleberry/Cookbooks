@@ -21,7 +21,7 @@ init_by_lua_block {
     local function table_keys(table, sep)
         local n     = 0
         local str   = ""
-        sep         = sep or ","
+        sep         = sep or "!"
         
         for k,v in pairs(table) do
             str = str .. (str:len() > 0 and sep or "") .. k
