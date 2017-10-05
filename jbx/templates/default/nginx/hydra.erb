@@ -405,7 +405,7 @@ server {
             
             -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
-            local restricted        = { "_url", "post_to_get", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
+            local restricted        = { "_url", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
             
             -- If rhid is set it's not safe to forward on to HP or we could get duplicates
             if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
