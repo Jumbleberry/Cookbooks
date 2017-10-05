@@ -342,7 +342,8 @@ server {
             local args  = safe_url_args(ngx.req.get_uri_args() or {})
             
             -- Remove md5 arg
-            args["md5"] = nil
+            args["md5"]            = nil
+            args["post_to_get"]    = nil
             
             -- Default back to the original encrypted URL & query string if one exists
             if ngx.var.encrypted_uri ~= nil and ngx.var.encrypted_uri:len() > 0 then
@@ -404,7 +405,7 @@ server {
             
             -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
-            local restricted        = { "_url", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
+            local restricted        = { "_url", "post_to_get", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
             
             -- If rhid is set it's not safe to forward on to HP or we could get duplicates
             if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
@@ -580,7 +581,7 @@ server {
     more_set_headers                    "X-Backend-Server: $hostname";
     set                                 $upstream mesh;
     
-    access_log                          /var/log/nginx/mesh.log main buffer=64k flush=5m if=$loggable;
+    access_log                          /var/log/nginx/mesh.log main buffer=64k flush=30s if=$loggable;
     
     root                                <%= @path %>;
     try_files                           $uri/ /index.php?_url=$uri&$args;
@@ -624,7 +625,7 @@ server {
     more_set_headers                    "X-Backend-Server: hitpath";
     set                                 $upstream hp;
     
-    access_log                          /var/log/nginx/hp.log main buffer=64k flush=5m if=$loggable;
+    access_log                          /var/log/nginx/hp.log main buffer=64k flush=30s if=$loggable;
     
     location = /nginx {
         allow                           127.0.0.1;
@@ -659,7 +660,7 @@ server {
     more_set_headers                    "X-Backend-Server: cloudfront";
     set                                 $upstream cf;
     
-    access_log                          /var/log/nginx/cf.log main buffer=64k flush=5m if=$loggable;
+    access_log                          /var/log/nginx/cf.log main buffer=64k flush=30s if=$loggable;
     
     location = /nginx {
         allow                           127.0.0.1;

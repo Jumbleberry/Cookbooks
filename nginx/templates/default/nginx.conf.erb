@@ -46,7 +46,7 @@ http {
                             '"$http_user_agent" "$http_x_forwarded_for" '
                             '$request_time $upstream_response_time $pipe';
     
-    access_log              /var/log/nginx/access.log main buffer=64k flush=5m;
+    access_log              /var/log/nginx/access.log main buffer=64k flush=30s;
     error_log               /var/log/nginx/error.log warn;
     
     map $request_uri $loggable {
