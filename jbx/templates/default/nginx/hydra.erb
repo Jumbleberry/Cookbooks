@@ -454,7 +454,7 @@ server {
         
         # Safe to upstream all requests, as all requests are forced to be GET
         proxy_intercept_errors      on;
-        proxy_next_upstream         non_idempotent timeout http_500 http_502 http_503 http_504 http_404 http_403;
+        proxy_next_upstream         non_idempotent timeout http_500 http_502 http_503 http_504 http_404;
         proxy_next_upstream_timeout 30;
         proxy_next_upstream_tries   2;
         
