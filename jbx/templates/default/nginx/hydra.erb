@@ -278,10 +278,11 @@ server {
             local args          = safe_url_args(ngx.req.get_uri_args() or {})
             args["md5"]         = ngx.md5(
                 (args["pub"] or "") ..
-                (args["bps"] or "") ..
                 (args["c1"] or "") .. 
                 (args["c2"] or "") .. 
-                (args["c3"] or "")
+                (args["c3"] or "") .. 
+                (args["bps"] or "") ..
+                (args["step"] or "")
             )
             
             ngx.req.set_uri_args(args)
@@ -473,7 +474,7 @@ server {
         local resty_dogstatsd   = require "resty_dogstatsd"
         
         local headers           = ngx.resp.get_headers()
-        local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|fpm(-ping)?|v1)(/|$)")
+        local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|status(.php)?|fpm(-ping)?|v1)(/|$)")
         
         -- Methods are not required for logging (no errors, didn't go upstream)
         if (ngx.status < 300 or (ngx.status - 400) < 100) and (ngx.var.upstream_header_time == nil or internal_route) then
@@ -481,7 +482,7 @@ server {
         end
         
         -- Async processing function
-        local function post_process(premature, response_time, tags)
+        local function post_process(premature, key, tags, response_time)
             -- Initialize
             local dogstatsd = resty_dogstatsd.new({
                 statsd = {
@@ -493,38 +494,47 @@ server {
             })
             
             -- Send metrics
-            dogstatsd:increment("hydra.request", 1, 1, tags)
-            dogstatsd:timer("hydra.upstream.time", response_time, tags)
-            dogstatsd:histogram("hydra.upstream.histogram", response_time, tags)
+            dogstatsd:increment(key .. ".count", 1, 1, tags)
+            
+            if response_time then
+                dogstatsd:timer(key .. ".time", response_time, tags)
+            end
         end
         
         -- Key reporting variables
+        local args              = safe_url_args(ngx.req.get_uri_args() or {})
         local upstreams         = ngx_re.split(ngx.var.upstream_addr or ngx.var.server_addr, ", ") or {}
         local response_times    = ngx_re.split(ngx.var.upstream_header_time or ngx.var.request_time, ", ") or {}
         local upstream_statuses = ngx_re.split(ngx.var.upstream_status or ngx.status, ", ") or {}
         
+        -- Shave/Scrub detection
+        local scrub             = ngx.re.match(ngx.var.http_referer or ngx.var.arg_referer or "", "(?|&)y[0-9]=000([a-zA-Z])(&|$)") or nil
+        
         local upstream_names    = { ["127.0.0.1:8001"] = "mesh", ["127.0.0.1:8002"] = "hp", ["127.0.0.1:8003"] = "cf" }
+        local safe_args         = { "sid", "rsid", "pub", "lpid", "retries", "redirects", "rel" }
+        local na                = "N/A"
         
         for k,v in pairs(upstreams) do
             local response_time     = (tonumber(response_times[k]) or 0) * 1000
             local tags              = {
                 "upstream:"         .. (upstream_names[v] or "internal"),
                 "upstream_hops:"    .. (k or "1"),
-                "hostname:"         .. (ngx.var.hostname or ""),
-                "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or ""),
-                "subdomain:"        .. (ngx.var.subdomain or ""),
-                "uri:"              .. (ngx.var.uri or ""),
-                "upstream_status:"  .. (upstream_statuses[k] or ""),
-                "http_accept:"      .. (headers["Accept"] or headers["accept"] or ""),
-                "ip:"               .. (ngx.var.remote_addr or ""),
-                "x_forwarded_for:"  .. (ngx.var.real_x_forwarded_for or "")
+                "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
+                "subdomain:"        .. (ngx.var.subdomain or na),
+                "uri:"              .. (ngx.var.uri or na),
+                "upstream_status:"  .. (upstream_statuses[k] or na),
+                "http_accept:"      .. (headers["Accept"] or headers["accept"] or na)
             }
             
-            for k,v in pairs(safe_url_args(ngx.req.get_uri_args() or {})) do
-                table.insert(tags, k .. ':' .. v)
+            -- pull arguments from the query string
+            for k,v in pairs(safe_args) do
+                table.insert(tags, v .. ':' .. (args[v] or na))
             end
             
-            ngx.timer.at(0, post_process, response_time, tags)
+            -- Scrub is "active", "inactive" or "n/a"
+            table.insert(tags, "scrub:" .. (scrub and (scrub[1]:lower():match("y") and "active" or "inactive") or na))
+            
+            ngx.timer.at(0, post_process, "hydra.request", tags, response_time)
         end
     }
 }
