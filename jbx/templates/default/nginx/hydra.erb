@@ -543,7 +543,7 @@ server {
                 "upstream_hops:"    .. (k or "1"),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
                 "subdomain:"        .. (ngx.var.subdomain:len() > 1 and ngx.var.subdomain or na),
-                "origin:"           .. (ngx.var.arg_origin or (ngx.var.subdomain .. ngx.var.subdomain) or na),
+                "origin:"           .. (ngx.var.arg_origin or (ngx.var.subdomain .. ngx.var.domain) or na),
                 "referer:"          .. (referer_host and referer_host[1] or na),
                 "uri:"              .. (ngx.var.uri or na),
                 "upstream_status:"  .. (upstream_statuses[k] or na),
