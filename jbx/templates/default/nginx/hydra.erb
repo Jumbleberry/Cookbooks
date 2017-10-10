@@ -595,14 +595,14 @@ upstream mesh {
 
 upstream hp {
     zone                                hp 64k;
-    keepalive                           20;
+    keepalive                           40;
     
     server                              mediaclicklb.com resolve max_fails=0;
 }
 
 upstream cf {
     zone                                cf 64k;
-    keepalive                           20;
+    #keepalive                          20;
     
     server                              cloudfront.com resolve max_fails=0;
 }
