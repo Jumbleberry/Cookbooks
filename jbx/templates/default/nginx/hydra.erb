@@ -68,8 +68,9 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     
-    server_name                     ~^(?<domain>[^\.]+\.[^\.]+)$
-                                    ~^(?<subdomain>.*?)\.(?<domain>[^\.]+\.[^\.]+)$;
+    server_name                     ~^(?<subdomain>)(?<domain>[^\.]+(\.:)[^\.:]+)$
+                                    ~^(?<subdomain>.*?)(\.|:)(?<domain>[^\.]+(\.|:)[^\.:]+)$
+                                    ~^(?<subdomain>)(?<domain>.*)$;
     
     merge_slashes                   off;
     access_log                      off;
@@ -98,6 +99,16 @@ server {
         
         -- Set real_x_forwarded_for header
         return x_forwarded .. "," .. ip
+    }
+    
+    # Ensure domain is set
+    set_by_lua_block $domain {
+        -- Ensure the domain ends with an alpha string (ruling out ipv4 or v6 addresses), and that it's not a regex
+        local valid_domain  = ngx.var.domain:match("%p%a+$") and ngx.var.domain:match("?") == nil
+        
+        -- Modify domain & subdomain to acceptable values if they're direct IPs
+        ngx.var.subdomain   = valid_domain and ngx.var.subdomain or "www"
+        return valid_domain and ngx.var.domain or "mediaclicktrker.com"
     }
     
     # Show server host name as header
@@ -270,7 +281,7 @@ server {
             post_to_get()
             
             -- Dont allow unencrypted routes on non-hp links
-            if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
+            if ngx.var.domain:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
                 --ngx.exec("@redirect_encrypted_only")
             end
             
@@ -309,7 +320,7 @@ server {
             post_to_get()
             
             -- Dont allow unencrypted routes on non-hp links
-            if ngx.var.host:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
+            if ngx.var.domain:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
                 --ngx.exec("@redirect_encrypted_only")
             end
         }
@@ -460,12 +471,12 @@ server {
         proxy_next_upstream_tries   2;
         
         proxy_method                GET;
-        proxy_set_header            Host $host;
+        proxy_set_header            Host $subdomain$domain;
         proxy_pass                  http://$upstream;
         
         proxy_cookie_domain         ~^.*?$ .$domain;
-        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicktrker\.com)(?::\d+)?(/.+)$ https://$host$2;
-        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicklb\.com)(?::\d+)?(/.+)$ https://$host$2;
+        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicktrker\.com)(?::\d+)?(/.+)$ https://$subdomain$domain$2;
+        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicklb\.com)(?::\d+)?(/.+)$ https://$subdomain$domain$2;
     }
     
     # Log stats to datadog
@@ -474,10 +485,10 @@ server {
         local resty_dogstatsd   = require "resty_dogstatsd"
         
         local headers           = ngx.resp.get_headers()
-        local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|status(.php)?|fpm(-ping)?|v1)(/|$)")
+        local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|nginx|status(.php)?|fpm(-ping)?|v1)(/|$)")
         
         -- Methods are not required for logging (no errors, didn't go upstream)
-        if (ngx.status < 300 or (ngx.status - 400) < 100) and (ngx.var.upstream_header_time == nil or internal_route) then
+        if (ngx.status < 300 or (ngx.status - 400) < 100) and internal_route then
             return
         end
         
@@ -520,7 +531,7 @@ server {
                 "upstream:"         .. (upstream_names[v] or "internal"),
                 "upstream_hops:"    .. (k or "1"),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
-                "subdomain:"        .. (ngx.var.subdomain or na),
+                "subdomain:"        .. (ngx.var.subdomain:len() > 0 and ngx.var.subdomain or na),
                 "uri:"              .. (ngx.var.uri or na),
                 "upstream_status:"  .. (upstream_statuses[k] or na),
                 "http_accept:"      .. (headers["Accept"] or headers["accept"] or na)
