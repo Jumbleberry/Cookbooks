@@ -426,7 +426,7 @@ server {
             
             -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
-            local restricted        = { "_url", "md5", "rhid", "rsid", "referer", "cookie", "accept" }
+            local restricted        = { "_url", "md5", "rhid", "rsid", "origin", "referer", "cookie", "accept" }
             
             -- If rhid is set it's not safe to forward on to HP or we could get duplicates
             if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
@@ -528,7 +528,9 @@ server {
         local upstream_statuses = ngx_re.split(ngx.var.upstream_status or ngx.status, ", ") or {}
         
         -- Shave/Scrub detection
-        local scrub             = ngx.re.match(ngx.var.http_referer or ngx.var.arg_referer or "", "(?|&)y[0-9]=000([a-zA-Z])(&|$)") or nil
+        local scrub             = ngx.re.match(ngx.var.arg_referer or ngx.var.http_referer or "", "(?|&)y[0-9]=000([a-zA-Z])(&|$)") or nil
+        -- Referer Host
+        local referer_host      = ngx.re.match(ngx.var.arg_referer or ngx.var.http_referer or "", "^(?:[^:]*:)?(?://)?([^:/]+)") or nil
         
         local upstream_names    = { ["127.0.0.1:8001"] = "mesh", ["127.0.0.1:8002"] = "hp", ["127.0.0.1:8003"] = "cf" }
         local safe_args         = { "sid", "rsid", "pub", "lpid", "retries", "redirects", "rel" }
@@ -541,18 +543,18 @@ server {
                 "upstream_hops:"    .. (k or "1"),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
                 "subdomain:"        .. (ngx.var.subdomain:len() > 1 and ngx.var.subdomain or na),
+                "origin:"           .. (ngx.var.arg_origin or (ngx.var.subdomain .. ngx.var.subdomain) or na),
+                "referer:"          .. (referer_host and referer_host[1] or na),
                 "uri:"              .. (ngx.var.uri or na),
                 "upstream_status:"  .. (upstream_statuses[k] or na),
-                "http_accept:"      .. (headers["Accept"] or headers["accept"] or na)
+                "http_accept:"      .. (headers["Accept"] or headers["accept"] or na),
+                "scrub:"            .. (scrub and (scrub[1]:lower():match("y") and "active" or "inactive") or na)
             }
             
             -- pull arguments from the query string
             for k,v in pairs(safe_args) do
                 table.insert(tags, v .. ':' .. (args[v] or na))
             end
-            
-            -- Scrub is "active", "inactive" or "n/a"
-            table.insert(tags, "scrub:" .. (scrub and (scrub[1]:lower():match("y") and "active" or "inactive") or na))
             
             ngx.timer.at(0, post_process, "hydra.request", tags, response_time)
         end
