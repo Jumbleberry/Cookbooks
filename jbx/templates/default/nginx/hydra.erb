@@ -336,6 +336,15 @@ server {
         try_files                   @proxy @proxy;
     }
     
+    # Audit endpoint for analyzing dead requests
+    location ~* ^/rd/audit {
+        content_by_lua_block {
+            ngx.header['Content-Type'] = "image/gif"
+            ngx.say(ngx.decode_base64("R0lGODdhAQABAIAAAPxqbAAAACwAAAAAAQABAAACAkQBADs="))
+            ngx.exit(200)
+        }
+    }
+    
     # All other Redirect / Pixel types have no guard
     location ~* ^/rd/ {
         try_files                   @proxy @proxy;
