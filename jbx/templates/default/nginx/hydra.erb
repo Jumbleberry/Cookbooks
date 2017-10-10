@@ -69,7 +69,7 @@ server {
     listen [::]:80 default_server;
     
     server_name                     ~^(?<subdomain>)(?<domain>[^\.]+(\.:)[^\.:]+)$
-                                    ~^(?<subdomain>.*?)(\.|:)(?<domain>[^\.]+(\.|:)[^\.:]+)$
+                                    ~^(?<subdomain>.*?(\.|:))(?<domain>[^\.]+(\.|:)[^\.:]+)$
                                     ~^(?<subdomain>)(?<domain>.*)$;
     
     merge_slashes                   off;
@@ -107,7 +107,7 @@ server {
         local valid_domain  = ngx.var.domain:match("%p%a+$") and ngx.var.domain:match("?") == nil
         
         -- Modify domain & subdomain to acceptable values if they're direct IPs
-        ngx.var.subdomain   = valid_domain and ngx.var.subdomain or "www"
+        ngx.var.subdomain   = valid_domain and ngx.var.subdomain or "www."
         return valid_domain and ngx.var.domain or "mediaclicktrker.com"
     }
     
@@ -540,7 +540,7 @@ server {
                 "upstream:"         .. (upstream_names[v] or "internal"),
                 "upstream_hops:"    .. (k or "1"),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
-                "subdomain:"        .. (ngx.var.subdomain:len() > 0 and ngx.var.subdomain or na),
+                "subdomain:"        .. (ngx.var.subdomain:len() > 1 and ngx.var.subdomain or na),
                 "uri:"              .. (ngx.var.uri or na),
                 "upstream_status:"  .. (upstream_statuses[k] or na),
                 "http_accept:"      .. (headers["Accept"] or headers["accept"] or na)
