@@ -471,11 +471,11 @@ server {
         proxy_send_timeout          15;
         
         proxy_request_buffering     off;
-        proxy_ignore_client_abort   off;
+        proxy_ignore_client_abort   on;
         
         # Safe to upstream all requests, as all requests are forced to be GET
         proxy_intercept_errors      on;
-        proxy_next_upstream         non_idempotent timeout http_500 http_502 http_503 http_504 http_404;
+        proxy_next_upstream         non_idempotent error timeout invalid_header http_500 http_502 http_503 http_504 http_404;
         proxy_next_upstream_timeout 30;
         proxy_next_upstream_tries   2;
         
@@ -541,12 +541,12 @@ server {
             local tags              = {
                 "upstream:"         .. (upstream_names[v] or "internal"),
                 "upstream_hops:"    .. (k or "1"),
+                "response_code:"    .. (upstream_statuses[k] and upstream_statuses[k]:gsub("-", "499") or na),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
                 "subdomain:"        .. (ngx.var.subdomain:len() > 1 and ngx.var.subdomain or na),
                 "origin:"           .. (ngx.var.arg_origin or (ngx.var.subdomain .. ngx.var.domain) or na),
                 "referer:"          .. (referer_host and referer_host[1] or na),
                 "uri:"              .. (ngx.var.uri or na),
-                "upstream_status:"  .. (upstream_statuses[k] or na),
                 "http_accept:"      .. (headers["Accept"] or headers["accept"] or na),
                 "scrub:"            .. (scrub and (scrub[1]:lower():match("y") and "active" or "inactive") or na)
             }
@@ -633,7 +633,7 @@ server {
         fastcgi_read_timeout            15;
         fastcgi_send_timeout            15;
         fastcgi_request_buffering       off;
-        fastcgi_ignore_client_abort     off;
+        fastcgi_ignore_client_abort     on;
         
         include                         fastcgi_params;
         fastcgi_index                   index.php;
