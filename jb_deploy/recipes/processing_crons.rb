@@ -43,7 +43,7 @@ cron "Processing - Get CRM Rebill Orders" do
   hour '*'
   minute '1-59/2'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Get CRM Current Orders" do
@@ -58,14 +58,14 @@ cron "Processing - Get Unmapped Campaigns" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_unmapped_campaigns.php"
   minute '*/5'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Datadog Stats Reporting" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/datadog_reporting.php"
   minute '*'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Calculate Retentions" do
@@ -73,14 +73,14 @@ cron "Processing - Calculate Retentions" do
   hour '5'
   minute '15'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Summary Current Week" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/hitpath_summary_campaign_caps.php current_week"
   minute '*/3'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Summary Previous Week" do
@@ -89,7 +89,7 @@ cron "Processing - Cap Summary Previous Week" do
   weekday '1'
   hour '2'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Bridge Page Detection & Scraping" do
@@ -97,7 +97,7 @@ cron "Processing - Bridge Page Detection & Scraping" do
   minute '0'
   hour '4-23/12'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Deltas" do
@@ -106,28 +106,28 @@ cron "Processing - Cap Deltas" do
   weekday '1'
   hour '0'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Caps Reached" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_caps_reached.php"
   minute '*/1'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Overage" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_overage.php"
   minute '*'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Future Caps" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/future_caps.php"
   minute '*'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Sunday Snapshot" do
@@ -154,7 +154,7 @@ cron "Processing - Cap Approval Monday Midnight" do
   hour '0'
   weekday '1'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Approval Monday - Incremental" do
@@ -163,7 +163,7 @@ cron "Processing - Cap Approval Monday - Incremental" do
   weekday '1'
   hour '7-15'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Approval Monday 4pm" do
@@ -172,7 +172,7 @@ cron "Processing - Cap Approval Monday 4pm" do
   hour '16'
   weekday '1'
   user 'www-data'
-  action :delete
+  action :create
 end
 
 cron "Processing - Cap Unapprovals Friday" do
