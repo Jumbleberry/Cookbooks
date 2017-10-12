@@ -6,6 +6,14 @@ cron "Processing - Enforce Prohibited Traffic Types" do
   action :create
 end
 
+cron "Processing - Ensure Valid SSL Certificates Network Wide" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/validate_certificates.php"
+  hour '*'
+  minute '*/5'
+  user 'www-data'
+  action :create
+end
+
 cron "Processing - Detect CRM Features" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/detect_features.php"
   hour '2-23/6'
