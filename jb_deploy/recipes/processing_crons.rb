@@ -16,7 +16,7 @@ end
 
 cron "Processing - Detect Advertiser Shave" do
   command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/detect_shave.php"
-  hour '0,8,12,16,20'
+  hour '0,7'
   minute '15'
   user 'www-data'
   action :create
