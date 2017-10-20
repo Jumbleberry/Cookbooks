@@ -282,7 +282,8 @@ server {
     
     # Salvage poorly configured requests
     location ~* ^(/rd/[^/]+)/ {
-        return                      302 https://salvage.$domain$1$is_args$args;
+        set                         $subdomain "re.";
+        rewrite                     ^(/rd/[^/]+)/ $1;
     }
     
     # Rate limit redirects to 1 per ip, 1 per 5sec
