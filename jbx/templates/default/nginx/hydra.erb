@@ -65,8 +65,8 @@ init_by_lua_block {
 }
 
 server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
+    listen 80 default_server reuseport;
+    listen [::]:80 default_server reuseport;
     
     server_name                     ~^(?<subdomain>)(?<domain>[^\.]+(\.:)[^\.:]+)$
                                     ~^(?<subdomain>.*?(\.|:))(?<domain>[^\.]+(\.|:)[^\.:]+)$
@@ -619,7 +619,7 @@ upstream cf {
 }
 
 server {
-    listen                              8001 default_server;
+    listen                              8001 default_server reuseport;
     
     more_set_headers                    "X-Backend-Server: $hostname";
     set                                 $upstream mesh;
@@ -663,7 +663,7 @@ server {
 }
 
 server {
-    listen                              8002 default_server;
+    listen                              8002 default_server reuseport;
     
     more_set_headers                    "X-Backend-Server: hitpath";
     set                                 $upstream hp;
@@ -698,7 +698,7 @@ server {
 }
 
 server {
-    listen                              8003 default_server;
+    listen                              8003 default_server reuseport;
     
     more_set_headers                    "X-Backend-Server: cloudfront";
     set                                 $upstream cf;
