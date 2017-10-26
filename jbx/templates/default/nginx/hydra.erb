@@ -326,7 +326,7 @@ server {
     }
     
     # Restrict simultaneous pixel fires
-    location ~* ^/rd/(px|ipx|hs) {
+    location ~* ^/rd/(px|ipx|hs|csp) {
         rewrite_by_lua_block {
             post_to_get()
             
