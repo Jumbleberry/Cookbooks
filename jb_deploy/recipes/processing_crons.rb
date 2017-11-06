@@ -170,7 +170,7 @@ cron "Processing - Cap Approval Monday Midnight" do
   hour '0'
   weekday '1'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Approval Monday - Incremental" do
@@ -179,7 +179,7 @@ cron "Processing - Cap Approval Monday - Incremental" do
   weekday '1'
   hour '7-15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Approval Monday 4pm" do
@@ -188,7 +188,7 @@ cron "Processing - Cap Approval Monday 4pm" do
   hour '16'
   weekday '1'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Unapprovals Friday" do
