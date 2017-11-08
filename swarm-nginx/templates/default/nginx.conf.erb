@@ -370,7 +370,7 @@ http {
             
             <% if node['environment'] != 'development' -%>
             fastcgi_cache           cache_php;
-            fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme$subdomain$domain$request_uri;
+            fastcgi_cache_key       $proxy_add_x_forwarded_for$real_scheme$subdomain$domain$request_uri$cookie_JBC;
             <% end -%>
             
             fastcgi_cache_bypass    <% if node['environment'] != 'development' -%>$no_cache $arg_bc $arg_lt<% else -%>1<% end -%>;
