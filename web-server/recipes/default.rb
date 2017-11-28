@@ -31,6 +31,10 @@ template '/etc/sysctl.conf' do
   notifies :run, "execute[sysctl-config]", :immediately
 end
 
+# Disable transparent huge pages
+execute "disable-thp" do
+  command "echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/enabled"
+end
 
 #System packages
 syspackages = ['git', 'gcc', 'vim', 'libpcre3-dev', 'make', 'curl', 'unzip', 'uuid']
