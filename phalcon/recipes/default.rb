@@ -20,7 +20,7 @@ package "php7.1-phalcon" do
     # Ignore configuration changes - necessary because of nginx updates
     options '--force-yes'
     options '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
-    version '3.2.1-1+php7.1'
+    version '3.2.2-1+php7.1'
 end
 
 # Creates symlinks for the configurations files
