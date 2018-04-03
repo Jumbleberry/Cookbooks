@@ -10,7 +10,7 @@ default['letsencrypt_aws']['hosts'] = '[
     "genuine-garcinia.com", "www.genuine-garcinia.com",
     "tryevantiskincream.com", "m.tryevantiskincream.com", "www.tryevantiskincream.com", "tablet.tryevantiskincream.com"
 ]'
-default['letsencrypt_aws']['github_url'] = 'https://github.com/Hao-Jumbleberry/letsencrypt-aws.git'
+default['letsencrypt_aws']['github_url'] = 'https://github.com/Jumbleberry/letsencrypt-aws.git'
 default['letsencrypt_aws']['branch'] = 'elbv2'
 default['letsencrypt_aws']['repo_path'] = '/var/www/letsencrypt-aws'
 default['letsencrypt_aws']['acme_private_key'] = 'acme-private.pem'
