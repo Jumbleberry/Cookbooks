@@ -5,6 +5,12 @@ apt_repository 'php-ppa' do
   components    ['main']
 end
 
+apt_repository 'gearman-ppa' do
+  uri           'ppa:ondrej/pkg-gearman'
+  distribution  node['lsb']['codename']
+  components    ['main']
+end
+
 include_recipe "apt"
 execute "apt-get-update-periodic-php" do
     command "apt-get update"
