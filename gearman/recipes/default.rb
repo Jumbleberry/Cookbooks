@@ -1,6 +1,12 @@
 include_recipe "web-server"
 include_recipe "apt"
 
+apt_repository 'gearman-ppa' do
+  uri           'ppa:ondrej/pkg-gearman'
+  distribution  node['lsb']['codename']
+  components    ['main']
+end
+
 # Update apt
 execute "apt-get-update-periodic" do
     command "apt-get update --fix-missing"

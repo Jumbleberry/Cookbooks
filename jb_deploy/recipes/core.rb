@@ -65,6 +65,7 @@ template credentials_file do
 
       "crypt"                   => node['jbx']['credentials']['crypt'],
       "raygun"                  => node['jbx']['credentials']['raygun'],
+      "oneshot"                 => node['jbx']['credentials']['oneshot'],
       
       "aws_access_key"          => node['jbx']['credentials']['aws']['access_key'],
       "aws_secret_key"          => node['jbx']['credentials']['aws']['secret_key'],
