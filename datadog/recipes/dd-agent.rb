@@ -29,6 +29,7 @@ if !dd_agent_version.nil? && dd_agent_version.split('.')[0].to_i < 5
 
   package dd_pkg_name do
     version dd_agent_version
+    options ('--allow-unauthenticated')
   end
 else
   # default behavior, remove the `base` package as it is no longer needed
