@@ -29,7 +29,7 @@ execute 'install-openresty' do
     sudo apt-get -y install software-properties-common
     sudo add-apt-repository -y "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main"
     sudo apt-get update
-    sudo RUNLEVEL=1 apt-get install openresty -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
+    sudo RUNLEVEL=1 apt-get install openresty=1.11.2.5* -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
     systemctl disable openresty.service
     EOH
   action :run
