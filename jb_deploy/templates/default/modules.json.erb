@@ -1,7 +1,4 @@
 {
-    "mesh"  : {
-        "domain"        : "(.*\\.)?<%= node['jbx']['mesh']['hostname'] %>"
-    },
     "api"  : {
         "domain"        : "<%= node['jbx']['api']['hostname'] %>"
     },
@@ -10,5 +7,11 @@
     },
     "mail"  : {
         "domain"        : "<%= node['jbx']['mail']['hostname'] %>"
+    },
+    "ndp"  : {
+        "domain"        : "www\\.mediaclicktp\\..*"
+    },
+    "mesh"  : {
+        "domain"        : "(.*\\.)?<%= node['jbx']['mesh']['hostname'] %>"
     }
 }

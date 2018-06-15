@@ -1,0 +1,22 @@
+include_recipe "jb_deploy::core"
+include_recipe "github-auth"
+
+# Set the branch to checkout
+branch = ENV['JBX_NDP_BRANCH'] || node['jbx']['ndp']['branch']
+
+{ :checkout => true, :sync => node[:user] != 'vagrant' }.each do |action, should|
+    git node['jbx']['ndp']['path'] do
+      ssh_wrapper node['github-auth']['wrapper_path'] + "/ndp_wrapper.sh"
+      repository node['jbx']['ndp']['git-url']
+      revision branch
+      user 'root'
+      action action
+      only_if { should }
+    end
+end
+
+execute "chown-data-www" do
+  command "chown -R #{node['jbx']['user']}:#{node['jbx']['user']} #{node['jbx']['ndp']['path']}"
+  user "root"
+  action :run
+end
