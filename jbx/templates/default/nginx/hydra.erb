@@ -76,7 +76,7 @@ server {
     access_log                      off;
     
     # Default upstream server
-    set                             $upstream mesh-hp-cf;
+    set                             $upstream hydra-hp;
     
     # Whether or not request is encrypted
     set                             $encrypted_uri "";
@@ -175,7 +175,7 @@ server {
         allow                       127.0.0.1;
         deny                        all;
         
-        fastcgi_pass                mesh;
+        fastcgi_pass                hydra;
         fastcgi_param               SCRIPT_FILENAME $uri;
         include                     fastcgi_params;
     }
@@ -193,7 +193,7 @@ server {
     
     # Rotator routes - HP does not know how to handle these
     location ~* ^/(campaign|affiliate|script)/ {
-        set                         $upstream mesh-cf;
+        set                         $upstream hydra;
         
         try_files                   @proxy @proxy;
     }
@@ -204,9 +204,9 @@ server {
     rewrite "^(/(?:[A-Za-z0-9-_]{4}){4,}(?:[A-Za-z0-9-_]{2}~))(/.*)?$" $1~$2   last;
     
     # Decrypt redirect URLs
-    location ~ "^/([A-Za-z0-9-_]{4}){4,}([A-Za-z0-9-_]{2}~~|[A-Za-z0-9-_]{3}~)?(/|$)" {
+    location ~ "^/([A-Za-z0-9-_]{4}){4,}([A-Za-z0-9-_]{2}~~|[A-Za-z0-9-_]{3}~)?~*(/|$)" {
         
-        # Keep the original encrypted URL in case we need to 3xx - we don't want to leak the real one
+        # Keep the original encrypted URL in case we need to 3xx - we dont want to leak the real one
         set $encrypted_uri $uri;
         set $original_args $args;
         
@@ -216,7 +216,6 @@ server {
             local aes       = require "resty.aes"
             local str       = require "resty.string"
             local cjson     = require "cjson.safe"
-            local ngx_re    = require "ngx.re"
             
             local rd        = "/rd/r.php"
             local uri       = ngx.var.uri
@@ -233,7 +232,7 @@ server {
                 index           = next + 1
             end
             
-            -- Encryption key, md5 of HitPath's key
+            -- Encryption key, md5 of HitPaths key
             local encryption_key = "f3a51b6c2d80757485b82fed8b7e69de"
             
             -- HitPath's specified IV a base64 encoded binary value
@@ -283,7 +282,7 @@ server {
     # Salvage poorly configured requests
     location ~* ^(/rd/[^/]+)/ {
         set                         $subdomain "re.";
-        rewrite                     ^(/rd/[^/]+)/ $1;
+        rewrite                     ^(/rd/[^/]+)(.+) $1?path=$2;
     }
     
     # Rate limit redirects to 1 per ip, 1 per 5sec
@@ -300,6 +299,7 @@ server {
             local args          = safe_url_args(ngx.req.get_uri_args() or {})
             args["md5"]         = ngx.md5(
                 (args["pub"] or "") ..
+                (args["progid"] or "") ..
                 (args["c1"] or "") .. 
                 (args["c2"] or "") .. 
                 (args["c3"] or "") .. 
@@ -381,6 +381,7 @@ server {
             if ngx.var.encrypted_uri ~= nil and ngx.var.encrypted_uri:len() > 0 then
                 uri     = ngx.var.encrypted_uri
                 args    = safe_url_args(ngx.decode_args(ngx.var.original_args) or {})
+                ngx.req.set_uri_args(args)
             end
             
             -- function to validate whether a parameter is a natural number
@@ -441,7 +442,7 @@ server {
             
             -- If rhid is set it's not safe to forward on to HP or we could get duplicates
             if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
-                ngx.var.upstream = "mesh-cf"
+                ngx.var.upstream = "hydra"
             end
             
             -- Force restricted arguments back to their value from the encrypted URL, or delete them
@@ -465,7 +466,7 @@ server {
         proxy_set_header            Accept-Encoding "";
         proxy_set_header            Content-Type "";
         
-        # Mask CF's involvement in upstream
+        # Mask CFs involvement in upstream
         proxy_set_header            Cf-Connecting-Ip "";
         proxy_set_header            Cf-IpCountry "";
         proxy_set_header            Cf-Visitor "";
@@ -481,7 +482,7 @@ server {
         proxy_read_timeout          15;
         proxy_send_timeout          15;
         
-        proxy_request_buffering     off;
+        proxy_request_buffering     on;
         proxy_ignore_client_abort   on;
         
         # Safe to upstream all requests, as all requests are forced to be GET
@@ -495,8 +496,7 @@ server {
         proxy_pass                  http://$upstream;
         
         proxy_cookie_domain         ~^.*?$ .$domain;
-        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicktrker\.com)(?::\d+)?(/.+)$ https://$subdomain$domain$2;
-        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclicklb\.com)(?::\d+)?(/.+)$ https://$subdomain$domain$2;
+        proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclick[^.]+\.com)(?::\d+)?(/.+)$ https://$subdomain$domain$2;
     }
     
     # Log stats to datadog
@@ -543,7 +543,7 @@ server {
         -- Referer Host
         local referer_host      = ngx.re.match(ngx.var.arg_referer or ngx.var.http_referer or "", "^(?:[^:]*:)?(?://)?([^:/]+)") or nil
         
-        local upstream_names    = { ["127.0.0.1:8001"] = "mesh", ["127.0.0.1:8002"] = "hp", ["127.0.0.1:8003"] = "cf" }
+        local upstream_names    = { ["127.0.0.1:8001"] = "hydra", ["127.0.0.1:8002"] = "hp", ["127.0.0.1:8003"] = "ndp" }
         local safe_args         = { "sid", "rsid", "pub", "lpid", "retries", "redirects", "rel" }
         local na                = "N/A"
         
@@ -572,12 +572,23 @@ server {
     }
 }
 
-upstream mesh-hp-cf {
-    zone                                mesh-hp-cf 64k;
+upstream hydra-hp {
+    zone                                hydra-hp 64k;
     keepalive                           60;
     
     server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
-    server                              127.0.0.1:8002 weight=1 max_fails=0;
+    server                              127.0.0.1:8002 backup max_fails=0;
+    
+    check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
+    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
+    check_http_expect_alive             http_2xx;
+}
+
+upstream hp-ndp {
+    zone                                hp-ndp 64k;
+    keepalive                           60;
+    
+    server                              127.0.0.1:8002 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8003 backup max_fails=0;
     
     check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
@@ -585,20 +596,8 @@ upstream mesh-hp-cf {
     check_http_expect_alive             http_2xx;
 }
 
-upstream mesh-cf {
-    zone                                mesh-cf 64k;
-    keepalive                           60;
-    
-    server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
-    server                              127.0.0.1:8003 backup max_fails=0;
-    
-    check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
-    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
-    check_http_expect_alive             http_2xx;
-}
-
-upstream mesh {
-    zone                                mesh 64k;
+upstream hydra {
+    zone                                hydra 64k;
     keepalive                           60;
     
     server                              unix:/var/run/php5-fpm.sock max_fails=0;
@@ -611,20 +610,20 @@ upstream hp {
     server                              mediaclicklb.com resolve max_fails=0;
 }
 
-upstream cf {
-    zone                                cf 64k;
-    #keepalive                          20;
+upstream ndp {
+    zone                                ndp 64k;
+    keepalive                           60;
     
-    server                              cloudfront.com resolve max_fails=0;
+    server                              unix:/var/run/php5-fpm.sock max_fails=0;
 }
 
 server {
     listen                              8001 default_server reuseport;
     
-    more_set_headers                    "X-Backend-Server: $hostname";
-    set                                 $upstream mesh;
+    more_set_headers                    "X-Backend-Server: hydra-$hostname";
+    set                                 $upstream hydra;
     
-    access_log                          /var/log/nginx/mesh.log main buffer=64k flush=30s if=$loggable;
+    access_log                          /var/log/nginx/hydra.log main buffer=64k flush=30s if=$loggable;
     
     root                                <%= @path %>;
     try_files                           $uri/ /index.php?_url=$uri&$args;
@@ -643,7 +642,7 @@ server {
         fastcgi_connect_timeout         10;
         fastcgi_read_timeout            15;
         fastcgi_send_timeout            15;
-        fastcgi_request_buffering       off;
+        fastcgi_request_buffering       on;
         fastcgi_ignore_client_abort     on;
         
         include                         fastcgi_params;
@@ -667,6 +666,7 @@ server {
     
     more_set_headers                    "X-Backend-Server: hitpath";
     set                                 $upstream hp;
+    set                                 $domain www.mediaclicktrker.com;
     
     access_log                          /var/log/nginx/hp.log main buffer=64k flush=30s if=$loggable;
     
@@ -678,6 +678,11 @@ server {
         stub_status                     on;
     }
     
+    location ~* ^/rd/f {
+        set                             $domain mediaclicklb.com;
+        rewrite                         ^/rd/f(.*) /rd/r$1;
+    }
+    
     location / {
         proxy_http_version              1.1;
         proxy_set_header                Connection "";
@@ -685,14 +690,14 @@ server {
         proxy_connect_timeout           10;
         proxy_read_timeout              15;
         proxy_send_timeout              15;
-        proxy_request_buffering         off;
+        proxy_request_buffering         on;
         
-        # HP can't be trusted to wrap-up aborted connections
+        # HP cant be trusted to wrap-up aborted connections
         proxy_ignore_client_abort       on;
         
         proxy_pass_request_headers      on;
         proxy_method                    GET;
-        proxy_set_header                Host www.mediaclicktrker.com;
+        proxy_set_header                Host $domain;
         proxy_pass                      http://$upstream;
     }
 }
@@ -700,10 +705,58 @@ server {
 server {
     listen                              8003 default_server reuseport;
     
-    more_set_headers                    "X-Backend-Server: cloudfront";
-    set                                 $upstream cf;
+    more_set_headers                    "X-Backend-Server: ndp-$hostname";
+    set                                 $upstream ndp;
     
-    access_log                          /var/log/nginx/cf.log main buffer=64k flush=30s if=$loggable;
+    access_log                          /var/log/nginx/ndp.log main buffer=64k flush=30s if=$loggable;
+    
+    root                                /var/www/jbx/public/;
+    try_files                           $uri/ /index.php?_url=$uri&$args;
+    
+    location = /nginx {
+        allow                           127.0.0.1;
+        deny                            all;
+        
+        access_log                      off;
+        stub_status                     on;
+    }
+    
+    location = /index.php {
+        fastcgi_keep_conn               on;
+        
+        fastcgi_connect_timeout         10;
+        fastcgi_read_timeout            15;
+        fastcgi_send_timeout            15;
+        fastcgi_request_buffering       on;
+        fastcgi_ignore_client_abort     on;
+        
+        include                         fastcgi_params;
+        fastcgi_index                   index.php;
+        fastcgi_split_path_info         ^(.+\.php)(.*)$;
+        fastcgi_param HTTP_HOST         www.mediaclicktp.com;
+        fastcgi_param PATH_INFO         $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED   $document_root$fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME   $document_root$fastcgi_script_name;
+        fastcgi_param REQUEST_SCHEME    $real_scheme;
+        fastcgi_param HTTPS             $is_https if_not_empty;
+        
+        fastcgi_pass_request_headers    on;
+        fastcgi_param REQUEST_METHOD    GET;
+        fastcgi_pass                    $upstream;
+    }
+}
+
+server {
+    listen                              80;
+    listen                              [::]:80;
+
+    server_name                         mediaclicktp.com www.mediaclicktp.com *.mediaclicktp.com;
+    
+    set                                 $upstream hp-ndp;
+    
+    access_log                          /var/log/nginx/hp-ndp.log main buffer=64k flush=30s if=$loggable;
+    
+    more_set_headers                    'Server: TP';
     
     location = /nginx {
         allow                           127.0.0.1;
@@ -715,16 +768,23 @@ server {
     
     location / {
         proxy_http_version              1.1;
-        proxy_set_header                Connection "";
         
-        proxy_connect_timeout           10;
+        proxy_connect_timeout           1;
         proxy_read_timeout              15;
         proxy_send_timeout              15;
-        proxy_request_buffering         off;
-        proxy_ignore_client_abort       off;
+        proxy_request_buffering         on;
+        proxy_ignore_client_abort       on;
         
+        proxy_intercept_errors          on;
+        proxy_next_upstream             non_idempotent error timeout invalid_header http_500 http_502 http_503 http_504 http_404;
+        proxy_next_upstream_timeout     30;
+        proxy_next_upstream_tries       2;
+
         proxy_pass_request_headers      on;
         proxy_method                    GET;
         proxy_pass                      http://$upstream;
+
+        proxy_cookie_domain             ~^.*?$ .mediaclicktp.com;
+        proxy_redirect                  ~^((?:[^:]*:)?//[^:]+\.mediaclick[^.]+\.com)(?::\d+)?(/.+)$ $2;
     }
 }
