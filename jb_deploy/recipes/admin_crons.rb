@@ -50,14 +50,15 @@ cron "Admin - Advertiser Terms" do
   action :create
 end
 
-# Defunct
 cron "Admin - Pull Phone Data" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/sync_phone.php"
-  minute '45'
+  minute '*/15'
+  hour '8-19'
   user 'www-data'
-  action :delete
+  action :create
 end
 
+# Defunct
 cron "Admin - Upload Sales Reports" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/upload_sales_report.php"
   minute '0,2'
