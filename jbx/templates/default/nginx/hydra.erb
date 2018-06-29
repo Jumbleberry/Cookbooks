@@ -758,7 +758,7 @@ server {
     set_by_lua_block $upstream {
         local args  = safe_url_args(ngx.req.get_uri_args() or {})
         args["sid"] = tonumber(args["sid"] or args["progid"])
-        args["hid"] = tonumber(args["hid"] or (args["sid"] ~= nil and ngx.var["cookie_uid" .. args["sid"]]:match("^(%d+)-")))
+        args["hid"] = tonumber(args["hid"] or (args["sid"] ~= nil and (ngx.var["cookie_uid" .. args["sid"]] or ""):match("^(%d+)-")))
 
         -- if hit id is below the range of hp upstream, handle via ndp
         if (args["hid"] ~= nil and tonumber(args["hid"]) < 900000000) or ngx.var.host:match("mediaclickndp") then
