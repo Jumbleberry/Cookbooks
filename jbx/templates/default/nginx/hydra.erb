@@ -175,7 +175,7 @@ server {
         allow                       127.0.0.1;
         deny                        all;
         
-        fastcgi_pass                hydra;
+        fastcgi_pass                unix:/var/run/php5-fpm.sock;
         fastcgi_param               SCRIPT_FILENAME $uri;
         include                     fastcgi_params;
     }
