@@ -579,7 +579,7 @@ upstream hydra-hp {
     server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8002 backup max_fails=0;
     
-    check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
+    check                               interval=15000 rise=2 fall=4 timeout=10000 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
@@ -591,7 +591,7 @@ upstream hp-ndp {
     server                              127.0.0.1:8002 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8003 backup max_fails=0;
     
-    check                               interval=15000 rise=2 fall=2 timeout=10000 default_down=false type=http;
+    check                               interval=15000 rise=2 fall=4 timeout=10000 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
