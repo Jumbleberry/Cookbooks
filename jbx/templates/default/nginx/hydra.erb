@@ -766,6 +766,11 @@ server {
     
     more_set_headers                    'Server: TP';
     
+    location = /thisthingisnotathing {
+        rewrite                         ^/.* /nginx break;
+        try_files                       @proxy @proxy;
+    }
+
     location = /nginx {
         allow                           127.0.0.1;
         deny                            all;
@@ -775,6 +780,10 @@ server {
     }
     
     location / {
+        try_files                       @proxy @proxy;
+    }
+    
+    location @proxy {
         proxy_http_version              1.1;
         
         proxy_connect_timeout           1;
