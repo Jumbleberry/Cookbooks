@@ -148,6 +148,7 @@ server {
     
     # Explicity define this route or it gets picked up as an encrypted link
     location = /thisthingisnotathing {
+        rewrite                     ^/.* /nginx break;
         try_files                   @proxy @proxy;
     }
     
@@ -629,9 +630,6 @@ server {
     try_files                           $uri/ /index.php?_url=$uri&$args;
     
     location = /nginx {
-        allow                           127.0.0.1;
-        deny                            all;
-        
         access_log                      off;
         stub_status                     on;
     }
@@ -671,9 +669,6 @@ server {
     access_log                          /var/log/nginx/hp.log main buffer=64k flush=30s if=$loggable;
     
     location = /nginx {
-        allow                           127.0.0.1;
-        deny                            all;
-        
         access_log                      off;
         stub_status                     on;
     }
@@ -714,9 +709,6 @@ server {
     try_files                           $uri/ /index.php?_url=$uri&$args;
     
     location = /nginx {
-        allow                           127.0.0.1;
-        deny                            all;
-        
         access_log                      off;
         stub_status                     on;
     }
@@ -792,7 +784,7 @@ server {
         proxy_ignore_client_abort       on;
         
         proxy_intercept_errors          on;
-        proxy_next_upstream             non_idempotent error timeout invalid_header http_500 http_502 http_503 http_504 http_404;
+        proxy_next_upstream             non_idempotent error timeout invalid_header http_500 http_502 http_503 http_504;
         proxy_next_upstream_timeout     30;
         proxy_next_upstream_tries       2;
 
