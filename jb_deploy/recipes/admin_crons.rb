@@ -8,7 +8,7 @@ end
 
 cron "Admin - Sale Projections" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/generate_projections.php"
-  minute '*/5'
+  minute '30'
   user 'www-data'
   action :create
 end
