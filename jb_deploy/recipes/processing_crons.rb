@@ -19,7 +19,7 @@ cron "Processing - Detect Advertiser Shave" do
   hour '0,7'
   minute '15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Detect CRM Features" do
@@ -59,7 +59,7 @@ cron "Processing - Get CRM Rebill Orders" do
   hour '*'
   minute '1-59/2'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Get CRM Current Orders" do
@@ -67,7 +67,7 @@ cron "Processing - Get CRM Current Orders" do
   hour '0-2,7-23'
   minute '30'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Get Unmapped Campaigns" do
@@ -89,7 +89,7 @@ cron "Processing - Calculate Retentions" do
   hour '5'
   minute '15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Cap Summary Current Week" do
