@@ -59,9 +59,40 @@ init_by_lua_block {
         end
     end
     
-    _G.safe_url_args    = safe_url_args
-    _G.table_keys       = table_keys
-    _G.post_to_get      = post_to_get
+    -- Convert an existing cookie into set-cookie format
+    local function cookie_to_headers(cookie)
+        local name = "cookie_" .. cookie
+        return (ngx.var[name] ~= nil and { ["set-cookie"] = { cookie .. "=" .. ngx.var[name] .. ";" } }) or {}
+    end
+
+    -- Parse tracking cookie
+    local function parse_tracking_cookie(cookie)
+        local header = cookie or ngx.resp.get_headers()
+        
+        if header["set-cookie"] ~= nil then
+            -- Always work with cookies as a table
+            header["set-cookie"] = (type(header["set-cookie"]) == "string" and { header["set-cookie"] }) or header["set-cookie"]
+
+            -- Search for tracking cookie and return its values if found
+            for k, cookie in ipairs(header["set-cookie"]) do
+                if cookie:match("^uid(%d+)=(%d+)-.*-(%d*);") ~= nil then
+                    return { 
+                        ["sid"]  = cookie:match("^uid(%d+)=%d+-.*-%d*;"),
+                        ["hid"]  = cookie:match("^uid%d+=(%d+)-.*-%d*;"), 
+                        ["lpid"] = cookie:match("^uid%d+=%d+-.*-(%d*);") 
+                    }
+                end
+            end
+        end
+
+        return {}
+    end
+    
+    _G.safe_url_args         = safe_url_args
+    _G.table_keys            = table_keys
+    _G.post_to_get           = post_to_get
+    _G.cookie_to_headers     = cookie_to_headers
+    _G.parse_tracking_cookie = parse_tracking_cookie
 }
 
 server {
@@ -73,15 +104,23 @@ server {
                                     ~^(?<subdomain>)(?<domain>.*)$;
     
     merge_slashes                   off;
-    access_log                      off;
+    access_log                      /var/log/nginx/router.log router if=$loggable;
     
     # Default upstream server
     set                             $upstream hydra-hp;
+    set                             $upstream_name "";
+    set                             $upstream_server "";
+    set                             $unencrypted_request "";
     
     # Whether or not request is encrypted
     set                             $encrypted_uri "";
     set                             $original_args "";
     set                             $decrypted_args "";
+    
+    # Args that may undergo some conversion
+    set                             $hid "";
+    set                             $sid "";
+    set                             $lpid "";
     
     # Fix X-Forwarded-For to strip out the proxy addresses
     set_by_lua_block $real_x_forwarded_for { 
@@ -429,14 +468,6 @@ server {
             
             local args              = safe_url_args(ngx.req.get_uri_args() or {})
             
-            -- Block potentially harmful retry/redirect loops
-            if (args.retries ~= nil and tonumber(args.retries) > 5) or
-                    (args.redirects ~= nil and tonumber(args.redirects) > 3) then
-                ngx.status = 409
-                ngx.say("Sorry, it seems like you're stuck in a redirect loop.\nPlease try again shortly.\n")
-                ngx.exit(409)
-            end
-            
             -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
             local restricted        = { "_url", "md5", "rhid", "rsid", "origin", "referer", "cookie", "accept" }
@@ -452,9 +483,21 @@ server {
                     args[v] = encrypted[v] or nil
                 end
             end
+
+            -- Set overloaded values
+            args["pub"]   = args["agentid"] or args["pub"]
+            args["sid"]   = args["progid"] or args["sid"]
             
             -- persist the safe arguments back to args
             ngx.req.set_uri_args(args)
+
+            -- Block potentially harmful retry/redirect loops
+            if (args.retries ~= nil and tonumber(args.retries) > 5) or
+                    (args.redirects ~= nil and tonumber(args.redirects) > 3) then
+                ngx.status = 409
+                ngx.say("Sorry, it seems like you're stuck in a redirect loop.\nPlease try again shortly.\n")
+                ngx.exit(409)
+            end
         }
         
         # Connection limits to prevent abuse
@@ -558,7 +601,7 @@ server {
         for k,v in pairs(upstreams) do
             local response_time     = (tonumber(response_times[k]) or 0) * 1000
             local tags              = {
-                "upstream:"         .. (upstream_names[v] or "internal"),
+                "upstream:"         .. (upstream_names[v] or "router"),
                 "upstream_hops:"    .. (k or "1"),
                 "response_code:"    .. (upstream_statuses[k] and upstream_statuses[k]:gsub("-", "499") or na),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
@@ -577,6 +620,16 @@ server {
             
             ngx.timer.at(0, post_process, "hydra.request", tags, response_time)
         end
+
+        ngx.var.unencrypted_request = "GET " .. ngx.var.uri .. ngx.var.is_args .. ngx.var.args .. " " .. ngx.var.server_protocol
+        ngx.var.upstream_name       = upstream_names[upstreams[#upstreams]] or "router"
+        ngx.var.upstream_server     = upstreams[#upstreams] or ngx.var.server_addr
+
+        -- Parse tracking cookie to fetch real var values from upstream
+        local hit                   = parse_tracking_cookie()
+        ngx.var.sid                 = hit["sid"] or args["sid"] or nil
+        ngx.var.hid                 = hit["hid"] or args["hid"] or nil
+        ngx.var.lpid                = hit["lpid"] or args["lpid"] or nil
     }
 }
 
@@ -767,8 +820,8 @@ server {
     set                                 $upstream hp-ndp;
     set_by_lua_block $upstream {
         local args  = safe_url_args(ngx.req.get_uri_args() or {})
-        args["sid"] = tonumber(args["sid"] or args["progid"])
-        args["hid"] = tonumber(args["hid"] or (args["sid"] ~= nil and (ngx.var["cookie_uid" .. args["sid"]] or ""):match("^(%d+)-")))
+        local hit   = parse_tracking_cookie(cookie_to_headers("uid" .. tonumber(args["sid"] or 0)))
+        args["hid"] = args["hid"] or hit["hid"]
 
         -- if hit id is below the range of hp upstream, handle via ndp
         if (args["hid"] ~= nil and tonumber(args["hid"]) < 900000000) or ngx.var.host:match("mediaclickndp") then

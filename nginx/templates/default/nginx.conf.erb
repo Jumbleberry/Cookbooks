@@ -46,6 +46,15 @@ http {
                             '"$http_user_agent" "$http_x_forwarded_for" '
                             '$request_time $upstream_response_time $pipe';
     
+    log_format router       '"$hostname" [$time_local] '
+                            '"$upstream" "$upstream_name" "$upstream_server" $remote_addr '
+                            '"$subdomain$domain" "$unencrypted_request" "$request" "$upstream_http_location" '
+                            '"$http_accept" "$http_referer" "$http_user_agent" "$http_x_forwarded_for" '
+                            '"$upstream_status" "$upstream_connect_time" "$upstream_header_time" "$upstream_response_time" '
+                            '$status $request_time $body_bytes_sent '
+                            'pub="$arg_pub" osid="$arg_sid" sid="$sid" rsid="$arg_rsid" hid="$hid" rhid="$arg_rhid" '
+                            'lpid="$lpid" c1="$arg_c1" c2="$arg_c2" c3="$arg_c3" transid="$arg_transid" rel="$arg_rel"';
+    
     access_log              /var/log/nginx/access.log main buffer=64k flush=30s;
     error_log               /var/log/nginx/error.log warn;
     
