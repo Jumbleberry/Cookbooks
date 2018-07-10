@@ -104,7 +104,7 @@ server {
                                     ~^(?<subdomain>)(?<domain>.*)$;
     
     merge_slashes                   off;
-    access_log                      /var/log/nginx/router.log router if=$loggable;
+    access_log                      /var/log/nginx/router.log router buffer=64k flush=30s if=$loggable;
     
     # Default upstream server
     set                             $upstream hydra-hp;
@@ -598,7 +598,7 @@ server {
         local safe_args         = { "sid", "rsid", "pub", "lpid", "retries", "redirects", "rel" }
         local na                = "N/A"
         
-        local host              = (ngx.var.domain and (((ngx.var.subdomain or "").. ngx.var.domain)) or nil
+        local host              = (ngx.var.domain and ((ngx.var.subdomain or "").. ngx.var.domain)) or nil
 
         for k,v in pairs(upstreams) do
             local response_time     = (tonumber(response_times[k]) or 0) * 1000
@@ -607,7 +607,7 @@ server {
                 "upstream_hops:"    .. (k or "1"),
                 "response_code:"    .. (upstream_statuses[k] and upstream_statuses[k]:gsub("-", "499") or na),
                 "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
-                "subdomain:"        .. (ngx.var.subdomain:len() > 1 and ngx.var.subdomain or na),
+                "subdomain:"        .. ((ngx.var.subdomain ~= nil and ngx.var.subdomain:len() > 1 and ngx.var.subdomain) or na),
                 "origin:"           .. (ngx.var.arg_origin or host or na),
                 "referer:"          .. (referer_host and referer_host[1] or na),
                 "uri:"              .. (ngx.var.uri or na),
@@ -642,9 +642,8 @@ upstream hydra-hp {
     server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8002 backup max_fails=0;
     
-    check                               interval=15000 rise=2 fall=4 timeout=10000 default_down=false type=http;
+    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
-    check_keepalive_requests            15;
     check_http_expect_alive             http_2xx;
 }
 
@@ -655,9 +654,8 @@ upstream hp-ndp {
     server                              127.0.0.1:8002 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8003 backup max_fails=0;
     
-    check                               interval=15000 rise=2 fall=4 timeout=10000 default_down=false type=http;
+    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
-    check_keepalive_requests            15;
     check_http_expect_alive             http_2xx;
 }
 
