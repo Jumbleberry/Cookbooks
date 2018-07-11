@@ -144,7 +144,7 @@ server {
     # Ensure domain is set
     set_by_lua_block $domain {
         -- Ensure the domain ends with an alpha string (ruling out ipv4 or v6 addresses), and that it's not a regex
-        local valid_domain  = ngx.var.domain:match("%p%a+$") and ngx.var.domain:match("?") == nil
+        local valid_domain  = ngx.var.domain ~= nil and ngx.var.domain:match("%p%a+$") and ngx.var.domain:match("?") == nil
         
         -- Modify domain & subdomain to acceptable values if they're direct IPs
         ngx.var.subdomain   = valid_domain and ngx.var.subdomain or "www."
