@@ -27,3 +27,18 @@ end
 execute '/usr/local/openresty/luajit/bin/luarocks install lua-resty-dogstatsd' do
     notifies :reload, "service[nginx]", :delayed
 end
+
+# install filebeat
+filebeat_install 'default'
+
+filebeat_config 'default' do
+  config node['filebeat']['hydra']['config']
+end
+
+node['filebeat']['hydra']['prospectors'].each do |p_name, p_config|
+  filebeat_prospector p_name do
+    config p_config
+  end
+end
+
+filebeat_service 'default'

@@ -1,0 +1,40 @@
+{
+  "name": "yum-plugin-versionlock",
+  "description": "Installs/Configures yum-plugin-versionlock",
+  "long_description": "Installs/Configures yum-plugin-versionlock",
+  "maintainer": "Marius Karnauskas",
+  "maintainer_email": "marius@karnauskas.lt",
+  "license": "GPL-3.0",
+  "platforms": {
+    "amazon": ">= 0.0.0",
+    "redhat": ">= 6.0",
+    "centos": ">= 6.0"
+  },
+  "dependencies": {
+
+  },
+  "providing": {
+
+  },
+  "attributes": {
+
+  },
+  "recipes": {
+
+  },
+  "version": "0.2.1",
+  "source_url": "https://github.com/karnauskas/chef-yum-plugin-versionlock",
+  "issues_url": "https://github.com/karnauskas/chef-yum-plugin-versionlock/issues",
+  "privacy": false,
+  "chef_versions": [
+    [
+      ">= 12.5"
+    ]
+  ],
+  "ohai_versions": [
+
+  ],
+  "gems": [
+
+  ]
+}

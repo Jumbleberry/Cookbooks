@@ -1,0 +1,43 @@
+{
+  "name": "elastic_repo",
+  "description": "Installs/Configures Elastic APT/Yum Repository",
+  "long_description": "Installs/Configures Elastic APT/Yum Repository",
+  "maintainer": "Virender Khatri",
+  "maintainer_email": "vir.khatri@gmail.com",
+  "license": "Apache-2.0",
+  "platforms": {
+    "debian": ">= 0.0.0",
+    "ubuntu": ">= 0.0.0",
+    "centos": ">= 0.0.0",
+    "amazon": ">= 0.0.0",
+    "redhat": ">= 0.0.0",
+    "fedora": ">= 0.0.0"
+  },
+  "dependencies": {
+
+  },
+  "providing": {
+
+  },
+  "attributes": {
+
+  },
+  "recipes": {
+
+  },
+  "version": "1.1.1",
+  "source_url": "https://github.com/vkhatri/chef-elastic-repo",
+  "issues_url": "https://github.com/vkhatri/chef-elastic-repo/issues",
+  "privacy": false,
+  "chef_versions": [
+    [
+      ">= 12.13"
+    ]
+  ],
+  "ohai_versions": [
+
+  ],
+  "gems": [
+
+  ]
+}
