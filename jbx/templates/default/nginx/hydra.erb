@@ -1,5 +1,7 @@
 # Optimize loading process
 init_by_lua_block {
+    local resty_dogstatsd = require "resty_dogstatsd"
+
     -- Flatten table of arguments into a 2d map
     local function safe_url_args(args)
         if type(args) == "table" then
@@ -87,12 +89,33 @@ init_by_lua_block {
 
         return {}
     end
+
+    -- Async processing function
+    local function post_process(premature, key, tags, response_time)
+        -- Initialize
+        local dogstatsd = resty_dogstatsd.new({
+            statsd = {
+                host        = "127.0.0.1",
+                port        = 8125,
+                namespace   = "ngx"
+            },
+            tags = {}
+        })
+        
+        -- Send metrics
+        dogstatsd:increment(key .. ".count", 1, 1, tags)
+        
+        if response_time then
+            dogstatsd:timer(key .. ".time", tonumber(response_time or 0) * 1000, tags)
+        end
+    end
     
     _G.safe_url_args         = safe_url_args
     _G.table_keys            = table_keys
     _G.post_to_get           = post_to_get
     _G.cookie_to_headers     = cookie_to_headers
     _G.parse_tracking_cookie = parse_tracking_cookie
+    _G.post_process          = post_process
 }
 
 server {
@@ -553,36 +576,16 @@ server {
     
     # Log stats to datadog
     log_by_lua_block {
-        local ngx_re            = require "ngx.re"
-        local resty_dogstatsd   = require "resty_dogstatsd"
-        
-        local headers           = ngx.resp.get_headers()
-        local internal_route    = ngx.re.match(ngx.var.uri, "^/(thisthingisnotathing|nginx|status(.php)?|fpm(-ping)?|v1)(/|$)")
-        
+        -- Log health check status (only report for local health checks)
+        if ngx.var.request_uri == "/thisthingisnotathing" and ngx.var.remote_addr == "127.0.0.1" then
+            return ngx.timer.at(0, post_process, "router.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         -- Methods are not required for logging (no errors, didn't go upstream)
-        if (ngx.status < 300 or (ngx.status - 400) < 100) and internal_route then
+        elseif (ngx.status < 300 or (ngx.status - 400) < 100) and ngx.var.loggable == "0" then
             return
         end
         
-        -- Async processing function
-        local function post_process(premature, key, tags, response_time)
-            -- Initialize
-            local dogstatsd = resty_dogstatsd.new({
-                statsd = {
-                    host        = "127.0.0.1",
-                    port        = 8125,
-                    namespace   = "ngx"
-                },
-                tags = {}
-            })
-            
-            -- Send metrics
-            dogstatsd:increment(key .. ".count", 1, 1, tags)
-            
-            if response_time then
-                dogstatsd:timer(key .. ".time", response_time, tags)
-            end
-        end
+        local ngx_re            = require "ngx.re"
+        local headers           = ngx.resp.get_headers()
         
         -- Key reporting variables
         local args              = safe_url_args(ngx.req.get_uri_args() or {})
@@ -602,7 +605,6 @@ server {
         local host              = (ngx.var.domain and ((ngx.var.subdomain or "").. ngx.var.domain)) or nil
 
         for k,v in pairs(upstreams) do
-            local response_time     = (tonumber(response_times[k]) or 0) * 1000
             local tags              = {
                 "upstream:"         .. (upstream_names[v] or "router"),
                 "upstream_hops:"    .. (k or "1"),
@@ -621,7 +623,7 @@ server {
                 table.insert(tags, v .. ':' .. (args[v] or na))
             end
             
-            ngx.timer.at(0, post_process, "hydra.request", tags, response_time)
+            ngx.timer.at(0, post_process, "hydra.request", tags, response_times[k])
         end
 
         ngx.var.unencrypted_request = "GET " .. (ngx.var.uri or "") .. ngx.var.is_args .. (ngx.var.args or "") .. " " .. ngx.var.server_protocol
@@ -636,6 +638,16 @@ server {
     }
 }
 
+upstream router {
+    zone                                router 64k;
+
+    server                              127.0.0.1:80 max_fails=0;
+
+    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
+    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
+    check_http_expect_alive             http_2xx;
+}
+
 upstream hydra-hp {
     zone                                hydra-hp 64k;
     keepalive                           60;
@@ -645,6 +657,16 @@ upstream hydra-hp {
     
     check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
+    check_http_expect_alive             http_2xx;
+}
+
+upstream tp {
+    zone                                tp 64k;
+
+    server                              127.0.0.1:80 max_fails=0;
+
+    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
+    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktp.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
 
@@ -726,6 +748,13 @@ server {
         fastcgi_param REQUEST_METHOD    GET;
         fastcgi_pass                    $upstream;
     }
+
+    log_by_lua_block {
+        -- Log health check status
+        if ngx.var.request_uri == "/thisthingisnotathing" then
+            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+        end
+    }
 }
 
 server {
@@ -771,6 +800,13 @@ server {
         proxy_method                    GET;
         proxy_set_header                Host $domain;
         proxy_pass                      http://$upstream;
+    }
+
+    log_by_lua_block {
+        -- Log health check status
+        if ngx.var.request_uri == "/thisthingisnotathing" then
+            return ngx.timer.at(0, post_process, "hp.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+        end
     }
 }
 
@@ -818,6 +854,13 @@ server {
         fastcgi_pass_request_headers    on;
         fastcgi_param REQUEST_METHOD    GET;
         fastcgi_pass                    $upstream;
+    }
+
+    log_by_lua_block {
+        -- Log health check status
+        if ngx.var.request_uri == "/thisthingisnotathing" then
+            return ngx.timer.at(0, post_process, "ndp.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+        end
     }
 }
 
@@ -895,5 +938,46 @@ server {
 
         proxy_cookie_domain             ~^.*?$ .mediaclicktp.com;
         proxy_redirect                  ~^((?:[^:]*:)?//[^:]+\.mediaclick[^.]+\.com)(?::\d+)?(/.+)$ $2;
+    }
+
+    log_by_lua_block {
+        -- Log health check status
+        if ngx.var.request_uri == "/thisthingisnotathing" then
+            return ngx.timer.at(0, post_process, "tp.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+        -- Methods are not required for logging (no errors, didn't go upstream)
+        elseif (ngx.status < 300 or (ngx.status - 400) < 100) and ngx.var.loggable == "0" then
+            return
+        end
+        
+        local ngx_re            = require "ngx.re"
+
+        -- Key reporting variables
+        local args              = safe_url_args(ngx.req.get_uri_args() or {})
+        local upstreams         = ngx_re.split(ngx.var.upstream_addr or ngx.var.server_addr, ", ") or {}
+        local response_times    = ngx_re.split(ngx.var.upstream_header_time or ngx.var.request_time, ", ") or {}
+        local upstream_statuses = ngx_re.split(ngx.var.upstream_status or ngx.status, ", ") or {}
+        
+        local upstream_names    = { ["127.0.0.1:8001"] = "hydra", ["127.0.0.1:8002"] = "hp", ["127.0.0.1:8003"] = "ndp" }
+        local safe_args         = { "sid", "pub", "lpid" }
+        local na                = "N/A"
+
+        local host              = (ngx.var.domain and ((ngx.var.subdomain or "").. ngx.var.domain)) or nil
+
+        for k,v in pairs(upstreams) do
+            local tags              = {
+                "upstream:"         .. (upstream_names[v] or "router"),
+                "upstream_hops:"    .. (k or "1"),
+                "response_code:"    .. (upstream_statuses[k] and upstream_statuses[k]:gsub("-", "499") or na),
+                "vanity_domain:"    .. (ngx.var.domain or ngx.var.host or na),
+                "uri:"              .. (ngx.var.uri or na)
+            }
+            
+            -- pull arguments from the query string
+            for k,v in pairs(safe_args) do
+                table.insert(tags, v .. ':' .. (args[v] or na))
+            end
+            
+            ngx.timer.at(0, post_process, "tp.request", tags, response_times[k])
+        end
     }
 }

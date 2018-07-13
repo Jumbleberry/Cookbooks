@@ -63,7 +63,11 @@ http {
         ~*^/nginx                0;
         ~*^/status(.php)?        0;
         ~*^/fpm(-ping)?          0;
+        ~*^/favicon.ico          0;
+        ~*^/robots.txt           0;
+        ~*^/hsts                 0;
         ~*^/v1                   0;
+        ~*^/+(\?|$)              0;
         default                  1;
     }
     
