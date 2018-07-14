@@ -578,7 +578,7 @@ server {
     log_by_lua_block {
         -- Log health check status (only report for local health checks)
         if ngx.var.request_uri == "/thisthingisnotathing" and ngx.var.remote_addr == "127.0.0.1" then
-            return ngx.timer.at(0, post_process, "router.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:router", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         -- Methods are not required for logging (no errors, didn't go upstream)
         elseif (ngx.status < 300 or (ngx.status - 400) < 100) and ngx.var.loggable == "0" then
             return
@@ -643,7 +643,7 @@ upstream router {
 
     server                              127.0.0.1:80 max_fails=0;
 
-    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
+    check                               interval=7500 rise=1 fall=2 timeout=5000 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
@@ -655,7 +655,7 @@ upstream hydra-hp {
     server                              127.0.0.1:8001 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8002 backup max_fails=0;
     
-    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
+    check                               interval=15000 rise=2 fall=3 timeout=12500 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
@@ -665,7 +665,7 @@ upstream tp {
 
     server                              127.0.0.1:80 max_fails=0;
 
-    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
+    check                               interval=7500 rise=1 fall=2 timeout=5000 default_down=false type=http;
     check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktp.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
@@ -677,8 +677,8 @@ upstream hp-ndp {
     server                              127.0.0.1:8002 weight=999999999999 max_fails=0;
     server                              127.0.0.1:8003 backup max_fails=0;
     
-    check                               interval=15000 rise=2 fall=4 timeout=12500 default_down=false type=http;
-    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktrker.com\r\n\r\n";
+    check                               interval=15000 rise=2 fall=3 timeout=12500 default_down=false type=http;
+    check_http_send                     "GET /thisthingisnotathing HTTP/1.1\r\nHOST:www.mediaclicktp.com\r\n\r\n";
     check_http_expect_alive             http_2xx;
 }
 
@@ -752,7 +752,7 @@ server {
     log_by_lua_block {
         -- Log health check status
         if ngx.var.request_uri == "/thisthingisnotathing" then
-            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:hydra", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         end
     }
 }
@@ -805,7 +805,8 @@ server {
     log_by_lua_block {
         -- Log health check status
         if ngx.var.request_uri == "/thisthingisnotathing" then
-            return ngx.timer.at(0, post_process, "hp.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+            local origin = (ngx.var.host ~= nil and ngx.var.host:match("mediaclicktp") and "tp-") or ""
+            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:" .. origin .. "hp", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         end
     }
 }
@@ -859,7 +860,7 @@ server {
     log_by_lua_block {
         -- Log health check status
         if ngx.var.request_uri == "/thisthingisnotathing" then
-            return ngx.timer.at(0, post_process, "ndp.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:ndp", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         end
     }
 }
@@ -943,7 +944,7 @@ server {
     log_by_lua_block {
         -- Log health check status
         if ngx.var.request_uri == "/thisthingisnotathing" then
-            return ngx.timer.at(0, post_process, "tp.healthcheck", { "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
+            return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:tp", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         -- Methods are not required for logging (no errors, didn't go upstream)
         elseif (ngx.status < 300 or (ngx.status - 400) < 100) and ngx.var.loggable == "0" then
             return
