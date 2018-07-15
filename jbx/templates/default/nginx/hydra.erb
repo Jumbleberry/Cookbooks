@@ -626,7 +626,7 @@ server {
             ngx.timer.at(0, post_process, "hydra.request", tags, response_times[k])
         end
 
-        ngx.var.unencrypted_request = "GET " .. (ngx.var.uri or "") .. ngx.var.is_args .. (ngx.var.args or "") .. " " .. ngx.var.server_protocol
+        ngx.var.unencrypted_request = "GET " .. (ngx.var.uri or "") .. ngx.var.is_args .. (ngx.var.args or "") .. " " .. (ngx.var.server_protocol or "HTTP/1.1")
         ngx.var.upstream_name       = upstream_names[upstreams[#upstreams]] or "router"
         ngx.var.upstream_server     = upstreams[#upstreams] or ngx.var.server_addr
 
