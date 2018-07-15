@@ -890,7 +890,7 @@ server {
         end
     }
     
-    access_log                          /var/log/nginx/hp-ndp.log main buffer=64k flush=30s if=$loggable;
+    access_log                          /var/log/nginx/tp.log main buffer=64k flush=30s if=$loggable;
     
     more_set_headers                    'Server: TP';
     
