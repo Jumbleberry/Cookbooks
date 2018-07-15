@@ -106,7 +106,7 @@ init_by_lua_block {
         dogstatsd:increment(key .. ".count", 1, 1, tags)
         
         if response_time then
-            dogstatsd:timer(key .. ".time", tonumber(response_time or 0) * 1000, tags)
+            dogstatsd:timer(key .. ".time", math.floor(tonumber(response_time or 0) * 1000), tags)
         end
     end
     
@@ -146,6 +146,9 @@ server {
     set                             $sid "";
     set                             $lpid "";
     
+    # Keep track of how long we slept nginx for
+    set                             $sleep_time "0";
+
     # Fix X-Forwarded-For to strip out the proxy addresses
     set_by_lua_block $real_x_forwarded_for { 
         local ip            = ngx.var.remote_addr
@@ -469,6 +472,7 @@ server {
             end
             
             -- exponential backoff & then try again
+            ngx.var.sleep_time = (retries * (retries + 1)) / 2
             ngx.sleep((retries * (retries + 1)) / 2)
             ngx.status = 302
             ngx.redirect(uri .. "?" .. ngx.encode_args(args), 302)
@@ -623,7 +627,8 @@ server {
                 table.insert(tags, v .. ':' .. (args[v] or na))
             end
             
-            ngx.timer.at(0, post_process, "hydra.request", tags, response_times[k])
+            -- don't include sleep time in total request time
+            ngx.timer.at(0, post_process, "hydra.request", tags, tonumber(response_times[k] or 0) - tonumber(ngx.var.sleep_time or 0))
         end
 
         ngx.var.unencrypted_request = "GET " .. (ngx.var.uri or "") .. ngx.var.is_args .. (ngx.var.args or "") .. " " .. (ngx.var.server_protocol or "HTTP/1.1")
