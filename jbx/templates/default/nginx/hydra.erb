@@ -882,11 +882,12 @@ server {
     set                                 $upstream hp-ndp;
     set_by_lua_block $upstream {
         local args  = safe_url_args(ngx.req.get_uri_args() or {})
+        local event = (args["event"] or "sale"):lower()
         local hit   = parse_tracking_cookie(cookie_to_headers("uid" .. tonumber(args["sid"] or 0)))
         args["hid"] = args["hid"] or hit["hid"]
 
         -- if hit id is below the range of hp upstream, handle via ndp
-        if (args["hid"] ~= nil and tonumber(args["hid"]) < 900000000) or ngx.var.host:match("mediaclickndp") then
+        if (args["hid"] ~= nil and tonumber(args["hid"]) < 900000000) or (event ~= "sale") or ngx.var.host:match("mediaclickndp") then
             return "ndp"
         elseif ngx.var.host:match("mediaclicklb") then
             return "hp"
