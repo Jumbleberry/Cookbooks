@@ -520,8 +520,8 @@ server {
             ngx.req.set_uri_args(args)
 
             -- Block potentially harmful retry/redirect loops
-            if (tonumber(args.retries) ~= nil and tonumber(args.retries) > 5) or
-                    (tonumber(args.redirects) ~= nil and tonumber(args.redirects) > 3) then
+            if (args.retries ~= nil and (tonumber(args.retries) or 0) > 5) or
+                    (args.redirects ~= nil and (tonumber(args.redirects) or 0) > 3) then
                 ngx.status = 409
                 ngx.say("Sorry, it seems like you're stuck in a redirect loop.\nPlease try again shortly.\n")
                 ngx.exit(409)
@@ -882,12 +882,12 @@ server {
     set                                 $upstream hp-ndp;
     set_by_lua_block $upstream {
         local args  = safe_url_args(ngx.req.get_uri_args() or {})
-        local event = (args["event"] or "sale"):lower()
+        local event = (args["event"] or "puchase"):lower()
         local hit   = parse_tracking_cookie(cookie_to_headers("uid" .. (tonumber(args["sid"]) or "")))
         args["hid"] = args["hid"] or hit["hid"]
 
         -- if hit id is below the range of hp upstream, handle via ndp
-        if (tonumber(args["hid"]) ~= nil and tonumber(args["hid"]) < 900000000) or (event ~= "sale") or ngx.var.host:match("mediaclickndp") then
+        if (tonumber(args["hid"]) ~= nil and tonumber(args["hid"]) < 900000000) or (event ~= "puchase") or ngx.var.host:match("mediaclickndp") then
             return "ndp"
         elseif ngx.var.host:match("mediaclicklb") then
             return "hp"
