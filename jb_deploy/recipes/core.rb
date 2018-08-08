@@ -104,6 +104,7 @@ end
 execute 'Database migrations' do
   cwd "#{node['jbx']['core']['path']}/application/cli"
   command "php cli.php migrations:migrate --no-interaction"
+  timeout 86400
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
 end
 
