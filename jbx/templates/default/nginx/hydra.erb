@@ -581,7 +581,7 @@ server {
     # Log stats to datadog
     log_by_lua_block {
         -- Log health check status (only report for local health checks)
-        if ngx.var.request_uri == "/thisthingisnotathing" and ngx.var.remote_addr == "127.0.0.1" then
+        if (ngx.var.request_uri == "/thisthingisnotathing" or ngx.var.request_uri == "/status.php") and ngx.var.remote_addr == "127.0.0.1" then
             return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:router", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         -- Methods are not required for logging (no errors, didn't go upstream)
         elseif (ngx.status < 300 or (ngx.status - 400) < 100) and ngx.var.loggable == "0" then
