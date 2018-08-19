@@ -32,6 +32,15 @@ init_by_lua_block {
         return str
     end
     
+    -- Turn empty strings to nil
+    local function empty_to_nil(arg)
+        if type(arg) == "string" then
+            return (arg ~= "" and arg) or nil
+        end
+
+        return arg
+    end
+    
     -- Turn POST to GET
     local function post_to_get()
         if ngx.var.request_method == "POST" then
@@ -112,6 +121,7 @@ init_by_lua_block {
     
     _G.safe_url_args         = safe_url_args
     _G.table_keys            = table_keys
+    _G.empty_to_nil          = empty_to_nil
     _G.post_to_get           = post_to_get
     _G.cookie_to_headers     = cookie_to_headers
     _G.parse_tracking_cookie = parse_tracking_cookie
@@ -499,9 +509,11 @@ server {
             -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
             local restricted        = { "_url", "md5", "rhid", "rsid", "origin", "referer", "cookie", "accept" }
+
+            local event             = (encrypted["event"] or args["event"] or "purchase"):lower()
             
-            -- If rhid is set it's not safe to forward on to HP or we could get duplicates
-            if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
+            -- If rhid/event is set it's not safe to forward on to HP or we could get duplicates
+            if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil or event ~= "purchase") then
                 ngx.var.upstream = "hydra"
             end
             
@@ -884,7 +896,7 @@ server {
         local args  = safe_url_args(ngx.req.get_uri_args() or {})
         local event = (args["event"] or "purchase"):lower()
         local hit   = parse_tracking_cookie(cookie_to_headers("uid" .. (tonumber(args["sid"]) or "")))
-        args["hid"] = args["hid"] or hit["hid"]
+        args["hid"] = empty_to_nil(args["hid"]) or hit["hid"]
 
         -- if hit id is below the range of hp upstream, handle via ndp
         if (tonumber(args["hid"]) ~= nil and tonumber(args["hid"]) < 900000000) or (event ~= "purchase") or ngx.var.host:match("mediaclickndp") then
