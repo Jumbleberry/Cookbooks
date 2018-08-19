@@ -335,7 +335,7 @@ server {
                 -- HP encrypted links include hardcoded values of 0 for ctype, cid, lpid
                 --  We dont use ctype in our links internally, so if ctype is encrypted in the URL it should have originated on HP
                 if decoded["ctype"] == nil or (v ~= "0" and v ~= 0) then
-                    args[mapping[k] or k] = args[mapping[k] or k] or v 
+                    args[mapping[k] or k] = v or args[mapping[k] or k]
                 end
             end
             
