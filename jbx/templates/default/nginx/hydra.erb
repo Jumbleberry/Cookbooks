@@ -899,7 +899,7 @@ server {
         args["hid"] = empty_to_nil(args["hid"]) or hit["hid"]
 
         -- if hit id is below the range of hp upstream, handle via ndp
-        if (tonumber(args["hid"]) ~= nil and tonumber(args["hid"]) < 900000000) or (event ~= "purchase") or ngx.var.host:match("mediaclickndp") then
+        if (tonumber(args["hid"]) ~= nil and tonumber(args["hid"]) < 820000000) or (event ~= "purchase") or ngx.var.host:match("mediaclickndp") then
             return "ndp"
         elseif ngx.var.host:match("mediaclicklb") then
             return "hp"
