@@ -23,24 +23,24 @@ include_recipe 'datadog::repository' if node['datadog']['installrepo']
 dd_agent_version = node['datadog']['agent_version']
 
 # If version specified and lower than 5.x
-if !dd_agent_version.nil? && dd_agent_version.split('.')[0].to_i < 5
-  # Select correct package name based on attribute
-  dd_pkg_name = node['datadog']['install_base'] ? 'datadog-agent-base' : 'datadog-agent'
+# if !dd_agent_version.nil? && dd_agent_version.split('.')[0].to_i < 5
+#   # Select correct package name based on attribute
+#   dd_pkg_name = node['datadog']['install_base'] ? 'datadog-agent-base' : 'datadog-agent'
 
-  package dd_pkg_name do
-    version dd_agent_version
-    options ('--allow-unauthenticated')
-  end
-else
-  # default behavior, remove the `base` package as it is no longer needed
-  package 'datadog-agent-base' do
-    action :remove
-  end
-  # Install the regular package
-  package 'datadog-agent' do
-    version dd_agent_version
-  end
-end
+#   package dd_pkg_name do
+#     version dd_agent_version
+#     options ('--allow-unauthenticated')
+#   end
+# else
+#   # default behavior, remove the `base` package as it is no longer needed
+#   package 'datadog-agent-base' do
+#     action :remove
+#   end
+#   # Install the regular package
+#   package 'datadog-agent' do
+#     version dd_agent_version
+#   end
+# end
 
 # Set the correct Agent startup action
 agent_action = node['datadog']['agent_start'] ? :start : :stop
