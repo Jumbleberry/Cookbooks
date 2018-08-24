@@ -32,6 +32,15 @@ init_by_lua_block {
         return str
     end
     
+    -- Turn empty strings to nil
+    local function empty_to_nil(arg)
+        if type(arg) == "string" then
+            return (arg ~= "" and arg) or nil
+        end
+
+        return arg
+    end
+    
     -- Turn POST to GET
     local function post_to_get()
         if ngx.var.request_method == "POST" then
@@ -106,12 +115,13 @@ init_by_lua_block {
         dogstatsd:increment(key .. ".count", 1, 1, tags)
         
         if response_time then
-            dogstatsd:timer(key .. ".time", math.floor(tonumber(response_time or 0) * 1000), tags)
+            dogstatsd:timer(key .. ".time", math.floor((tonumber(response_time) or 0) * 1000), tags)
         end
     end
     
     _G.safe_url_args         = safe_url_args
     _G.table_keys            = table_keys
+    _G.empty_to_nil          = empty_to_nil
     _G.post_to_get           = post_to_get
     _G.cookie_to_headers     = cookie_to_headers
     _G.parse_tracking_cookie = parse_tracking_cookie
@@ -325,7 +335,7 @@ server {
                 -- HP encrypted links include hardcoded values of 0 for ctype, cid, lpid
                 --  We dont use ctype in our links internally, so if ctype is encrypted in the URL it should have originated on HP
                 if decoded["ctype"] == nil or (v ~= "0" and v ~= 0) then
-                    args[mapping[k] or k] = args[mapping[k] or k] or v 
+                    args[mapping[k] or k] = v or args[mapping[k] or k]
                 end
             end
             
@@ -499,9 +509,11 @@ server {
             -- Further processing on encrypted/decrypted arguments for safety
             local encrypted         = ngx.decode_args(ngx.var.decrypted_args or "") or {}
             local restricted        = { "_url", "md5", "rhid", "rsid", "origin", "referer", "cookie", "accept" }
+
+            local event             = (encrypted["event"] or args["event"] or "purchase"):lower()
             
-            -- If rhid is set it's not safe to forward on to HP or we could get duplicates
-            if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil) then
+            -- If rhid/event is set it's not safe to forward on to HP or we could get duplicates
+            if ngx.var.upstream:match("hp") ~= nil and (args["rhid"] ~= nil or encrypted["rhid"] ~= nil or event ~= "purchase") then
                 ngx.var.upstream = "hydra"
             end
             
@@ -520,8 +532,8 @@ server {
             ngx.req.set_uri_args(args)
 
             -- Block potentially harmful retry/redirect loops
-            if (args.retries ~= nil and tonumber(args.retries) > 5) or
-                    (args.redirects ~= nil and tonumber(args.redirects) > 3) then
+            if (args.retries ~= nil and (tonumber(args.retries) or 0) > 5) or
+                    (args.redirects ~= nil and (tonumber(args.redirects) or 0) > 3) then
                 ngx.status = 409
                 ngx.say("Sorry, it seems like you're stuck in a redirect loop.\nPlease try again shortly.\n")
                 ngx.exit(409)
@@ -581,7 +593,7 @@ server {
     # Log stats to datadog
     log_by_lua_block {
         -- Log health check status (only report for local health checks)
-        if ngx.var.request_uri == "/thisthingisnotathing" and ngx.var.remote_addr == "127.0.0.1" then
+        if (ngx.var.request_uri == "/thisthingisnotathing" or ngx.var.request_uri == "/status.php") and ngx.var.remote_addr == "127.0.0.1" then
             return ngx.timer.at(0, post_process, "hydra.healthcheck", { "upstream:router", "response_code:" .. (ngx.var.status or "502") }, ngx.var.request_time)
         -- Methods are not required for logging (no errors, didn't go upstream)
         elseif (ngx.status < 300 or (ngx.status - 400) < 100) and ngx.var.loggable == "0" then
@@ -628,7 +640,7 @@ server {
             end
             
             -- don't include sleep time in total request time
-            ngx.timer.at(0, post_process, "hydra.request", tags, tonumber(response_times[k] or 0) - tonumber(ngx.var.sleep_time or 0))
+            ngx.timer.at(0, post_process, "hydra.request", tags, (tonumber(response_times[k]) or 0) - (tonumber(ngx.var.sleep_time) or 0))
         end
 
         ngx.var.unencrypted_request = "GET " .. (ngx.var.uri or "") .. ngx.var.is_args .. (ngx.var.args or "") .. " " .. (ngx.var.server_protocol or "HTTP/1.1")
@@ -882,11 +894,12 @@ server {
     set                                 $upstream hp-ndp;
     set_by_lua_block $upstream {
         local args  = safe_url_args(ngx.req.get_uri_args() or {})
-        local hit   = parse_tracking_cookie(cookie_to_headers("uid" .. tonumber(args["sid"] or 0)))
-        args["hid"] = args["hid"] or hit["hid"]
+        local event = (args["event"] or "purchase"):lower()
+        local hit   = parse_tracking_cookie(cookie_to_headers("uid" .. (tonumber(args["sid"]) or "")))
+        args["hid"] = empty_to_nil(args["hid"]) or hit["hid"]
 
         -- if hit id is below the range of hp upstream, handle via ndp
-        if (args["hid"] ~= nil and tonumber(args["hid"]) < 900000000) or ngx.var.host:match("mediaclickndp") then
+        if (tonumber(args["hid"]) ~= nil and tonumber(args["hid"]) < 820000000) or (event ~= "purchase") or ngx.var.host:match("mediaclickndp") then
             return "ndp"
         elseif ngx.var.host:match("mediaclicklb") then
             return "hp"

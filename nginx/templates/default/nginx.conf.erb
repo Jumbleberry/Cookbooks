@@ -131,7 +131,7 @@ http {
     ##
     # Zones
     ##
-    limit_conn_zone         $binary_remote_addr$real_x_forwarded_for$host$uri$arg_sid$arg_hid$arg_transid$arg_md5
+    limit_conn_zone         $binary_remote_addr$real_x_forwarded_for$host$uri$arg_sid$arg_hid$arg_transid$arg_event$arg_md5
                                 zone=conn_limit_per_ip:50m;
     limit_conn_zone         $upstream zone=conn_limit_per_upstream:1m;
     limit_req_zone          $binary_remote_addr$real_x_forwarded_for$host$uri$arg_sid$arg_hid$arg_transid$arg_md5$arg_redirects$arg_retries 

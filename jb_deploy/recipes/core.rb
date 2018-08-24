@@ -70,6 +70,8 @@ template credentials_file do
       "aws_access_key"          => node['jbx']['credentials']['aws']['access_key'],
       "aws_secret_key"          => node['jbx']['credentials']['aws']['secret_key'],
       "aws_region"              => node['jbx']['credentials']['aws']['region'],
+
+      "snowplow_collector_uri"  => node['jbx']['credentials']['snowplow']['collector_uri'],
                                 
       "datadog_api_key"         =>  node['datadog']['api_key'],
       "datadog_app_key"         =>  node['datadog']['application_key'],
@@ -104,6 +106,7 @@ end
 execute 'Database migrations' do
   cwd "#{node['jbx']['core']['path']}/application/cli"
   command "php cli.php migrations:migrate --no-interaction"
+  timeout 86400
   not_if { ::Dir.glob("#{node['jbx']['core']['path']}/application/migrations/*.php").empty? }
 end
 
