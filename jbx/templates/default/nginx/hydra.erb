@@ -189,6 +189,7 @@ server {
     
     # Show server host name as header
     more_set_headers                'Server: Hydra';
+    more_set_headers                'X-Robots-Tag: none';
     more_set_headers                'X-Content-Type-Options: nosniff';
     more_set_headers                'X-XSS-Protection: 0';
     more_set_headers                'Referrer-Policy: never, no-referrer';
@@ -201,8 +202,8 @@ server {
     more_set_headers                "X-Backend-Connect-Time: $upstream_connect_time";
     more_set_headers                "X-Backend-Response-Time: $upstream_header_time";
     more_set_headers                "X-Backend-Status: $upstream_status";
-    more_set_headers                "X-Backend-Uri: $uri";
-    more_set_headers                "X-Backend-Args: $args";
+    # more_set_headers                "X-Backend-Uri: $uri";
+    # more_set_headers                "X-Backend-Args: $args";
     
     location = /favicon.ico { 
         return                      204;
@@ -363,7 +364,7 @@ server {
     }
     
     # Rate limit redirects to 1 per ip, 1 per 5sec
-    location ~* ^/rd/(r|o) {
+    location ~* ^/rd/(r|o|getsid) {
         rewrite_by_lua_block {
             post_to_get()
             
