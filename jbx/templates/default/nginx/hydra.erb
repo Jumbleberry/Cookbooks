@@ -556,7 +556,6 @@ server {
         
         # Mask CFs involvement in upstream
         proxy_set_header            Cf-Connecting-Ip "";
-        proxy_set_header            Cf-IpCountry "";
         proxy_set_header            Cf-Visitor "";
         proxy_set_header            CF-RAY "";
         proxy_set_header            Server "";
@@ -585,7 +584,6 @@ server {
         
         proxy_method                GET;
         proxy_set_header            Host $subdomain$domain;
-        proxy_set_header            CF-IPCountry $http_cf_ipcountry;
         proxy_pass                  http://$upstream;
         
         proxy_cookie_domain         ~^.*?$ .$domain;
