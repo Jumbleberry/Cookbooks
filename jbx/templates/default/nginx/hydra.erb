@@ -585,6 +585,7 @@ server {
         
         proxy_method                GET;
         proxy_set_header            Host $subdomain$domain;
+        proxy_set_header            CF-IPCountry $http_cf_ipcountry;
         proxy_pass                  http://$upstream;
         
         proxy_cookie_domain         ~^.*?$ .$domain;
