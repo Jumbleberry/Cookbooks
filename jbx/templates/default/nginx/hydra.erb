@@ -588,6 +588,13 @@ server {
         
         proxy_cookie_domain         ~^.*?$ .$domain;
         proxy_redirect              ~^((?:[^:]*:)?//[^:]+\.mediaclick[^.]+\.com)(?::\d+)?(/.+)$ https://$subdomain$domain$2;
+
+        # Get around an issue where chrome downloads pages since a 204 status has no content type and content sniffing is disabled
+        header_filter_by_lua_block {
+            if ngx.status == 204 then
+                ngx.header["X-Content-Type-Options"] = nil
+            end
+        }
     }
     
     # Log stats to datadog
