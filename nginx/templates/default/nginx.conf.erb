@@ -47,7 +47,7 @@ http {
                             '$request_time $upstream_response_time $pipe';
     
     log_format router       '"$hostname" [$time_local] '
-                            '"$upstream" "$upstream_name" "$upstream_server" $remote_addr '
+                            '"$upstream" "$upstream_name" "$upstream_server" $remote_addr $real_ip '
                             '"$subdomain$domain" "$unencrypted_request" "$request" "$upstream_http_location" '
                             '"$http_accept" "$http_referer" "$http_user_agent" "$http_x_forwarded_for" '
                             '"$upstream_status" "$upstream_connect_time" "$upstream_header_time" "$upstream_response_time" '

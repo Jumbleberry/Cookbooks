@@ -159,6 +159,15 @@ server {
     # Keep track of how long we slept nginx for
     set                             $sleep_time "0";
 
+    # Keep track of the original user IP (including v6 address)
+    set_by_lua_block $real_ip {
+        if ngx.var.realip_remote_addr == nil or ngx.var.realip_remote_addr == ngx.var.remote_addr then
+            return ngx.var.remote_addr
+        end
+
+        return ngx.var.http_cf_connecting_ipv6 or ngx.var.remote_addr
+    }
+
     # Fix X-Forwarded-For to strip out the proxy addresses
     set_by_lua_block $real_x_forwarded_for { 
         local ip            = ngx.var.remote_addr
