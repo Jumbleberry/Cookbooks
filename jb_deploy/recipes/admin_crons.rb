@@ -31,7 +31,7 @@ cron "Admin - Advertiser Prepay" do
   command "/usr/bin/php #{node[:admin][:path]}/cron_scripts/advertiser_limits.php"
   minute '*/15'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Admin - Effective Cap Notification" do
