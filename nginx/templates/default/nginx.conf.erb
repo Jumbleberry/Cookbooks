@@ -17,7 +17,8 @@ http {
 
     client_body_timeout     15s;
     client_header_timeout   15s;
-    
+    large_client_header_buffers 4 64k;
+
     keepalive_timeout       300;
     keepalive_requests      1000;
     types_hash_max_size     2048;
