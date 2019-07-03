@@ -9,5 +9,4 @@ version          '0.1.0'
 depends "web-server"
 depends "nginx"
 depends "zend"
-depends "s3fs-fuse"
 depends "jb_deploy"
