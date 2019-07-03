@@ -1,7 +1,6 @@
 include_recipe "web-server"
 include_recipe "nginx"
 include_recipe "zend"
-include_recipe "s3fs-fuse"
 include_recipe "jb_deploy::admin"
 
 # Creates the nginx virtual host
