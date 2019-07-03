@@ -67,11 +67,3 @@ template "#{node['admin']['path']}/cron_scripts/includes/config/settings.php" do
   source  "admin/settings.php.erb"
   not_if { node[:user] == 'vagrant' && ::File.exist?("#{node['admin']['path']}/cron_scripts/includes/config/settings.php") }
 end
-
-#Creates bucket directory
-directory node['admin']['storage']['base'] + node['admin']['storage']['user_images'] do
-    action :create
-    owner node['admin']['user']
-    group node['admin']['user']
-    recursive true
-end
