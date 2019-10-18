@@ -41,4 +41,6 @@ node['filebeat']['hydra']['prospectors'].each do |p_name, p_config|
   end
 end
 
-filebeat_service 'default'
+filebeat_service 'default' do 
+  disable_service true
+end
