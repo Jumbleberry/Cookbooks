@@ -9,7 +9,7 @@
             "<%= @tag %>"
         ],
         "check": {
-            "script": "<%= @consul_path %>/redis_check.php <%= @currentip %> <%= @port %>",
+            "args": ["<%= @consul_path %>/redis_check.php", "<%= @currentip %>", "<%= @port %>"],
             "interval": "5s"
         },
         "enableTagOverride": true
