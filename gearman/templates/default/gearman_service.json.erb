@@ -7,7 +7,7 @@
             "gearman"
         ],
         "check": {
-            "script": "<%= @consul_path %>/gearman_check.php <%= @currentip %>",
+            "args": ["<%= @consul_path %>/gearman_check.php", "<%= @currentip %>"],
             "interval": "5s"
         }
     }
