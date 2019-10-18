@@ -76,6 +76,8 @@ default['consul']['checksums'] = {
   '0.9.0_linux_386'    => '7f4c537ef333ed93d934b7e0bdb3b16949ae50f4071df16894530e24b9e9d927',
   '0.9.0_linux_amd64'  => '33e54c7d9a93a8ce90fc87f74c7f787068b7a62092b7c55a945eea9939e8577f',
   '0.9.0_web_ui'       => 'b53fb4e86cc47a9285a21984357274b7d52856044c3958749fb1ffaa8a92e126',
+
+  '1.6.1_linux_amd64'  => 'a8568ca7b6797030b2c32615b4786d4cc75ce7aee2ed9025996fe92b07b31f7e'
 }
 default['consul']['source_revision'] = 'master'
 default['consul']['use_packagecloud_repo'] = true
