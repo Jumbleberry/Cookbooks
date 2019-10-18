@@ -41,7 +41,7 @@ GEM
     erubis (2.7.0)
     faraday (0.9.1)
       multipart-post (>= 1.2, < 3)
-    ffi (1.9.8)
+    ffi (1.11.1)
     foodcritic (5.0.0)
       erubis
       gherkin (~> 2.11)
