@@ -122,7 +122,7 @@ cron "Processing - Cap Deltas" do
   weekday '1'
   hour '0'
   user 'www-data'
-  action :create
+  action :delete
 end
 
 cron "Processing - Caps Reached" do
