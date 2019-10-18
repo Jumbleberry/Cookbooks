@@ -12,11 +12,6 @@ directory node['consul']['lib_dir'] do
   action :create
 end
 
-# Install consul ui if we're supposed to serve it
-if (node['consul'].attribute?('serve_ui') && node['consul']['serve_ui'])
-    include_recipe "consul::ui"
-end
-
 include_recipe "consul"
 include_recipe "dnsmasq"
 
