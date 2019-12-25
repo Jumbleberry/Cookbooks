@@ -24,6 +24,6 @@ link virtualhost_link do
 end
 
 # install dog-statsd dependency
-execute '/usr/local/openresty/luajit/bin/luarocks install lua-resty-dogstatsd' do
+execute '/usr/local/openresty/luajit/bin/luarocks install jumbleberry-dogstatsd' do
     notifies :reload, "service[nginx]", :delayed
 end
