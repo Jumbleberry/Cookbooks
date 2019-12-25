@@ -13,7 +13,8 @@ end
 template virtualhost do
   source    "nginx/hydra.erb"
   variables ({
-    "path"      => "#{node['jbx']['core']['path']}/public"
+    "path"      => "#{node['jbx']['core']['path']}/public",
+    "dedupe"    => node['jbx']['mesh']['dedupe']
   })
   notifies :reload, "service[nginx]", :delayed
 end

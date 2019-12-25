@@ -12,6 +12,7 @@ default['jbx']['mesh']['path'] = '/vagrant/www/application/modules/mesh'
 default['jbx']['mesh']['git-url'] = 'git@github.com:Jumbleberry/JBX-Mesh.git'
 default['jbx']['mesh']['branch'] = 'master'
 default['jbx']['mesh']['github_key'] = ''
+default['jbx']['mesh']['dedupe'] = false
 
 default['jbx']['processing']['path'] = '/vagrant/www/application/modules/processing'
 default['jbx']['processing']['git-url'] = 'git@github.com:Jumbleberry/JBX-Processing.git'

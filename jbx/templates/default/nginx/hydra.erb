@@ -399,6 +399,7 @@ server {
         error_page                  404 =403 @redirect_encrypted_only;
         error_page                  503 @redirect_exponential_backoff;
         
+<% if (@dedupe) %>
         # Only allow 1 concurrent request
         limit_conn                  conn_limit_per_ip 1;
         limit_conn_status           503;
@@ -406,7 +407,8 @@ server {
         # 5 seconds between duplicate requests
         limit_req                   zone=force_cookie_reuse nodelay;
         limit_req_status            503;
-        
+<% end %>
+
         # Continue normal processing
         try_files                   @proxy @proxy;
     }
@@ -561,6 +563,9 @@ server {
         proxy_set_header            X-Forwarded-Proto $real_scheme;
         proxy_set_header            Accept-Encoding "";
         proxy_set_header            Content-Type "";
+
+        # Control Deduping
+        proxy_set_header            X-Dedupe <%= @dedupe? '1': '0' %>;
         
         # Mask CFs involvement in upstream
         proxy_set_header            Cf-Connecting-Ip "";
