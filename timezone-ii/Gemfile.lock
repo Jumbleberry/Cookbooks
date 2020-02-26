@@ -53,7 +53,7 @@ GEM
     gist (3.1.1)
     hashr (0.0.22)
     highline (1.6.15)
-    i18n (0.6.1)
+    i18n (0.6.11)
     ipaddress (0.8.0)
     json (1.5.4)
     librarian (0.0.26)
