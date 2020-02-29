@@ -226,7 +226,7 @@ GEM
     polyglot (0.3.5)
     powerpack (0.0.9)
     rainbow (2.1.0)
-    rake (11.2.2)
+    rake (12.3.3)
     rbvmomi (1.8.2)
       builder
       nokogiri (>= 1.4.1)
