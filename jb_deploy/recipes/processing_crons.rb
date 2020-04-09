@@ -146,65 +146,10 @@ cron "Processing - Future Caps" do
   action :create
 end
 
-cron "Processing - Cap Sunday Snapshot" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
-  minute '*'
-  hour '0-23'
-  weekday '0,5,6'
+cron "Processing - Landing Page Screenshots" do
+  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/get_landingpage_screenshots.php"
+  minute '30'
+  hour '10,14,18,22'
   user 'www-data'
-  action :delete
-end
-
-cron "Processing - Cap Monday Snapshot" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_snapshot.php"
-  minute '*'
-  weekday '1'
-  hour '1-15'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Cap Approval Monday Midnight" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
-  minute '15'
-  hour '0'
-  weekday '1'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Cap Approval Monday - Incremental" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
-  minute '*'
-  weekday '1'
-  hour '7-15'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Cap Approval Monday 4pm" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_approval.php"
-  minute '0'
-  hour '16'
-  weekday '1'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Cap Unapprovals Friday" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_unapproved.php"
-  minute '1-59'
-  hour '16-23'
-  weekday '5'
-  user 'www-data'
-  action :delete
-end
-
-cron "Processing - Cap Unapprovals Weekends" do
-  command "/usr/bin/php #{node[:jbx][:processing][:path]}/crons/cap_unapproved.php"
-  minute '*'
-  hour '0-23'
-  weekday '0,6'
-  user 'www-data'
-  action :delete
+  action :create
 end
