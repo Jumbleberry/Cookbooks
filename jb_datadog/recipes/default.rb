@@ -1,5 +1,5 @@
-include_recipe "datadog::dd-agent"
-include_recipe "datadog::dd-handler"
+# include_recipe "datadog::dd-agent"
+# include_recipe "datadog::dd-handler"
 
 # Create yaml files
 node['datadog']['services'].each do | service, instances |
