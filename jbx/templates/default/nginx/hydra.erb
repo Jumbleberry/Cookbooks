@@ -565,7 +565,7 @@ server {
         proxy_set_header            Content-Type "";
 
         # Control Deduping
-        proxy_set_header            X-Dedupe <%= @dedupe? '1': '0' %>;
+        proxy_set_header            X-Dedupe <%= @dedupe ? "1" : "0" %>;
         
         # Mask CFs involvement in upstream
         proxy_set_header            Cf-Connecting-Ip "";
@@ -808,7 +808,15 @@ server {
         access_log                      off;
         stub_status                     on;
     }
-    
+
+    location = / {
+        return                          204;
+    }
+
+    location ~* ^/promo {
+        return                          404;
+    }
+
     location ~* ^/rd/f {
         set                             $domain mediaclicklb.com;
         rewrite                         ^/rd/f(.*) /rd/r$1;
