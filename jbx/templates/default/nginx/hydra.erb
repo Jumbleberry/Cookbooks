@@ -809,6 +809,10 @@ server {
         stub_status                     on;
     }
 
+    location = /thisthingisnotathing {
+        rewrite                         ^ /status.php;
+    }
+
     location = / {
         return                          204;
     }
