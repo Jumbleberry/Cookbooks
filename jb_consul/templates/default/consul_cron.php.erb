@@ -33,7 +33,7 @@ if (!is_null($current_instance   = $aws->getCurrentInstance())) {
     while ($attempts--) {
         
         //Get list of the instances already runing as a cluster, if there is any the bootstraping process is already done
-        $cluster_instances  = $aws->getInstancesByTag('consul', 'cluster2');
+        $cluster_instances  = $aws->getInstancesByTag('consul', 'hydra');
             
         // Get all the cluster instances we can join, if a cluster is set up, otherwise get all the bootstrap instances we can join
         $instancesToJoin    = count($cluster_instances)? $cluster_instances : $aws->getInstancesByTag('consul', 'bootstrap2');
@@ -48,20 +48,20 @@ if (!is_null($current_instance   = $aws->getCurrentInstance())) {
         }
     
         // Which type of tag should we have
-        $tag = empty($consul->getLeader()) ? 'bootstrap2': 'cluster2';
+        $tag = empty($consul->getLeader()) ? 'bootstrap2': 'hydra';
     
         // Update the tags accordingly, depending whether or not we're in a cluster
         if ($tag !== $current_tag) {
             $aws->updateInstanceTag($current_instance['InstanceId'], 'consul', ($current_tag = $tag));
     
             // When cluster first reaches quorum, register external services
-            if($tag == 'cluster2'){
+            if($tag == 'hydra'){
                 $external_services = json_decode(EXTERNAL_SERVICES);
                 foreach ($external_services as $external_service) $consul->addExternalService($external_service);
             }
         }
         
-        if ($current_tag == 'cluster2')
+        if ($current_tag == 'hydra')
             break;
         
         sleep(5);
