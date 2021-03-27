@@ -390,7 +390,8 @@ server {
                 (args["c2"] or "") .. 
                 (args["c3"] or "") .. 
                 (args["bps"] or "") ..
-                (args["step"] or "")
+                (args["step"] or "") ..
+                (args["hid"] or "")
             )
             
             ngx.req.set_uri_args(args)
@@ -422,6 +423,18 @@ server {
             if ngx.var.domain:match("mediaclick") == nil and ngx.var.encrypted_uri:len() == 0 then
                 --ngx.exec("@redirect_encrypted_only")
             end
+
+            local args          = safe_url_args(ngx.req.get_uri_args() or {})
+            args["transid"]     = (args["transid"] or ""):len() > 0 and args["transid"] or nil
+
+            -- Treat routes that generate clicks as "Init" events, to prevent simultaneous click generation
+            args["md5"]         = ngx.md5(
+                (args["hid"] or "") ..
+                (args["transid"] or "") ..
+                ((args["v"] or args["oi"]) and "init" or args["event"] or "n/a"):lower()
+            )
+            
+            ngx.req.set_uri_args(args)
         }
         
         error_page                  404 =403 @redirect_encrypted_only;
@@ -548,6 +561,10 @@ server {
                 ngx.status = 409
                 ngx.say("Sorry, it seems like you're stuck in a redirect loop.\nPlease try again shortly.\n")
                 ngx.exit(409)
+            -- Browser is reloading a previous pixel request
+            elseif args.jbclid ~= nil then
+                ngx.status = 204
+                ngx.exit(204)
             end
         }
         
